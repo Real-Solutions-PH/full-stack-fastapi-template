@@ -17,11 +17,12 @@ export function middleware(request: NextRequest) {
 
   if (!token && !isPublic) {
     const url = request.nextUrl.clone()
-    url.pathname = "/login"
+    url.pathname = pathname === "/" ? "/landing" : "/login"
     return NextResponse.redirect(url)
   }
 
-  if (token && isPublic && pathname !== "/reset-password") {
+  const authOnlyRedirects = ["/login", "/signup", "/recover-password"]
+  if (token && authOnlyRedirects.some((r) => pathname.startsWith(r))) {
     const url = request.nextUrl.clone()
     url.pathname = "/"
     return NextResponse.redirect(url)

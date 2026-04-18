@@ -1,11 +1,35 @@
-# Stage 0, "build-stage", install deps and build the Next.js app with bun
-FROM oven/bun:1-alpine AS build-stage
+# Stage 0, "deps", install deps once and reuse across stages
+FROM oven/bun:1-alpine AS deps
 WORKDIR /app
-
 COPY package.json bun.lock /app/
 COPY frontend/package.json /app/frontend/
 RUN bun install --frozen-lockfile
 
+# Stage "dev", run Next.js dev server with HMR for docker compose watch
+FROM oven/bun:1-alpine AS dev
+WORKDIR /app
+COPY --from=deps /app/node_modules /app/node_modules
+COPY package.json bun.lock /app/
+COPY frontend/package.json /app/frontend/
+COPY ./frontend /app/frontend
+WORKDIR /app/frontend
+ARG NEXT_PUBLIC_API_URL
+ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
+ENV NEXT_TELEMETRY_DISABLED=1
+ENV NODE_ENV=development
+ENV PORT=3000
+ENV HOSTNAME=0.0.0.0
+ENV WATCHPACK_POLLING=true
+ENV CHOKIDAR_USEPOLLING=true
+EXPOSE 3000
+CMD ["bun", "run", "dev", "--", "-H", "0.0.0.0", "-p", "3000"]
+
+# Stage 1, "build-stage", build the Next.js app with bun
+FROM oven/bun:1-alpine AS build-stage
+WORKDIR /app
+COPY --from=deps /app/node_modules /app/node_modules
+COPY package.json bun.lock /app/
+COPY frontend/package.json /app/frontend/
 COPY ./frontend /app/frontend
 
 WORKDIR /app/frontend

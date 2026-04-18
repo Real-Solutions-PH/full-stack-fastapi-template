@@ -57,13 +57,16 @@ services:
   frontend:
     restart: "no"
     ports:
-      - "5173:3000"
+      - "3000:3000"
     build:
       context: .
       dockerfile: frontend/Dockerfile
+      target: dev
       args:
         - NEXT_PUBLIC_API_URL=http://localhost:8000
-        - NODE_ENV=development
+    environment:
+      WATCHPACK_POLLING: "true"
+      CHOKIDAR_USEPOLLING: "true"
     develop:
       watch:
         - path: ./frontend

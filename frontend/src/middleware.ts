@@ -2,7 +2,13 @@ import { type NextRequest, NextResponse } from "next/server"
 
 const AUTH_COOKIE = "access_token"
 
-const publicRoutes = ["/login", "/signup", "/recover-password", "/reset-password"]
+const publicRoutes = [
+  "/landing",
+  "/login",
+  "/signup",
+  "/recover-password",
+  "/reset-password",
+]
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl

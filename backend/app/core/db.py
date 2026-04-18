@@ -20,6 +20,7 @@ def init_db(session: Session) -> None:
     from app.modules.iam.users import repo as user_repo
     from app.modules.iam.users.models import User
     from app.modules.iam.users.schema import UserCreate
+    from app.modules.items.models import Item  # noqa: F401  resolve User.items mapper
 
     # Tables are managed by Alembic migrations.
     user = session.exec(

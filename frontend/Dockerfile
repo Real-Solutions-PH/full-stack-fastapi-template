@@ -23,9 +23,9 @@ ENV NEXT_TELEMETRY_DISABLED=1
 RUN addgroup --system --gid 1001 nodejs \
  && adduser --system --uid 1001 nextjs
 
-COPY --from=build-stage /app/frontend/public ./public
+COPY --from=build-stage /app/frontend/public ./frontend/public
 COPY --from=build-stage --chown=nextjs:nodejs /app/frontend/.next/standalone ./
-COPY --from=build-stage --chown=nextjs:nodejs /app/frontend/.next/static ./.next/static
+COPY --from=build-stage --chown=nextjs:nodejs /app/frontend/.next/static ./frontend/.next/static
 
 USER nextjs
 
@@ -33,4 +33,4 @@ EXPOSE 3000
 ENV PORT=3000
 ENV HOSTNAME=0.0.0.0
 
-CMD ["node", "server.js"]
+CMD ["node", "frontend/server.js"]

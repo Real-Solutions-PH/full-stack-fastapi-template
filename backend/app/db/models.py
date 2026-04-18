@@ -1,36 +1,13 @@
-import uuid
-from datetime import datetime, timezone
+"""Aggregator module so SQLModel.metadata sees every table.
 
-from sqlalchemy import DateTime
-from sqlmodel import Field, Relationship, SQLModel
+Alembic autogenerate imports ``SQLModel`` from here; any new module-level
+``table=True`` SQLModel must be re-exported below so its table is registered.
+"""
 
-from app.schema.item import ItemBase
-from app.schema.user import UserBase
+from sqlmodel import SQLModel  # noqa: F401
 
-
-def get_datetime_utc() -> datetime:
-    return datetime.now(timezone.utc)
-
-
-# Database model, database table inferred from class name
-class User(UserBase, table=True):
-    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
-    hashed_password: str
-    created_at: datetime | None = Field(
-        default_factory=get_datetime_utc,
-        sa_type=DateTime(timezone=True),  # type: ignore
-    )
-    items: list["Item"] = Relationship(back_populates="owner", cascade_delete=True)
-
-
-# Database model, database table inferred from class name
-class Item(ItemBase, table=True):
-    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
-    created_at: datetime | None = Field(
-        default_factory=get_datetime_utc,
-        sa_type=DateTime(timezone=True),  # type: ignore
-    )
-    owner_id: uuid.UUID = Field(
-        foreign_key="user.id", nullable=False, ondelete="CASCADE"
-    )
-    owner: User | None = Relationship(back_populates="items")
+from app.modules.iam.permissions.models import Permission  # noqa: F401
+from app.modules.iam.roles.models import Role  # noqa: F401
+from app.modules.iam.tenants.models import Tenant  # noqa: F401
+from app.modules.iam.users.models import User  # noqa: F401
+from app.modules.items.models import Item  # noqa: F401

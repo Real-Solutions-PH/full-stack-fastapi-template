@@ -7,8 +7,8 @@ from sqlmodel import Session, select
 from app.core.config import settings
 from app.core.security import get_password_hash, verify_password
 from app.db.models import User
-from app.repo import user_repo
-from app.schema.user import UserCreate
+from app.modules.iam.users import repo as user_repo
+from app.modules.iam.users.schema import UserCreate
 from tests.utils.user import create_random_user
 from tests.utils.utils import random_email, random_lower_string
 
@@ -39,7 +39,7 @@ def test_create_user_new_email(
     client: TestClient, superuser_token_headers: dict[str, str], db: Session
 ) -> None:
     with (
-        patch("app.services.user_service.send_email", return_value=None),
+        patch("app.modules.iam.users.services.send_email", return_value=None),
         patch("app.core.config.settings.SMTP_HOST", "smtp.example.com"),
         patch("app.core.config.settings.SMTP_USER", "admin@example.com"),
     ):

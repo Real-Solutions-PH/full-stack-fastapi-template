@@ -7,9 +7,9 @@ from sqlmodel import Session
 from app.core.config import settings
 from app.core.security import get_password_hash, verify_password
 from app.db.models import User
-from app.repo import user_repo
-from app.schema.user import UserCreate
-from app.utils.token import generate_password_reset_token
+from app.modules.iam.auth.utils import generate_password_reset_token
+from app.modules.iam.users import repo as user_repo
+from app.modules.iam.users.schema import UserCreate
 from tests.utils.user import user_authentication_headers
 from tests.utils.utils import random_email, random_lower_string
 

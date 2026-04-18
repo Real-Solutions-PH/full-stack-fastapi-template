@@ -2,27 +2,26 @@ from sqlmodel import Session, create_engine, select
 
 from app.core.config import settings
 from app.core.security import get_password_hash
-from app.db.models import User
-from app.repo import user_repo
-from app.schema.user import UserCreate
 
 engine = create_engine(str(settings.SQLALCHEMY_DATABASE_URI))
 
 
-# make sure all SQLModel models are imported (app.db.models) before initializing DB
-# otherwise, SQLModel might fail to initialize relationships properly
-# for more details: https://github.com/fastapi/full-stack-fastapi-template/issues/28
+# Ensure every module-level SQLModel is imported (via app.db.models) before
+# SQLModel resolves relationships. See:
+# https://github.com/fastapi/full-stack-fastapi-template/issues/28
 
 
 def init_db(session: Session) -> None:
-    # Tables should be created with Alembic migrations
-    # But if you don't want to use migrations, create
-    # the tables un-commenting the next lines
-    # from sqlmodel import SQLModel
+    # Imported lazily: seeders live inside modules whose deps eventually
+    # re-import ``engine`` from here, which would deadlock at module load.
+    from app.modules.iam.permissions.seed import seed_permissions
+    from app.modules.iam.roles.seed import seed_roles
+    from app.modules.iam.tenants.seed import seed_tenants
+    from app.modules.iam.users import repo as user_repo
+    from app.modules.iam.users.models import User
+    from app.modules.iam.users.schema import UserCreate
 
-    # This works because the models are already imported and registered from app.db.models
-    # SQLModel.metadata.create_all(engine)
-
+    # Tables are managed by Alembic migrations.
     user = session.exec(
         select(User).where(User.email == settings.FIRST_SUPERUSER)
     ).first()
@@ -36,3 +35,7 @@ def init_db(session: Session) -> None:
             user_in, update={"hashed_password": get_password_hash(user_in.password)}
         )
         user_repo.create(session=session, user=db_user)
+
+    seed_roles(session)
+    seed_permissions(session)
+    seed_tenants(session)

@@ -43,3 +43,8 @@ if settings.all_cors_origins:
     )
 
 app.include_router(v1_router, prefix=settings.API_V1_STR)
+
+if settings.AI_ENABLED:
+    from app.modules.ai.copilotkit_setup import setup_copilotkit
+
+    setup_copilotkit(app)

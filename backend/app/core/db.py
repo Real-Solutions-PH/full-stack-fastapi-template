@@ -40,3 +40,10 @@ def init_db(session: Session) -> None:
     seed_roles(session)
     seed_permissions(session)
     seed_tenants(session)
+
+    if settings.AI_ENABLED:
+        from app.modules.ai.agents.seed import seed_agents
+        from app.modules.ai.tools.seed import seed_tools
+
+        seed_agents(session)
+        seed_tools(session)

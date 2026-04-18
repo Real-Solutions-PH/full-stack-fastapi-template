@@ -74,7 +74,7 @@ services:
             - ./frontend/.next
         - path: ./frontend/package.json
           action: rebuild
-        - path: ./frontend/package-lock.json
+        - path: ./bun.lock
           action: rebuild
 
 networks:

@@ -1,3 +1,5 @@
+"use client"
+
 import { Briefcase, Home, Users } from "lucide-react"
 
 import { SidebarAppearance } from "@/components/Common/Appearance"

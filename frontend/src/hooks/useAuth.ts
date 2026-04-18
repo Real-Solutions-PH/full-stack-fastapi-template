@@ -1,5 +1,7 @@
+"use client"
+
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { useNavigate } from "@tanstack/react-router"
+import { useRouter } from "next/navigation"
 
 import {
   type Body_login_login_access_token as AccessToken,
@@ -8,15 +10,12 @@ import {
   type UserRegister,
   UsersService,
 } from "@/client"
+import { clearAuthCookie, isLoggedIn, setAuthCookie } from "@/lib/auth"
 import { handleError } from "@/utils"
 import useCustomToast from "./useCustomToast"
 
-const isLoggedIn = () => {
-  return localStorage.getItem("access_token") !== null
-}
-
 const useAuth = () => {
-  const navigate = useNavigate()
+  const router = useRouter()
   const queryClient = useQueryClient()
   const { showErrorToast } = useCustomToast()
 
@@ -30,7 +29,7 @@ const useAuth = () => {
     mutationFn: (data: UserRegister) =>
       UsersService.registerUser({ requestBody: data }),
     onSuccess: () => {
-      navigate({ to: "/login" })
+      router.push("/login")
     },
     onError: handleError.bind(showErrorToast),
     onSettled: () => {
@@ -42,20 +41,23 @@ const useAuth = () => {
     const response = await LoginService.loginAccessToken({
       formData: data,
     })
-    localStorage.setItem("access_token", response.access_token)
+    setAuthCookie(response.access_token)
   }
 
   const loginMutation = useMutation({
     mutationFn: login,
     onSuccess: () => {
-      navigate({ to: "/" })
+      router.push("/")
+      router.refresh()
     },
     onError: handleError.bind(showErrorToast),
   })
 
   const logout = () => {
-    localStorage.removeItem("access_token")
-    navigate({ to: "/login" })
+    clearAuthCookie()
+    queryClient.clear()
+    router.push("/login")
+    router.refresh()
   }
 
   return {

@@ -1,5 +1,6 @@
+"use client"
+
 import { useSuspenseQuery } from "@tanstack/react-query"
-import { createFileRoute } from "@tanstack/react-router"
 import { Search } from "lucide-react"
 import { Suspense } from "react"
 
@@ -15,17 +16,6 @@ function getItemsQueryOptions() {
     queryKey: ["items"],
   }
 }
-
-export const Route = createFileRoute("/_layout/items")({
-  component: Items,
-  head: () => ({
-    meta: [
-      {
-        title: "Items - FastAPI Template",
-      },
-    ],
-  }),
-})
 
 function ItemsTableContent() {
   const { data: items } = useSuspenseQuery(getItemsQueryOptions())
@@ -53,7 +43,7 @@ function ItemsTable() {
   )
 }
 
-function Items() {
+export default function Items() {
   return (
     <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between">

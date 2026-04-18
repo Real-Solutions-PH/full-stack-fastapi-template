@@ -1,5 +1,4 @@
-import { createFileRoute, Outlet, redirect } from "@tanstack/react-router"
-
+import type { ReactNode } from "react"
 import { Footer } from "@/components/Common/Footer"
 import AppSidebar from "@/components/Sidebar/AppSidebar"
 import {
@@ -7,20 +6,8 @@ import {
   SidebarProvider,
   SidebarTrigger,
 } from "@/components/ui/sidebar"
-import { isLoggedIn } from "@/hooks/useAuth"
 
-export const Route = createFileRoute("/_layout")({
-  component: Layout,
-  beforeLoad: async () => {
-    if (!isLoggedIn()) {
-      throw redirect({
-        to: "/login",
-      })
-    }
-  },
-})
-
-function Layout() {
+export default function AppLayout({ children }: { children: ReactNode }) {
   return (
     <SidebarProvider>
       <AppSidebar />
@@ -29,14 +16,10 @@ function Layout() {
           <SidebarTrigger className="-ml-1 text-muted-foreground" />
         </header>
         <main className="flex-1 p-6 md:p-8">
-          <div className="mx-auto max-w-7xl">
-            <Outlet />
-          </div>
+          <div className="mx-auto max-w-7xl">{children}</div>
         </main>
         <Footer />
       </SidebarInset>
     </SidebarProvider>
   )
 }
-
-export default Layout

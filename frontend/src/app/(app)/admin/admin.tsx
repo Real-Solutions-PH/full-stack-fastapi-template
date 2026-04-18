@@ -1,6 +1,8 @@
+"use client"
+
 import { useSuspenseQuery } from "@tanstack/react-query"
-import { createFileRoute, redirect } from "@tanstack/react-router"
-import { Suspense } from "react"
+import { useRouter } from "next/navigation"
+import { Suspense, useEffect } from "react"
 
 import { type UserPublic, UsersService } from "@/client"
 import AddUser from "@/components/Admin/AddUser"
@@ -15,25 +17,6 @@ function getUsersQueryOptions() {
     queryKey: ["users"],
   }
 }
-
-export const Route = createFileRoute("/_layout/admin")({
-  component: Admin,
-  beforeLoad: async () => {
-    const user = await UsersService.readUserMe()
-    if (!user.is_superuser) {
-      throw redirect({
-        to: "/",
-      })
-    }
-  },
-  head: () => ({
-    meta: [
-      {
-        title: "Admin - FastAPI Template",
-      },
-    ],
-  }),
-})
 
 function UsersTableContent() {
   const { user: currentUser } = useAuth()
@@ -55,7 +38,18 @@ function UsersTable() {
   )
 }
 
-function Admin() {
+export default function Admin() {
+  const router = useRouter()
+  const { user } = useAuth()
+
+  useEffect(() => {
+    if (user && !user.is_superuser) {
+      router.replace("/")
+    }
+  }, [user, router])
+
+  if (user && !user.is_superuser) return null
+
   return (
     <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between">

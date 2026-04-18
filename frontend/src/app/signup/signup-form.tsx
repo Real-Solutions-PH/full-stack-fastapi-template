@@ -1,9 +1,7 @@
+"use client"
+
 import { zodResolver } from "@hookform/resolvers/zod"
-import {
-  createFileRoute,
-  Link as RouterLink,
-  redirect,
-} from "@tanstack/react-router"
+import Link from "next/link"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
 import { AuthLayout } from "@/components/Common/AuthLayout"
@@ -18,7 +16,7 @@ import {
 import { Input } from "@/components/ui/input"
 import { LoadingButton } from "@/components/ui/loading-button"
 import { PasswordInput } from "@/components/ui/password-input"
-import useAuth, { isLoggedIn } from "@/hooks/useAuth"
+import useAuth from "@/hooks/useAuth"
 
 const formSchema = z
   .object({
@@ -39,25 +37,7 @@ const formSchema = z
 
 type FormData = z.infer<typeof formSchema>
 
-export const Route = createFileRoute("/signup")({
-  component: SignUp,
-  beforeLoad: async () => {
-    if (isLoggedIn()) {
-      throw redirect({
-        to: "/",
-      })
-    }
-  },
-  head: () => ({
-    meta: [
-      {
-        title: "Sign Up - FastAPI Template",
-      },
-    ],
-  }),
-})
-
-function SignUp() {
+export default function SignUpForm() {
   const { signUpMutation } = useAuth()
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -73,8 +53,6 @@ function SignUp() {
 
   const onSubmit = (data: FormData) => {
     if (signUpMutation.isPending) return
-
-    // exclude confirm_password from submission data
     const { confirm_password: _confirm_password, ...submitData } = data
     signUpMutation.mutate(submitData)
   }
@@ -176,14 +154,12 @@ function SignUp() {
 
           <div className="text-center text-sm">
             Already have an account?{" "}
-            <RouterLink to="/login" className="underline underline-offset-4">
+            <Link href="/login" className="underline underline-offset-4">
               Log in
-            </RouterLink>
+            </Link>
           </div>
         </form>
       </Form>
     </AuthLayout>
   )
 }
-
-export default SignUp

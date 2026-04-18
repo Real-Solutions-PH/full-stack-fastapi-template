@@ -1,9 +1,7 @@
+"use client"
+
 import { zodResolver } from "@hookform/resolvers/zod"
-import {
-  createFileRoute,
-  Link as RouterLink,
-  redirect,
-} from "@tanstack/react-router"
+import Link from "next/link"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
 
@@ -20,7 +18,7 @@ import {
 import { Input } from "@/components/ui/input"
 import { LoadingButton } from "@/components/ui/loading-button"
 import { PasswordInput } from "@/components/ui/password-input"
-import useAuth, { isLoggedIn } from "@/hooks/useAuth"
+import useAuth from "@/hooks/useAuth"
 
 const formSchema = z.object({
   username: z.email(),
@@ -32,25 +30,7 @@ const formSchema = z.object({
 
 type FormData = z.infer<typeof formSchema>
 
-export const Route = createFileRoute("/login")({
-  component: Login,
-  beforeLoad: async () => {
-    if (isLoggedIn()) {
-      throw redirect({
-        to: "/",
-      })
-    }
-  },
-  head: () => ({
-    meta: [
-      {
-        title: "Log In - FastAPI Template",
-      },
-    ],
-  }),
-})
-
-function Login() {
+export default function LoginForm() {
   const { loginMutation } = useAuth()
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -105,12 +85,12 @@ function Login() {
                 <FormItem>
                   <div className="flex items-center">
                     <FormLabel>Password</FormLabel>
-                    <RouterLink
-                      to="/recover-password"
+                    <Link
+                      href="/recover-password"
                       className="ml-auto text-sm underline-offset-4 hover:underline"
                     >
                       Forgot your password?
-                    </RouterLink>
+                    </Link>
                   </div>
                   <FormControl>
                     <PasswordInput
@@ -131,9 +111,9 @@ function Login() {
 
           <div className="text-center text-sm">
             Don't have an account yet?{" "}
-            <RouterLink to="/signup" className="underline underline-offset-4">
+            <Link href="/signup" className="underline underline-offset-4">
               Sign up
-            </RouterLink>
+            </Link>
           </div>
         </form>
       </Form>

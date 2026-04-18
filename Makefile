@@ -123,4 +123,4 @@ clean: ## Remove Python caches and build artifacts
 	find . -type d -name .pytest_cache -exec rm -rf {} + 2>/dev/null || true
 	find . -type d -name htmlcov -exec rm -rf {} + 2>/dev/null || true
 	find . -name "*.pyc" -delete 2>/dev/null || true
-	rm -rf frontend/dist
+	rm -rf frontend/.next

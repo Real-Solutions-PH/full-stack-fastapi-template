@@ -4,9 +4,8 @@
   "files": {
     "includes": [
       "**",
-      "!**/dist/**/*",
+      "!**/.next/**/*",
       "!**/node_modules/**/*",
-      "!**/src/routeTree.gen.ts",
       "!**/src/client/**/*",
       "!**/src/components/ui/**/*",
       "!**/playwright-report",

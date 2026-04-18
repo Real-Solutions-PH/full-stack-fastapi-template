@@ -1,3 +1,5 @@
+"use client"
+
 import type { ColumnDef } from "@tanstack/react-table"
 import { Check, Copy } from "lucide-react"
 

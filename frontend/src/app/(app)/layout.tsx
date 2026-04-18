@@ -1,5 +1,8 @@
 import type { ReactNode } from "react"
 import { Footer } from "@/components/Common/Footer"
+
+export const dynamic = "force-dynamic"
+
 import AppSidebar from "@/components/Sidebar/AppSidebar"
 import {
   SidebarInset,

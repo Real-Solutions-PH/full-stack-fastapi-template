@@ -121,6 +121,17 @@ class Settings(BaseSettings):
     @property
     def brave_search_enabled(self) -> bool:
         return bool(self.BRAVE_API_KEY)
+    # OCR Module
+    OCR_ENABLED: bool = False
+    OCR_DEFAULT_PROVIDER: str = "rapidocr"  # rapidocr | easyocr | granite
+    OCR_MAX_FILE_SIZE_MB: int = 10
+    OCR_ALLOWED_MIME_TYPES: str = "image/png,image/jpeg,image/tiff,application/pdf"
+    OCR_BUCKET: str = "ocr-documents"
+
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def ocr_allowed_mime_list(self) -> list[str]:
+        return [m.strip() for m in self.OCR_ALLOWED_MIME_TYPES.split(",") if m.strip()]
 
     def _check_default_secret(self, var_name: str, value: str | None) -> None:
         if value == "changethis":

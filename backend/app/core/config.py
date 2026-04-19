@@ -100,6 +100,27 @@ class Settings(BaseSettings):
     MINIO_REGION: str = "us-east-1"
     MINIO_DEFAULT_BUCKET: str = "app-uploads"
 
+    # AI Module
+    AI_ENABLED: bool = False
+
+    # LLM Providers
+    NEBIUS_API_KEY: str | None = None
+    NEBIUS_BASE_URL: str = "https://api.studio.nebius.com/v1/"
+    NEBIUS_MODEL: str = "meta-llama/Meta-Llama-3.1-70B-Instruct"
+
+    OPENROUTER_API_KEY: str | None = None
+    OPENROUTER_BASE_URL: str = "https://openrouter.ai/api/v1"
+    OPENROUTER_MODEL: str = "meta-llama/llama-3.1-70b-instruct"
+
+    DEFAULT_LLM_PROVIDER: str = "nebius"
+
+    # Tools
+    BRAVE_API_KEY: str | None = None
+
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def brave_search_enabled(self) -> bool:
+        return bool(self.BRAVE_API_KEY)
     # OCR Module
     OCR_ENABLED: bool = False
     OCR_DEFAULT_PROVIDER: str = "rapidocr"  # rapidocr | easyocr | granite

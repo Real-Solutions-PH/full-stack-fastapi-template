@@ -10,6 +10,10 @@ v1_router.include_router(iam_router)
 v1_router.include_router(items_router)
 v1_router.include_router(system_router)
 
+if settings.AI_ENABLED:
+    from app.modules.ai.main import router as ai_router
+
+    v1_router.include_router(ai_router)
 if settings.OCR_ENABLED:
     from app.modules.ocr.main import router as ocr_router
 

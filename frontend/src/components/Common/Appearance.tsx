@@ -1,6 +1,7 @@
 "use client"
 
 import { Monitor, Moon, Sun } from "lucide-react"
+import { useEffect, useState } from "react"
 
 import { useTheme } from "@/components/theme-provider"
 import { Button } from "@/components/ui/button"
@@ -28,7 +29,13 @@ const ICON_MAP: Record<Theme, LucideIcon> = {
 export const SidebarAppearance = () => {
   const { isMobile } = useSidebar()
   const { setTheme, theme } = useTheme()
-  const Icon = ICON_MAP[(theme as Theme) ?? "system"]
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  const Icon = mounted ? ICON_MAP[(theme as Theme) ?? "system"] : Monitor
 
   return (
     <SidebarMenuItem>

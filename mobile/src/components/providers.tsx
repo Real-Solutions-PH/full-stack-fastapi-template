@@ -1,13 +1,9 @@
 import { useNetworkStatus } from "@/hooks/useNetworkStatus";
-import { useSyncOnForeground } from "@/hooks/useSyncOnForeground";
-import { initializeDatabase } from "@/lib/database";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { ReactNode } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { Toaster } from "sonner-native";
-
-initializeDatabase();
 
 export const queryClient = new QueryClient({
 	defaultOptions: {
@@ -29,7 +25,6 @@ interface ProvidersProps {
 
 function AppInitializer() {
 	useNetworkStatus();
-	useSyncOnForeground();
 	return null;
 }
 

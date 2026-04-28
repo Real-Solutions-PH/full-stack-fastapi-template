@@ -1,5 +1,3 @@
-import { db } from "@/lib/database";
-
 export interface CachedUser {
 	id: string;
 	email: string;
@@ -9,44 +7,23 @@ export interface CachedUser {
 	created_at?: string | null;
 }
 
-interface UserRow {
-	id: string;
-	email: string;
-	full_name: string | null;
-	is_active: number;
-	is_superuser: number;
-	created_at: string | null;
-	cached_at: string;
-}
+let cachedUser: CachedUser | null = {
+	id: "demo-user",
+	email: "ervinpiol7@gmail.com",
+	full_name: "Ervin Piol",
+	is_active: true,
+	is_superuser: false,
+	created_at: new Date().toISOString(),
+};
 
 export function getCachedUser(): CachedUser | null {
-	const row = db.getFirstSync<UserRow>("SELECT * FROM users LIMIT 1");
-	if (!row) return null;
-	return {
-		id: row.id,
-		email: row.email,
-		full_name: row.full_name,
-		is_active: row.is_active === 1,
-		is_superuser: row.is_superuser === 1,
-		created_at: row.created_at,
-	};
+	return cachedUser;
 }
 
 export function upsertUser(user: CachedUser): void {
-	db.runSync(
-		`INSERT OR REPLACE INTO users (id, email, full_name, is_active, is_superuser, created_at, cached_at)
-     VALUES (?, ?, ?, ?, ?, ?, datetime('now'))`,
-		[
-			user.id,
-			user.email,
-			user.full_name,
-			user.is_active ? 1 : 0,
-			user.is_superuser ? 1 : 0,
-			user.created_at ?? null,
-		],
-	);
+	cachedUser = { ...user };
 }
 
 export function clearUserCache(): void {
-	db.runSync("DELETE FROM users");
+	cachedUser = null;
 }

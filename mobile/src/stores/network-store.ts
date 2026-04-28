@@ -1,4 +1,3 @@
-import { mmkv } from "@/lib/storage";
 import { create } from "zustand";
 
 type SyncStatus = "idle" | "syncing" | "error";
@@ -21,10 +20,10 @@ interface NetworkState {
 
 export const useNetworkStore = create<NetworkState>()((set) => ({
 	isConnected: true,
-	connectionType: "unknown",
-	isWifi: false,
+	connectionType: "wifi",
+	isWifi: true,
 	syncStatus: "idle",
-	lastSyncAt: mmkv.getString("lastSyncAt") ?? null,
+	lastSyncAt: null,
 	pendingChangesCount: 0,
 	syncError: null,
 
@@ -41,10 +40,7 @@ export const useNetworkStore = create<NetworkState>()((set) => ({
 			syncError: error ?? null,
 		}),
 
-	setLastSyncAt: (timestamp) => {
-		mmkv.set("lastSyncAt", timestamp);
-		set({ lastSyncAt: timestamp });
-	},
+	setLastSyncAt: (timestamp) => set({ lastSyncAt: timestamp }),
 
 	setPendingChangesCount: (count) => set({ pendingChangesCount: count }),
 }));

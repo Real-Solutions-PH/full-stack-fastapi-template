@@ -120,6 +120,7 @@ export type UserPublic = {
     is_superuser?: boolean;
     full_name?: (string | null);
     id: string;
+    tenant_id: string;
     created_at?: (string | null);
 };
 

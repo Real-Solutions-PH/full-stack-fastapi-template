@@ -559,6 +559,11 @@ export const UserPublicSchema = {
             format: 'uuid',
             title: 'Id'
         },
+        tenant_id: {
+            type: 'string',
+            format: 'uuid',
+            title: 'Tenant Id'
+        },
         created_at: {
             anyOf: [
                 {
@@ -573,7 +578,7 @@ export const UserPublicSchema = {
         }
     },
     type: 'object',
-    required: ['email', 'id'],
+    required: ['email', 'id', 'tenant_id'],
     title: 'UserPublic'
 } as const;
 

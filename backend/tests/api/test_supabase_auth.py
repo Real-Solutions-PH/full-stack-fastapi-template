@@ -131,6 +131,27 @@ def test_superuser_delete_revokes_auth_identity(
     assert db.get(User, auth_uid) is None
 
 
+def test_superuser_create_does_not_adopt_existing_auth_user(
+    client: TestClient, superuser_token_headers: dict[str, str], db: Session
+) -> None:
+    """POST /users/ with an email already registered in GoTrue must 409
+    instead of silently linking the pre-existing auth identity."""
+    email = random_email()
+    supabase_auth.admin_get_or_create_user(email=email, password=random_lower_string())
+
+    r = client.post(
+        f"{settings.API_V1_STR}/users/",
+        headers=superuser_token_headers,
+        json={"email": email},
+    )
+    assert r.status_code == 409
+    assert "auth provider" in r.json()["message"]
+
+    from app.modules.iam.users import repo as user_repo
+
+    assert user_repo.get_by_email(session=db, email=email) is None
+
+
 def test_bootstrap_is_idempotent(db: Session) -> None:
     from sqlmodel import select
 

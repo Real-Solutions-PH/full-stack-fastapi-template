@@ -124,11 +124,28 @@ def admin_delete_user(auth_uid: uuid.UUID) -> None:
     r.raise_for_status()
 
 
-def admin_get_or_create_user(email: str, password: str | None = None) -> uuid.UUID:
+class EmailExistsError(Exception):
+    """The email is already registered with the auth provider and the
+    caller opted out of adopting the existing identity."""
+
+
+def admin_get_or_create_user(
+    email: str, password: str | None = None, *, adopt_existing: bool = True
+) -> uuid.UUID:
     """Idempotently ensure a GoTrue user exists; return its auth UID.
 
-    If the user already exists and ``password`` is given, the password is
-    reset so callers (bootstrap, test fixtures) end in a known state.
+    If the user already exists and ``adopt_existing`` is True, the existing
+    identity is adopted — and if ``password`` is given it is reset so
+    callers (bootstrap, test fixtures) end in a known state. Caveat for the
+    FIRST_SUPERUSER bootstrap: the reset invalidates the old password, but
+    any access token already issued to the previous holder stays
+    signature-valid until ``exp`` (≤ jwt_expiry) — don't point the
+    bootstrap at an email you don't control.
+
+    With ``adopt_existing=False`` an already-registered email raises
+    :class:`EmailExistsError` instead, so privileged flows (superuser user
+    creation) can't silently grant app access to an unverified pre-existing
+    auth identity.
     """
     body: dict[str, Any] = {"email": email, "email_confirm": True}
     if password is not None:
@@ -139,6 +156,8 @@ def admin_get_or_create_user(email: str, password: str | None = None) -> uuid.UU
     if r.status_code == 200:
         return uuid.UUID(r.json()["id"])
     if r.status_code == 422 and r.json().get("error_code") == "email_exists":
+        if not adopt_existing:
+            raise EmailExistsError(email)
         user_id = admin_get_user_id_by_email(email)
         if user_id is None:  # pragma: no cover - create/lookup race
             raise RuntimeError(f"GoTrue reports {email} exists but lookup failed")

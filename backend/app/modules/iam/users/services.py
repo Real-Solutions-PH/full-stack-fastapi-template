@@ -37,7 +37,18 @@ def create_user(*, session: Session, user_in: UserCreate) -> User:
             status_code=400,
             detail="The user with this email already exists in the system.",
         )
-    auth_uid = supabase_auth.admin_get_or_create_user(email=user_in.email)
+    try:
+        auth_uid = supabase_auth.admin_get_or_create_user(
+            email=user_in.email, adopt_existing=False
+        )
+    except supabase_auth.EmailExistsError:
+        raise HTTPException(
+            status_code=409,
+            detail=(
+                "email already registered with the auth provider — "
+                "verify ownership before granting access"
+            ),
+        )
     tenant = tenant_service.get_default_tenant(session=session)
     db_user = User.model_validate(
         user_in, update={"id": auth_uid, "tenant_id": tenant.id}

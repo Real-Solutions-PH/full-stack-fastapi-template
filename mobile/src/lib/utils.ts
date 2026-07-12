@@ -1,3 +1,4 @@
+import axios from "axios"
 import { type ClassValue, clsx } from "clsx"
 import { twMerge } from "tailwind-merge"
 
@@ -38,6 +39,17 @@ export const confirmPasswordRules = (
 }
 
 export function handleError(err: unknown): string {
+  if (axios.isAxiosError(err)) {
+    const body = err.response?.data as
+      | { message?: string; details?: Array<{ msg?: string }> | null }
+      | undefined
+    // Validation errors (422) carry per-field messages in details.
+    if (Array.isArray(body?.details) && body.details[0]?.msg) {
+      return body.details[0].msg
+    }
+    if (body?.message) return body.message
+    return err.message
+  }
   if (err instanceof Error) return err.message
   if (typeof err === "string") return err
   return "An unexpected error occurred"

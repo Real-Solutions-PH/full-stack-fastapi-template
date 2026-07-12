@@ -1,16 +1,18 @@
 import { AxiosError } from "axios"
-import type { ApiError } from "./client"
+import type { ApiError, ErrorResponse } from "./client"
 
 function extractErrorMessage(err: ApiError): string {
   if (err instanceof AxiosError) {
     return err.message
   }
 
-  const errDetail = (err.body as any)?.detail
-  if (Array.isArray(errDetail) && errDetail.length > 0) {
-    return errDetail[0].msg
+  const body = err.body as ErrorResponse | undefined
+  const details = body?.details
+  // Validation errors (422) carry per-field messages in details.
+  if (Array.isArray(details) && details.length > 0 && details[0]?.msg) {
+    return details[0].msg
   }
-  return errDetail || "Something went wrong."
+  return body?.message || "Something went wrong."
 }
 
 export const handleError = function (

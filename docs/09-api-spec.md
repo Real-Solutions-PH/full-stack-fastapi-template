@@ -4,7 +4,7 @@
 
 - Base URL: `/api/v1`
 - Auth: Bearer JWT
-- Errors: RFC 7807 problem+json
+- Errors: standard JSON envelope `{ "code": string, "message": string, "details": any | null }` (constitution §3.6). `code` is the lowercased HTTP status name (`not_found`, `forbidden`, ...), with `validation_error` for 422 (field errors listed in `details`) and `internal_error` for 500.
 - Pagination: `?limit=&offset=` + `X-Total-Count`
 - Versioning: URL prefix
 - Date format: ISO-8601 UTC (`YYYY-MM-DDTHH:MM:SSZ`)

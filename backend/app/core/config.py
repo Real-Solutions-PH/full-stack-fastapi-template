@@ -22,6 +22,16 @@ def parse_cors(v: Any) -> list[str] | str:
     raise ValueError(v)
 
 
+# The Supabase CLI local stack's well-known demo service-role key (JWT
+# payload: iss="supabase-demo"). Public knowledge — shipping it to a hosted
+# environment would hand full GoTrue admin access to anyone.
+_DEMO_SUPABASE_SERVICE_ROLE_KEY = (
+    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9."
+    "eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0."
+    "EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU"
+)
+
+
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
         # Use top level .env file (one level above ./backend/)
@@ -156,10 +166,12 @@ class Settings(BaseSettings):
     def ocr_allowed_mime_list(self) -> list[str]:
         return [m.strip() for m in self.OCR_ALLOWED_MIME_TYPES.split(",") if m.strip()]
 
-    def _check_default_secret(self, var_name: str, value: str | None) -> None:
-        if value == "changethis":
+    def _check_default_secret(
+        self, var_name: str, value: str | None, insecure_value: str = "changethis"
+    ) -> None:
+        if value == insecure_value:
             message = (
-                f'The value of {var_name} is "changethis", '
+                f"The value of {var_name} is a well-known insecure default, "
                 "for security, please change it, at least for deployments."
             )
             if self.ENVIRONMENT == "local":
@@ -172,6 +184,13 @@ class Settings(BaseSettings):
         self._check_default_secret("POSTGRES_PASSWORD", self.POSTGRES_PASSWORD)
         self._check_default_secret(
             "FIRST_SUPERUSER_PASSWORD", self.FIRST_SUPERUSER_PASSWORD
+        )
+        # The CLI stack's demo service-role key is public knowledge; outside
+        # a local environment it must never be the configured key.
+        self._check_default_secret(
+            "SUPABASE_SERVICE_ROLE_KEY",
+            self.SUPABASE_SERVICE_ROLE_KEY,
+            insecure_value=_DEMO_SUPABASE_SERVICE_ROLE_KEY,
         )
 
         return self

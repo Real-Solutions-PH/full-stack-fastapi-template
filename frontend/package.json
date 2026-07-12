@@ -12,6 +12,8 @@
     "test:ui": "bunx playwright test --ui"
   },
   "dependencies": {
+    "@copilotkit/react-core": "^1.56.0",
+    "@copilotkit/react-ui": "^1.56.0",
     "@hookform/resolvers": "^5.2.2",
     "@radix-ui/react-avatar": "^1.1.11",
     "@radix-ui/react-checkbox": "^1.3.3",
@@ -25,6 +27,7 @@
     "@radix-ui/react-slot": "^1.2.4",
     "@radix-ui/react-tabs": "^1.1.13",
     "@radix-ui/react-tooltip": "^1.2.8",
+    "@sentry/nextjs": "^10",
     "@tanstack/react-query": "^5.90.21",
     "@tanstack/react-query-devtools": "^5.91.1",
     "@tanstack/react-table": "^8.21.3",
@@ -40,14 +43,12 @@
     "react-error-boundary": "^6.0.0",
     "react-hook-form": "^7.68.0",
     "react-icons": "^5.5.0",
+    "react-markdown": "^9.0.0",
+    "remark-gfm": "^4.0.0",
     "sonner": "^2.0.7",
     "tailwind-merge": "^3.4.0",
     "tailwindcss": "^4.2.1",
-    "zod": "^4.3.6",
-    "@copilotkit/react-core": "^1.56.0",
-    "@copilotkit/react-ui": "^1.56.0",
-    "react-markdown": "^9.0.0",
-    "remark-gfm": "^4.0.0"
+    "zod": "^4.3.6"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.3.14",

@@ -126,6 +126,7 @@ services:
       dockerfile: frontend/Dockerfile
       args:
         - NEXT_PUBLIC_API_URL=https://api.${DOMAIN?Variable not set}
+        - NEXT_PUBLIC_SENTRY_DSN=${FRONTEND_SENTRY_DSN:-}
         - NODE_ENV=production
 
 volumes:

@@ -17,7 +17,7 @@ This repo is governed by the **Engineering Constitution v2.0**, pinned at [docs/
 |---|---|---|
 | backend | install deps | `uv sync` (from `backend/`) |
 | backend | lint | `make backend-lint` (mypy + ty check + ruff check + ruff format --check) |
-| backend | test | `make backend-test` (or `bash backend/scripts/test.sh`) |
+| backend | test | `make test-docker` (containerized) — `make backend-test` runs pytest directly against the configured DB |
 | backend | migrate | `make backend-migrate` (upgrade head) / `make backend-revision MSG="..."` |
 | frontend | install deps | `bun install` (root) |
 | frontend | dev server | `bun run dev` |
@@ -38,7 +38,7 @@ This repo is governed by the **Engineering Constitution v2.0**, pinned at [docs/
 - Biome is the linter/formatter for TS — not ESLint, not Prettier.
 - Backend type-checking is mypy **strict**.
 - Docs use `YYYY-MM-DD` dates; update `docs/README.md`'s index when adding a doc.
-- Backend tests run against the local DB and **wipe `User`/`Item` rows** — use the Docker-based test scripts (`make backend-test` / `bash backend/scripts/test.sh`), not an ad hoc run against a DB you care about.
+- Backend tests **wipe `User`/`Item` rows** in whatever DB they point at. `make backend-test` / `bash backend/scripts/test.sh` run pytest directly against the configured (local) DB; use `make test-docker` (root `scripts/test.sh` — builds, runs tests in the compose stack, tears down volumes) when you care about the local DB's contents.
 
 ## Pointers
 

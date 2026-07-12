@@ -26,12 +26,15 @@ Context pack for human + AI programmers building this SaaS. Fill each template; 
 | [17-roadmap.md](17-roadmap.md) | Quarterly themes, future bets | PM |
 | [18-risks.md](18-risks.md) | Risks, mitigations, owners | All |
 | [19-glossary.md](19-glossary.md) | Domain terms, acronyms | All |
-| [20-decision-log.md](20-decision-log.md) | ADRs, key choices, rationale | Tech lead |
+| [20-decision-log.md](20-decision-log.md) | Deprecated — pointer to `adr/` | Tech lead |
 | [21-onboarding.md](21-onboarding.md) | Dev setup, repo tour, runbook | Eng |
+| [constitution.md](constitution.md) | Pinned Engineering Constitution v2.0 (master in Notion) | Founders |
+| [adr/](adr/) | Architecture Decision Records — one file per decision | Tech lead |
+| [runbook.md](runbook.md) | Deploy, rollback, backup/restore, common ops, incidents | DevOps |
 
 ## Conventions
 
 - Update doc when reality changes. Stale doc worse than no doc.
-- Link decisions to ADRs in [20-decision-log.md](20-decision-log.md).
+- Decisions live in `docs/adr/` as ADRs (`docs/20-decision-log.md` is deprecated — see its banner).
 - Date entries `YYYY-MM-DD`.
 - Keep AI-context-friendly: short sections, headings, tables.

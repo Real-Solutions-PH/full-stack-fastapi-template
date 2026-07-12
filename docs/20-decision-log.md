@@ -1,5 +1,7 @@
 # Decision Log (ADRs)
 
+> **Deprecated:** ADRs now live in [adr/](adr/) — one file per decision, using [adr/template.md](adr/template.md). This file is retained as a pointer.
+
 One entry per significant decision. Append-only. Supersede instead of edit.
 
 ---

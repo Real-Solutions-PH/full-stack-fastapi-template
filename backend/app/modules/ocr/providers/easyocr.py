@@ -14,7 +14,12 @@ class EasyOcrProvider(OcrProvider):
     async def extract(self, file_bytes: bytes, mime_type: str) -> OcrResult:
         return await asyncio.to_thread(self._extract_sync, file_bytes, mime_type)
 
-    def _extract_sync(self, file_bytes: bytes, mime_type: str) -> OcrResult:
+    # pragma-justification: body imports docling, which ships only in the
+    # optional "ocr" extra and is not installed in CI (pyproject mypy
+    # override documents the same gap) — genuinely unexercisable there.
+    def _extract_sync(
+        self, file_bytes: bytes, mime_type: str
+    ) -> OcrResult:  # pragma: no cover
         from docling.datamodel.base_models import InputFormat
         from docling.datamodel.pipeline_options import (
             EasyOcrOptions,

@@ -4,6 +4,7 @@ Every error response from the API uses the shape
 ``{"code": <str>, "message": <str>, "details": <Any | None>}``.
 """
 
+import logging
 from collections.abc import Mapping
 from http import HTTPStatus
 from typing import Any, cast
@@ -16,6 +17,8 @@ from pydantic import BaseModel
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.core.config import settings
+
+logger = logging.getLogger(__name__)
 
 
 class ErrorResponse(BaseModel):
@@ -59,7 +62,7 @@ async def http_exception_handler(
     if isinstance(detail, dict):
         code = detail.get("code") or code_for_status(exc.status_code)
         message = detail.get("message") or str(detail)
-        details = detail.get("details")
+        details = jsonable_encoder(detail.get("details"))
     else:
         code = code_for_status(exc.status_code)
         message = str(detail)
@@ -70,29 +73,35 @@ async def http_exception_handler(
 async def validation_exception_handler(
     _request: Request, exc: RequestValidationError
 ) -> JSONResponse:
+    # Only expose loc/msg/type: pydantic's errors() also carries "input"
+    # (the submitted value — passwords on a failed login/signup) and "ctx"
+    # (which can embed exception objects). Neither may leave the server.
+    safe_details = [
+        {"loc": err.get("loc"), "msg": err.get("msg"), "type": err.get("type")}
+        for err in exc.errors()
+    ]
     return _envelope_response(
         422,
         "validation_error",
         "Validation failed",
-        jsonable_encoder(exc.errors()),
+        jsonable_encoder(safe_details),
     )
 
 
 async def unhandled_exception_handler(request: Request, exc: Exception) -> JSONResponse:
-    details: Any | None = None
-    if settings.ENVIRONMENT == "local":
-        details = str(exc)
+    # Registering an Exception handler stops ServerErrorMiddleware from
+    # printing the traceback, so log it here; the envelope never carries
+    # exception internals in any environment.
+    logger.exception("Unhandled exception", exc_info=exc)
     # This handler runs outside CORSMiddleware, so CORS headers must be
     # echoed manually or browsers hide the 500 response body entirely.
-    headers: Mapping[str, str] | None = None
+    headers: dict[str, str] = {"Vary": "Origin"}
     origin = request.headers.get("origin")
     if origin and origin in settings.all_cors_origins:
-        headers = {
-            "Access-Control-Allow-Origin": origin,
-            "Access-Control-Allow-Credentials": "true",
-        }
+        headers["Access-Control-Allow-Origin"] = origin
+        headers["Access-Control-Allow-Credentials"] = "true"
     return _envelope_response(
-        500, "internal_error", "Internal server error", details, headers
+        500, "internal_error", "Internal server error", None, headers
     )
 
 

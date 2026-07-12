@@ -53,6 +53,22 @@ def test_validation_error_returns_envelope_with_details(
         assert "type" in item
 
 
+def test_validation_error_never_reflects_submitted_values(
+    client: TestClient,
+) -> None:
+    # pydantic's errors() carries the submitted value under "input" — a login
+    # POST missing a field must not echo the posted password back.
+    secret = "SuperSecretPW123"
+    response = client.post(
+        f"{settings.API_V1_STR}/login/access-token",
+        data={"password": secret},
+    )
+    assert response.status_code == 422
+    assert secret not in response.text
+    for item in response.json()["details"]:
+        assert set(item) == {"loc", "msg", "type"}
+
+
 def test_unhandled_exception_returns_internal_error_envelope_with_cors() -> None:
     route_path = "/boom-t29"
 
@@ -74,5 +90,9 @@ def test_unhandled_exception_returns_internal_error_envelope_with_cors() -> None
     assert content["code"] == "internal_error"
     assert content["message"] == "Internal server error"
     assert "super secret internals" not in content["message"]
+    # Exception internals never leave the server in any environment.
+    assert content["details"] is None
+    assert "super secret internals" not in response.text
     assert response.headers.get("Access-Control-Allow-Origin") == origin
     assert response.headers.get("Access-Control-Allow-Credentials") == "true"
+    assert "Origin" in response.headers.get("Vary", "")

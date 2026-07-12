@@ -1,9 +1,17 @@
 import "../../global.css"
 import { Providers } from "@/components/providers"
+import * as Sentry from "@sentry/react-native"
 import { Stack } from "expo-router"
 import { StatusBar } from "expo-status-bar"
 
-export default function RootLayout() {
+// Error monitoring (GlitchTip, Sentry-SDK compatible).
+// No-ops entirely when EXPO_PUBLIC_SENTRY_DSN is not set at build time.
+const sentryDsn = process.env.EXPO_PUBLIC_SENTRY_DSN
+if (sentryDsn) {
+  Sentry.init({ dsn: sentryDsn, tracesSampleRate: 0 })
+}
+
+function RootLayout() {
   return (
     <Providers>
       <StatusBar style="auto" />
@@ -17,3 +25,5 @@ export default function RootLayout() {
     </Providers>
   )
 }
+
+export default sentryDsn ? Sentry.wrap(RootLayout) : RootLayout

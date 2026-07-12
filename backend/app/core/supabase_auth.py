@@ -124,6 +124,18 @@ def admin_delete_user(auth_uid: uuid.UUID) -> None:
     r.raise_for_status()
 
 
+def admin_update_email(auth_uid: uuid.UUID, email: str) -> None:
+    """Change a GoTrue user's email (marked confirmed). Raises
+    ``httpx.HTTPStatusError`` on failure — callers must not commit a local
+    email change unless this succeeded."""
+    httpx.put(
+        _auth_url(f"/admin/users/{auth_uid}"),
+        headers=_admin_headers(),
+        json={"email": email, "email_confirm": True},
+        timeout=10,
+    ).raise_for_status()
+
+
 class EmailExistsError(Exception):
     """The email is already registered with the auth provider and the
     caller opted out of adopting the existing identity."""

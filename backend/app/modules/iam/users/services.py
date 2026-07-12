@@ -1,5 +1,6 @@
 import uuid
 
+import httpx
 from fastapi import HTTPException
 from sqlalchemy.exc import IntegrityError
 from sqlmodel import Session
@@ -90,6 +91,24 @@ def provision_user_from_claims(
     return user
 
 
+def _sync_email_to_gotrue(*, user: User, new_email: str | None) -> None:
+    """Propagate a local email change to the GoTrue identity.
+
+    Called BEFORE the local commit: if GoTrue rejects the change the local
+    row is left untouched and the request fails with a 502 envelope, so the
+    two stores can't drift apart.
+    """
+    if not new_email or new_email == user.email:
+        return
+    try:
+        supabase_auth.admin_update_email(user.id, new_email)
+    except httpx.HTTPError:
+        raise HTTPException(
+            status_code=502,
+            detail="Failed to update the email with the auth provider",
+        )
+
+
 def update_user(*, session: Session, user_id: uuid.UUID, user_in: UserUpdate) -> User:
     db_user = user_repo.get_by_id(session=session, user_id=user_id)
     if not db_user:
@@ -103,6 +122,7 @@ def update_user(*, session: Session, user_id: uuid.UUID, user_in: UserUpdate) ->
             raise HTTPException(
                 status_code=409, detail="User with this email already exists"
             )
+    _sync_email_to_gotrue(user=db_user, new_email=user_in.email)
     user_data = user_in.model_dump(exclude_unset=True)
     return user_repo.update(session=session, user=db_user, update_data=user_data)
 
@@ -116,6 +136,7 @@ def update_user_me(
             raise HTTPException(
                 status_code=409, detail="User with this email already exists"
             )
+    _sync_email_to_gotrue(user=current_user, new_email=user_in.email)
     update_data = user_in.model_dump(exclude_unset=True)
     return user_repo.update(session=session, user=current_user, update_data=update_data)
 

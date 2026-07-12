@@ -152,6 +152,45 @@ def test_superuser_create_does_not_adopt_existing_auth_user(
     assert user_repo.get_by_email(session=db, email=email) is None
 
 
+def test_update_user_email_propagates_to_gotrue(
+    client: TestClient, superuser_token_headers: dict[str, str]
+) -> None:
+    email = random_email()
+    password = random_lower_string()
+    auth_uid = supabase_auth.admin_get_or_create_user(email=email, password=password)
+    r = client.get(
+        f"{settings.API_V1_STR}/users/me", headers=auth_headers(email, password)
+    )
+    assert r.status_code == 200
+
+    new_email = random_email()
+    r = client.patch(
+        f"{settings.API_V1_STR}/users/{auth_uid}",
+        headers=superuser_token_headers,
+        json={"email": new_email},
+    )
+    assert r.status_code == 200
+    assert r.json()["email"] == new_email
+    # The GoTrue user's email actually changed (admin lookup by email).
+    assert supabase_auth.admin_get_user_id_by_email(new_email) == auth_uid
+    assert supabase_auth.admin_get_user_id_by_email(email) is None
+
+
+def test_update_me_email_propagates_to_gotrue(client: TestClient) -> None:
+    email = random_email()
+    password = random_lower_string()
+    auth_uid = supabase_auth.admin_get_or_create_user(email=email, password=password)
+    headers = auth_headers(email, password)
+
+    new_email = random_email()
+    r = client.patch(
+        f"{settings.API_V1_STR}/users/me", headers=headers, json={"email": new_email}
+    )
+    assert r.status_code == 200
+    assert r.json()["email"] == new_email
+    assert supabase_auth.admin_get_user_id_by_email(new_email) == auth_uid
+
+
 def test_bootstrap_is_idempotent(db: Session) -> None:
     from sqlmodel import select
 

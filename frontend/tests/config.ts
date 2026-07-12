@@ -1,10 +1,9 @@
 import path from "node:path"
-import { fileURLToPath } from "node:url"
 import dotenv from "dotenv"
 
-const __filename = fileURLToPath(import.meta.url)
-const __dirname = path.dirname(__filename)
-
+// Playwright transpiles test files to CJS, where __dirname exists natively.
+// import.meta must not be used here — it forces ESM loading of the CJS
+// output and crashes with "exports is not defined in ES module scope".
 dotenv.config({ path: path.join(__dirname, "../../.env") })
 
 function getEnvVar(name: string): string {

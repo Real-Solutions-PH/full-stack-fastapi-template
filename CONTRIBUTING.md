@@ -22,3 +22,7 @@ Exceptions that need a human look before merge:
 
 - Any PR failing CI.
 - Major-version bumps of core frameworks (`fastapi`, `next`, `react`, `expo`, `react-native`), especially `expo-*` / `react-native-*` bumps — these are version-coupled and there is no mobile CI gate yet (see ticket #26).
+
+## License gate
+
+CI (the "License Gate" workflow) fails any PR that adds a shipped dependency with an SUL/BUSL/AGPL-family license (also SSPL) in any workspace — backend, frontend, or mobile. Matching is a case-insensitive substring check against the full license string, so dual-license expressions are caught too. A knowingly-accepted exception requires an ADR in `docs/adr/` and an `allow_packages` entry in `scripts/license-denylist.json` referencing it (§3.7).

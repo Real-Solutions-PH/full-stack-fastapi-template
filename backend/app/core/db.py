@@ -1,9 +1,39 @@
+import logging
+
+from sqlalchemy import text
 from sqlmodel import Session, create_engine, select
 
 from app.core.config import settings
 from app.core.security import get_password_hash
 
+logger = logging.getLogger(__name__)
+
 engine = create_engine(str(settings.SQLALCHEMY_DATABASE_URI))
+
+
+def warn_if_rls_dormant() -> None:
+    """Log when the app connection bypasses row-level security.
+
+    Superusers and table owners skip RLS entirely, so the #40 policies are a
+    dormant second wall until #39 flips the app engine to the non-owner
+    ``app_user`` role. Non-fatal by design: purely a startup breadcrumb.
+    """
+    try:
+        with engine.connect() as conn:
+            bypasses = conn.execute(
+                text(
+                    "SELECT rolbypassrls OR rolsuper FROM pg_roles"
+                    " WHERE rolname = current_user"
+                )
+            ).scalar()
+        if bypasses:
+            logger.warning(
+                "RLS is DORMANT: app connection runs as %s which bypasses row"
+                " security (expected until #39 flips to app_user)",
+                settings.POSTGRES_USER,
+            )
+    except Exception:  # pragma: no cover - visibility only, never fatal
+        logger.warning("Could not determine RLS posture of the app connection")
 
 
 # Ensure every module-level SQLModel is imported (via app.db.models) before

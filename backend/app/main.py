@@ -9,6 +9,7 @@ from starlette.middleware.cors import CORSMiddleware
 
 from app.api import v1_router
 from app.core.config import settings
+from app.core.db import warn_if_rls_dormant
 from app.core.storage import ensure_bucket
 from app.shared.errors import ErrorResponse, register_exception_handlers
 
@@ -26,6 +27,7 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
     ensure_bucket(settings.MINIO_DEFAULT_BUCKET)
     if settings.OCR_ENABLED:
         ensure_bucket(settings.OCR_BUCKET)
+    warn_if_rls_dormant()
     yield
 
 

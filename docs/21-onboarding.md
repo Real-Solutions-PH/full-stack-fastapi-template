@@ -28,7 +28,7 @@ cd frontend && bun install && bun run dev
 ```
 
 URLs:
-- Frontend: http://localhost:5173
+- Frontend: http://localhost:3000
 - API: http://localhost:8000
 - Docs: http://localhost:8000/docs
 - MinIO: http://localhost:9001

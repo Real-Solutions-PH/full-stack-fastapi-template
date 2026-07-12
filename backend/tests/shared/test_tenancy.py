@@ -13,7 +13,6 @@ def _user(tenant_id: uuid.UUID, user_id: uuid.UUID) -> User:
     return User(
         id=user_id,
         email="tenancy-unit@example.com",
-        hashed_password="x",
         tenant_id=tenant_id,
     )
 

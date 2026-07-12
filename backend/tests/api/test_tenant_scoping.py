@@ -16,14 +16,14 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from sqlmodel import Session, select
 
+from app.core import supabase_auth
 from app.core.config import settings
-from app.core.security import get_password_hash
 from app.db.models import Conversation, Item, OcrDocument, Tenant, User
 from app.modules.ai.conversations.main import router as conversations_router
 from app.modules.iam.tenants import repo as tenant_repo
 from app.modules.ocr.main import router as ocr_router
 from app.shared.errors import register_exception_handlers
-from tests.utils.user import user_authentication_headers
+from tests.utils.user import create_auth_user, user_authentication_headers
 from tests.utils.utils import random_email, random_lower_string
 
 
@@ -55,16 +55,9 @@ def tenant_b(db: Session) -> Tenant:
 
 
 def _create_user(db: Session, tenant_id: uuid.UUID) -> tuple[User, str]:
-    password = random_lower_string()
-    user = User(
-        email=random_email(),
-        hashed_password=get_password_hash(password),
-        tenant_id=tenant_id,
-    )
-    db.add(user)
-    db.commit()
-    db.refresh(user)
-    return user, password
+    # GoTrue identity + local row pinned to the requested tenant (created
+    # BEFORE any request so JIT provisioning can't assign the default one).
+    return create_auth_user(db, tenant_id=tenant_id)
 
 
 @pytest.fixture(scope="module")
@@ -78,11 +71,9 @@ def user_b(db: Session, tenant_b: Tenant) -> tuple[User, str]:
 
 
 @pytest.fixture(scope="module")
-def user_b_headers(client: TestClient, user_b: tuple[User, str]) -> dict[str, str]:
+def user_b_headers(user_b: tuple[User, str]) -> dict[str, str]:
     user, password = user_b
-    return user_authentication_headers(
-        client=client, email=user.email, password=password
-    )
+    return user_authentication_headers(email=user.email, password=password)
 
 
 @pytest.fixture(scope="module")
@@ -269,13 +260,18 @@ def test_create_conversation_stamps_tenant(
     assert conv.tenant_id == tenant_b.id
 
 
-def test_signup_assigns_default_tenant(
+def test_first_login_assigns_default_tenant(
     client: TestClient, db: Session, default_tenant: Tenant
 ) -> None:
+    # Self-signup happens in Supabase (#39); the local mirror row is
+    # JIT-provisioned on the first authenticated request with the default
+    # tenant — the post-#38 signup semantics, preserved.
     email = random_email()
-    r = client.post(
-        f"{settings.API_V1_STR}/users/signup",
-        json={"email": email, "password": random_lower_string()},
+    password = random_lower_string()
+    supabase_auth.admin_get_or_create_user(email=email, password=password)
+    r = client.get(
+        f"{settings.API_V1_STR}/users/me",
+        headers=user_authentication_headers(email=email, password=password),
     )
     assert r.status_code == 200
     assert r.json()["tenant_id"] == str(default_tenant.id)

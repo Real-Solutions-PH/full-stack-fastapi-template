@@ -25,7 +25,6 @@ from sqlmodel import Session
 
 from app.core.config import settings
 from app.core.db import engine as owner_engine
-from app.core.security import get_password_hash
 from app.db.models import Conversation, Item, Message, Tenant, User
 from tests.utils.utils import random_email, random_lower_string
 
@@ -56,11 +55,7 @@ def fixture_rows(db: Session) -> Generator[dict[str, Any], None, None]:
         )
         db.add(tenant)
         db.commit()
-        user = User(
-            email=random_email(),
-            hashed_password=get_password_hash("irrelevant"),
-            tenant_id=tenant.id,
-        )
+        user = User(email=random_email(), tenant_id=tenant.id)
         db.add(user)
         db.commit()
         item = Item(title=f"rls item {label}", owner_id=user.id, tenant_id=tenant.id)

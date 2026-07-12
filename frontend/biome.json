@@ -6,6 +6,7 @@
       "**",
       "!**/.next/**/*",
       "!**/node_modules/**/*",
+      "!**/public/**/*",
       "!**/src/client/**/*",
       "!**/src/components/ui/**/*",
       "!**/playwright-report",

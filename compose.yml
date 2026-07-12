@@ -85,6 +85,9 @@ services:
       db:
         condition: service_healthy
         restart: true
+      minio:
+        # the app lifespan ensures the default bucket exists at startup
+        condition: service_healthy
       prestart:
         condition: service_completed_successfully
     env_file:

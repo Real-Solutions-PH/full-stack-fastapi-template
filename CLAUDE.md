@@ -16,7 +16,7 @@ This repo is governed by the **Engineering Constitution v2.0**, pinned at [docs/
 | Workspace | Task | Command |
 |---|---|---|
 | backend | install deps | `uv sync` (from `backend/`) |
-| backend | lint | `make backend-lint` (mypy + ty check + ruff check + ruff format --check) |
+| backend | lint | `make backend-lint` (mypy + ruff check + ruff format --check) |
 | backend | test | `make test-docker` (containerized) — `make backend-test` runs pytest directly against the configured DB |
 | backend | migrate | `make backend-migrate` (upgrade head) / `make backend-revision MSG="..."` |
 | frontend | install deps | `bun install` (root) |

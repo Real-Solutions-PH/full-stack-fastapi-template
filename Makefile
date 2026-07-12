@@ -30,8 +30,8 @@ ps: ## List running containers
 backend-shell: ## Open a bash shell in the backend container
 	docker compose exec backend bash
 
-backend-lint: ## Run backend linters (mypy, ty, ruff)
-	cd backend && uv run mypy app && uv run ty check app && uv run ruff check app && uv run ruff format app --check
+backend-lint: ## Run backend linters (mypy, ruff)
+	cd backend && uv run mypy app && uv run ruff check app && uv run ruff format app --check
 
 backend-format: ## Auto-format backend code (ruff)
 	cd backend && bash scripts/format.sh

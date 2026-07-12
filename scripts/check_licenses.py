@@ -52,15 +52,34 @@ def self_test() -> None:
     allow = ["app"]
     # 1. AGPL variant hidden in a dual-license string is caught
     caught = check(
-        normalize([{"Name": "pymupdf", "License": "Dual Licensed - GNU AFFERO GPL 3.0 or Artifex Commercial License"}]),
+        normalize(
+            [
+                {
+                    "Name": "pymupdf",
+                    "License": "Dual Licensed - GNU AFFERO GPL 3.0 or Artifex Commercial License",
+                }
+            ]
+        ),
         deny,
         allow,
     )
-    assert caught == [("pymupdf", "Dual Licensed - GNU AFFERO GPL 3.0 or Artifex Commercial License")], caught
+    assert caught == [
+        ("pymupdf", "Dual Licensed - GNU AFFERO GPL 3.0 or Artifex Commercial License")
+    ], caught
     # 2. Allowlisted package is skipped (license-checker shape, scoped name)
-    assert check(normalize({"app@0.1.0": {"licenses": "AGPL-3.0-only"}}), deny, allow) == []
+    assert (
+        check(normalize({"app@0.1.0": {"licenses": "AGPL-3.0-only"}}), deny, allow)
+        == []
+    )
     # 3. Clean list passes
-    assert check(normalize({"@scope/pkg@1.0.0": {"licenses": ["MIT", "BSD-3-Clause"]}}), deny, allow) == []
+    assert (
+        check(
+            normalize({"@scope/pkg@1.0.0": {"licenses": ["MIT", "BSD-3-Clause"]}}),
+            deny,
+            allow,
+        )
+        == []
+    )
     print("self-test OK")
 
 
@@ -72,11 +91,15 @@ def main() -> int:
     pairs = normalize(json.load(sys.stdin))
     violations = check(pairs, config["deny_patterns"], config["allow_packages"])
     if violations:
-        print("License gate FAILED — denylisted licenses found (see scripts/license-denylist.json):")
+        print(
+            "License gate FAILED — denylisted licenses found (see scripts/license-denylist.json):"
+        )
         for name, lic in violations:
             print(f"  {name}: {lic}")
         return 1
-    print(f"License gate passed: {len(pairs)} packages checked, no denylisted licenses.")
+    print(
+        f"License gate passed: {len(pairs)} packages checked, no denylisted licenses."
+    )
     return 0
 
 

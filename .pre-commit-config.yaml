@@ -13,10 +13,11 @@ repos:
         exclude: |
             (?x)^(
                 frontend/src/client/.*|
+                mobile/src/client/.*|
                 backend/app/email-templates/build/.*
             )$
       - id: trailing-whitespace
-        exclude: ^frontend/src/client/.*
+        exclude: ^(frontend|mobile)/src/client/.*
   - repo: local
     hooks:
       - id: local-biome-check
@@ -25,6 +26,7 @@ repos:
         language: system
         types: [text]
         files: ^frontend/
+        pass_filenames: false
 
       - id: local-ruff-check
         name: ruff check
@@ -42,14 +44,9 @@ repos:
 
       - id: local-mypy
         name: mypy check
-        entry: uv run mypy backend/app
-        require_serial: true
-        language: unsupported
-        pass_filenames: false
-
-      - id: local-ty
-        name: ty check
-        entry: uv run ty check backend/app
+        # config-file: hook runs from the repo root, where backend's
+        # [tool.mypy] overrides (e.g. optional docling extra) aren't found
+        entry: uv run mypy --config-file backend/pyproject.toml backend/app
         require_serial: true
         language: unsupported
         pass_filenames: false

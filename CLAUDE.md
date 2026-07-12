@@ -29,6 +29,7 @@ This repo is governed by the **Engineering Constitution v2.0**, pinned at [docs/
 | mobile | install deps | `cd mobile && bun install` |
 | mobile | typecheck | `bun run typecheck` (from `mobile/`) |
 | mobile | lint | `bun run lint` (from `mobile/`, Biome) |
+| mobile | test | `bun run test` (from `mobile/`, jest-expo — always `bun run test`, never `bun test`, which invokes bun's own runner) |
 
 ## Codegen rule
 

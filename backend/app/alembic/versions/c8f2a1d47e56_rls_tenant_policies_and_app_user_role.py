@@ -99,6 +99,9 @@ def upgrade():
         ' GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO app_user'
     )
 
+    # Migration state is not app data — the app role never touches it.
+    op.execute('REVOKE ALL ON alembic_version FROM app_user')
+
 
 def downgrade():
     op.execute(

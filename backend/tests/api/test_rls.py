@@ -13,6 +13,7 @@ leak) instead of seeing zero rows.
 """
 
 import json
+import secrets
 import uuid
 from collections.abc import Generator
 from typing import Any
@@ -28,7 +29,9 @@ from app.core.security import get_password_hash
 from app.db.models import Conversation, Item, Message, Tenant, User
 from tests.utils.utils import random_email, random_lower_string
 
-APP_USER_PASSWORD = "rls-test"
+# Random per-run password; teardown clears it — NOLOGIN alone does NOT
+# remove a password, and make backend-test may point at a real local DB.
+APP_USER_PASSWORD = secrets.token_urlsafe(24)
 
 
 def _set_claims(conn: Connection, tenant_id: uuid.UUID) -> None:
@@ -117,12 +120,13 @@ def app_user_engine(
         f"/{settings.POSTGRES_DB}"
     )
     engine = create_engine(url, pool_size=1, max_overflow=0)
-    yield engine
-    engine.dispose()
-
-    with owner_engine.connect() as conn:
-        conn.execute(text("ALTER ROLE app_user NOLOGIN"))
-        conn.commit()
+    try:
+        yield engine
+    finally:
+        engine.dispose()
+        with owner_engine.connect() as conn:
+            conn.execute(text("ALTER ROLE app_user NOLOGIN PASSWORD NULL"))
+            conn.commit()
 
 
 def test_app_user_does_not_bypass_rls(app_user_engine: Engine) -> None:
@@ -212,6 +216,25 @@ def test_claimless_transaction_sees_zero_rows_not_an_error(
         assert guc == "", "precondition: GUC must be '' (the gotcha) not NULL"
         assert conn.execute(text("SELECT count(*) FROM item")).scalar() == 0
         assert conn.execute(text("SELECT count(*) FROM tenant")).scalar() == 0
+        conn.rollback()
+
+
+def test_cross_tenant_message_insert_is_blocked(
+    app_user_engine: Engine, fixture_rows: dict[str, Any]
+) -> None:
+    """The message policy is transitive (EXISTS over conversation) — the one
+    policy whose WITH CHECK rests on nested RLS evaluation, so pin it."""
+    a, b = fixture_rows["a"], fixture_rows["b"]
+    with app_user_engine.connect() as conn:
+        _set_claims(conn, a["tenant_id"])
+        with pytest.raises(ProgrammingError, match="row-level security"):
+            conn.execute(
+                text(
+                    "INSERT INTO message (id, conversation_id, role, content)"
+                    " VALUES (:id, :conversation_id, 'user', 'smuggled')"
+                ),
+                {"id": uuid.uuid4(), "conversation_id": b["conversation_id"]},
+            )
         conn.rollback()
 
 

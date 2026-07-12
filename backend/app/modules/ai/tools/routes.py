@@ -1,7 +1,7 @@
 import uuid
 from typing import Any
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 
 from app.modules.ai.tools import services as tool_service
 from app.modules.ai.tools.schema import (
@@ -11,7 +11,7 @@ from app.modules.ai.tools.schema import (
     ToolsPublic,
     ToolUpdate,
 )
-from app.modules.iam.deps import CurrentUser
+from app.modules.iam.deps import CurrentUser, get_current_active_superuser
 from app.shared.deps import SessionDep
 from app.shared.schema import Message
 
@@ -31,14 +31,20 @@ def read_tool(session: SessionDep, _current_user: CurrentUser, id: uuid.UUID) ->
     return tool_service.get_tool(session=session, tool_id=id)
 
 
-@router.post("/", response_model=ToolPublic)
+@router.post(
+    "/", dependencies=[Depends(get_current_active_superuser)], response_model=ToolPublic
+)
 def create_tool(
     *, session: SessionDep, _current_user: CurrentUser, tool_in: ToolCreate
 ) -> Any:
     return tool_service.create_tool(session=session, tool_in=tool_in)
 
 
-@router.put("/{id}", response_model=ToolPublic)
+@router.put(
+    "/{id}",
+    dependencies=[Depends(get_current_active_superuser)],
+    response_model=ToolPublic,
+)
 def update_tool(
     *,
     session: SessionDep,
@@ -49,7 +55,7 @@ def update_tool(
     return tool_service.update_tool(session=session, tool_id=id, tool_in=tool_in)
 
 
-@router.delete("/{id}")
+@router.delete("/{id}", dependencies=[Depends(get_current_active_superuser)])
 def delete_tool(
     session: SessionDep, _current_user: CurrentUser, id: uuid.UUID
 ) -> Message:
@@ -67,7 +73,7 @@ def read_agent_tools(
     )
 
 
-@router.post("/agent/{agent_id}")
+@router.post("/agent/{agent_id}", dependencies=[Depends(get_current_active_superuser)])
 def assign_tool(
     *,
     session: SessionDep,
@@ -81,7 +87,9 @@ def assign_tool(
     return Message(message="Tool assigned to agent")
 
 
-@router.delete("/agent/{agent_id}/{tool_id}")
+@router.delete(
+    "/agent/{agent_id}/{tool_id}", dependencies=[Depends(get_current_active_superuser)]
+)
 def unassign_tool(
     session: SessionDep,
     _current_user: CurrentUser,

@@ -9,12 +9,12 @@ from app.modules.ocr.models import OcrDocument
 def get_by_id(
     *, session: Session, doc_id: uuid.UUID, tenant_id: uuid.UUID | None
 ) -> OcrDocument | None:
-    """Tenant filter lives in the query: rows outside ``tenant_id`` are
-    invisible (natural 404). ``tenant_id=None`` = superuser bypass."""
-    doc = session.get(OcrDocument, doc_id)
-    if doc is not None and tenant_id is not None and doc.tenant_id != tenant_id:
-        return None
-    return doc
+    """Tenant filter lives in the WHERE clause: rows outside ``tenant_id``
+    are invisible (natural 404). ``tenant_id=None`` = superuser bypass."""
+    query = select(OcrDocument).where(OcrDocument.id == doc_id)
+    if tenant_id is not None:
+        query = query.where(OcrDocument.tenant_id == tenant_id)
+    return session.exec(query).first()
 
 
 def get_multi(

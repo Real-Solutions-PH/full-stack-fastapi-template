@@ -9,12 +9,12 @@ from app.modules.items.models import Item
 def get_by_id(
     *, session: Session, item_id: uuid.UUID, tenant_id: uuid.UUID | None
 ) -> Item | None:
-    """Tenant filter lives in the query: rows outside ``tenant_id`` are
-    invisible (natural 404). ``tenant_id=None`` = superuser bypass."""
-    item = session.get(Item, item_id)
-    if item is not None and tenant_id is not None and item.tenant_id != tenant_id:
-        return None
-    return item
+    """Tenant filter lives in the WHERE clause: rows outside ``tenant_id``
+    are invisible (natural 404). ``tenant_id=None`` = superuser bypass."""
+    query = select(Item).where(Item.id == item_id)
+    if tenant_id is not None:
+        query = query.where(Item.tenant_id == tenant_id)
+    return session.exec(query).first()
 
 
 def get_multi(

@@ -9,12 +9,14 @@ from app.modules.ai.conversations.models import Conversation, Message
 def get_by_id(
     *, session: Session, conversation_id: uuid.UUID, tenant_id: uuid.UUID
 ) -> Conversation | None:
-    """Tenant filter lives in the query: rows outside ``tenant_id`` are
-    invisible (natural 404, no existence leak)."""
-    conversation = session.get(Conversation, conversation_id)
-    if conversation is not None and conversation.tenant_id != tenant_id:
-        return None
-    return conversation
+    """Tenant filter lives in the WHERE clause: rows outside ``tenant_id``
+    are invisible (natural 404, no existence leak)."""
+    query = (
+        select(Conversation)
+        .where(Conversation.id == conversation_id)
+        .where(Conversation.tenant_id == tenant_id)
+    )
+    return session.exec(query).first()
 
 
 def get_multi_by_user(

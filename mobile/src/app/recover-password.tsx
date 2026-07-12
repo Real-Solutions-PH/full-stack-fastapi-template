@@ -3,7 +3,7 @@ import { FormField } from "@/components/ui/form-field"
 import { Input } from "@/components/ui/input"
 import { Text } from "@/components/ui/text"
 import { useCustomToast } from "@/hooks/useCustomToast"
-import { api } from "@/lib/auth"
+import { getSupabase } from "@/lib/supabase"
 import { emailPattern, handleError } from "@/lib/utils"
 import { useRouter } from "expo-router"
 import { Controller, useForm } from "react-hook-form"
@@ -25,7 +25,8 @@ export default function RecoverPasswordScreen() {
 
   const onSubmit = async ({ email }: RecoverForm) => {
     try {
-      await api.post(`/api/v1/password-recovery/${encodeURIComponent(email)}`)
+      const { error } = await getSupabase().auth.resetPasswordForEmail(email)
+      if (error) throw error
       toast.success("Recovery email sent")
       router.replace("/login")
     } catch (err) {

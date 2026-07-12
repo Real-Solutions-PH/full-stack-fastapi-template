@@ -28,6 +28,7 @@ Internal template (RSPH-owned, §7.3) — founder decision on issue #25, 2026-07
 - No RSPH-operated database: scaling, HA, backups, PITR are Supabase's problem.
 - Auth (sessions, recovery, MFA headroom) maintained by the platform; the custom crypto surface disappears.
 - Multi-tenant enforcement moves into the database (RLS) instead of query discipline.
+- Account deletion revokes the GoTrue identity along with the local row (no orphaned auth users). Caveat: the FIRST_SUPERUSER bootstrap adopts a pre-existing auth user by password-reset, but already-issued tokens stay valid up to `jwt_expiry` — bootstrap before exposing the auth endpoint (see runbook).
 
 **Negative:**
 - Local/dev and CI flows must run against the Supabase CLI local stack (or a shim) instead of a bare Postgres container.

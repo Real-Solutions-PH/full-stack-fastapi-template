@@ -93,6 +93,12 @@ Note: RSPH's own Free-tier project quota (2 active projects, counted across ever
 - Purge the old values from Bitwarden, `.env`, deploy env, and build args.
 - Hand the org fully to the client, or tear it down per contract.
 
+**Supabase Auth (#39) operational notes:**
+
+- **Re-harden self-hosted GoTrue:** `supabase/config.toml` relaxes `[auth.rate_limit] sign_in_sign_ups` to 500 strictly for the local E2E suite. Supabase Cloud ignores the file, but anyone self-hosting GoTrue from this repo's config MUST restore the default 30 (and review the other rate limits) before exposing the auth endpoint.
+- **Bootstrap before exposure:** run the FIRST_SUPERUSER bootstrap (backend prestart / `init_db`) *before* the auth endpoint is publicly reachable. The bootstrap adopts an already-registered email by password-reset; a squatter who pre-registered `FIRST_SUPERUSER` loses the password at bootstrap but any token they already hold stays signature-valid for up to `jwt_expiry` (1h default) — bootstrapping first closes that window entirely.
+- **Migrating pre-existing local users** (deliberate template non-goal, C1): the template only JIT-provisions Supabase-born identities. For a legacy row, the operator creates the GoTrue user via the admin API (`POST /auth/v1/admin/users`, service-role key) and re-keys the local row to the auth UID: `UPDATE "user" SET id = '<auth_uid>' WHERE email = '<email>';` (FKs on `item.owner_id` etc. must be updated in the same transaction or cascaded).
+
 ## Row-Level Security & rate limiting (2026-07-12, #40)
 
 **RLS.** Migration `c8f2a1d47e56` enables RLS with tenant-isolation policies on `user`, `item`, `ocr_document`, `conversation`, `tenant`, and `message` (transitive via its conversation). Policies key on `current_setting('request.jwt.claims', true)` through the `app_tenant_id()` helper — byte-compatible with Supabase PostgREST, so they survive the Supabase migration unchanged.

@@ -15,6 +15,7 @@ This repo is governed by the **Engineering Constitution v2.0**, pinned at [docs/
 
 | Workspace | Task | Command |
 |---|---|---|
+| all | local auth stack | `make supabase-up` / `make supabase-down` — Supabase (GoTrue) is the auth provider (ADR-0005); backend tests and any auth flow REQUIRE it running |
 | backend | install deps | `uv sync` (from `backend/`) |
 | backend | lint | `make backend-lint` (mypy + ruff check + ruff format --check) |
 | backend | test | `make test-docker` (containerized) — `make backend-test` runs pytest directly against the configured DB |

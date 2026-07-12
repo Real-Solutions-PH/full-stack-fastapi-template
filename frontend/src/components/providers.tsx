@@ -12,19 +12,31 @@ import { type ReactNode, useState } from "react"
 import { ApiError, OpenAPI } from "@/client"
 import { ThemeProvider } from "@/components/theme-provider"
 import { Toaster } from "@/components/ui/sonner"
-import { clearAuthCookie, readAuthCookie } from "@/lib/auth"
+import { createClient } from "@/lib/supabase/client"
 
 OpenAPI.BASE = process.env.NEXT_PUBLIC_API_URL ?? ""
-OpenAPI.TOKEN = async () => readAuthCookie() ?? ""
+OpenAPI.TOKEN = async () => {
+  // Guard SSR: the browser Supabase client needs window/document cookies.
+  if (typeof window === "undefined") return ""
+  const { data } = await createClient().auth.getSession()
+  return data.session?.access_token ?? ""
+}
 
 export function Providers({ children }: { children: ReactNode }) {
   const router = useRouter()
 
   const [queryClient] = useState(() => {
     const handleApiError = (error: Error) => {
+      // SSR renders can surface 401s too; sign-out is browser-only (the old
+      // cookie helpers had the same typeof-document guard).
+      if (typeof window === "undefined") return
       if (error instanceof ApiError && [401, 403].includes(error.status)) {
-        clearAuthCookie()
-        router.push("/login")
+        createClient()
+          .auth.signOut({ scope: "local" })
+          .finally(() => {
+            router.push("/login")
+            router.refresh()
+          })
       }
     }
     return new QueryClient({

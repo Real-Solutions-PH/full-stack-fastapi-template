@@ -64,9 +64,17 @@ services:
       target: dev
       args:
         - NEXT_PUBLIC_API_URL=http://localhost:8000
+    # The Next.js middleware (server-side, in-container) reaches the
+    # host-local Supabase stack via host.docker.internal, while the browser
+    # (on the host) keeps the NEXT_PUBLIC_* 127.0.0.1 URL from .env.
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     environment:
       WATCHPACK_POLLING: "true"
       CHOKIDAR_USEPOLLING: "true"
+      NEXT_PUBLIC_SUPABASE_URL: ${SUPABASE_URL:-http://127.0.0.1:54321}
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ${SUPABASE_ANON_KEY:-}
+      SUPABASE_URL: http://host.docker.internal:54321
     develop:
       watch:
         - path: ./frontend
@@ -93,9 +101,17 @@ services:
       - mailcatcher
     env_file:
       - .env
+    # Both the dev server and the browser run inside this container, so
+    # host.docker.internal works for every Supabase URL; Mailpit is the
+    # local Supabase stack's email catcher (auth emails, port 54324).
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     environment:
       - NEXT_PUBLIC_API_URL=http://backend:8000
-      - MAILCATCHER_HOST=http://mailcatcher:1080
+      - NEXT_PUBLIC_SUPABASE_URL=http://host.docker.internal:54321
+      # Override the 127.0.0.1 value inherited from env_file (.env).
+      - SUPABASE_URL=http://host.docker.internal:54321
+      - MAILPIT_HOST=http://host.docker.internal:54324
       # For the reports when run locally
       - PLAYWRIGHT_HTML_HOST=0.0.0.0
       - CI=${CI:-}

@@ -13,7 +13,8 @@ export async function signUpNewUser(
   await page.getByTestId("password-input").fill(password)
   await page.getByTestId("confirm-password-input").fill(password)
   await page.getByRole("button", { name: "Sign Up" }).click()
-  await page.goto("/login")
+  // Successful Supabase signup signs out and routes to /login.
+  await page.waitForURL("/login")
 }
 
 export async function logInUser(page: Page, email: string, password: string) {

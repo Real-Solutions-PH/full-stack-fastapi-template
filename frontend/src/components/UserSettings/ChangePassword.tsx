@@ -5,7 +5,6 @@ import { useMutation } from "@tanstack/react-query"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
 
-import { type UpdatePassword, UsersService } from "@/client"
 import {
   Form,
   FormControl,
@@ -16,8 +15,9 @@ import {
 } from "@/components/ui/form"
 import { LoadingButton } from "@/components/ui/loading-button"
 import { PasswordInput } from "@/components/ui/password-input"
+import useAuth from "@/hooks/useAuth"
 import useCustomToast from "@/hooks/useCustomToast"
-import { handleError } from "@/utils"
+import { createClient } from "@/lib/supabase/client"
 
 const formSchema = z
   .object({
@@ -37,11 +37,16 @@ const formSchema = z
     message: "The passwords don't match",
     path: ["confirm_password"],
   })
+  .refine((data) => data.new_password !== data.current_password, {
+    message: "New password cannot be the same as the current one",
+    path: ["new_password"],
+  })
 
 type FormData = z.infer<typeof formSchema>
 
 const ChangePassword = () => {
   const { showSuccessToast, showErrorToast } = useCustomToast()
+  const { user } = useAuth()
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     mode: "onSubmit",
@@ -54,13 +59,32 @@ const ChangePassword = () => {
   })
 
   const mutation = useMutation({
-    mutationFn: (data: UpdatePassword) =>
-      UsersService.updatePasswordMe({ requestBody: data }),
+    mutationFn: async (data: FormData) => {
+      const supabase = createClient()
+      // Supabase does not verify the current password on updateUser, so
+      // preflight it with a sign-in to preserve the previous UX.
+      if (!user?.email) {
+        throw new Error("Could not determine the current user")
+      }
+      const { error: preflightError } = await supabase.auth.signInWithPassword({
+        email: user.email,
+        password: data.current_password,
+      })
+      if (preflightError) {
+        throw new Error("Incorrect current password")
+      }
+      const { error } = await supabase.auth.updateUser({
+        password: data.new_password,
+      })
+      if (error) throw error
+    },
     onSuccess: () => {
       showSuccessToast("Password updated successfully")
       form.reset()
     },
-    onError: handleError.bind(showErrorToast),
+    onError: (err: Error) => {
+      showErrorToast(err.message)
+    },
   })
 
   const onSubmit = async (data: FormData) => {

@@ -66,7 +66,8 @@ test("Log in with invalid password", async ({ page }) => {
   await fillForm(page, firstSuperuser, password)
   await page.getByRole("button", { name: "Log In" }).click()
 
-  await expect(page.getByText("Incorrect email or password")).toBeVisible()
+  // GoTrue's error copy for a failed password sign-in.
+  await expect(page.getByText("Invalid login credentials")).toBeVisible()
 })
 
 test("Successful log out", async ({ page }) => {
@@ -106,12 +107,8 @@ test("Logged-out user cannot access protected routes", async ({ page }) => {
   await page.waitForURL("/login")
 })
 
-test("Redirects to /login when token is wrong", async ({ page }) => {
-  await page.goto("/settings")
-  await page.evaluate(() => {
-    localStorage.setItem("access_token", "invalid_token")
-  })
-  await page.goto("/settings")
-  await page.waitForURL("/login")
-  await expect(page).toHaveURL("/login")
-})
+// Dropped: "Redirects to /login when token is wrong". Auth moved from a
+// localStorage/app-cookie token to Supabase-managed sb-*-auth-token cookies
+// (#39); the middleware revalidates them via supabase.auth.getUser(), and
+// the unauthenticated-redirect path is already covered by
+// "Logged-out user cannot access protected routes" above.

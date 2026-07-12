@@ -1,6 +1,5 @@
+import { createServerClient } from "@supabase/ssr"
 import { type NextRequest, NextResponse } from "next/server"
-
-const AUTH_COOKIE = "access_token"
 
 const publicRoutes = [
   "/landing",
@@ -10,25 +9,65 @@ const publicRoutes = [
   "/reset-password",
 ]
 
-export function middleware(request: NextRequest) {
+const authOnlyRedirects = ["/login", "/signup", "/recover-password"]
+
+export async function middleware(request: NextRequest) {
+  // Canonical @supabase/ssr middleware pattern: refresh the auth session and
+  // forward any rotated cookies on both pass-through and redirect responses.
+  let supabaseResponse = NextResponse.next({ request })
+
+  // Server-side code may need a different Supabase URL than the browser
+  // (e.g. a containerized frontend reaching a host-local stack through
+  // host.docker.internal) — SUPABASE_URL overrides when set.
+  const supabase = createServerClient(
+    process.env.SUPABASE_URL ?? process.env.NEXT_PUBLIC_SUPABASE_URL ?? "",
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "",
+    {
+      cookies: {
+        getAll() {
+          return request.cookies.getAll()
+        },
+        setAll(cookiesToSet) {
+          for (const { name, value } of cookiesToSet) {
+            request.cookies.set(name, value)
+          }
+          supabaseResponse = NextResponse.next({ request })
+          for (const { name, value, options } of cookiesToSet) {
+            supabaseResponse.cookies.set(name, value, options)
+          }
+        },
+      },
+    },
+  )
+
+  // IMPORTANT: getUser() revalidates the JWT against Supabase Auth — do not
+  // replace it with getSession(), which trusts the cookie unverified.
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
   const { pathname } = request.nextUrl
-  const token = request.cookies.get(AUTH_COOKIE)?.value
   const isPublic = publicRoutes.some((route) => pathname.startsWith(route))
 
-  if (!token && !isPublic) {
+  const redirectWithCookies = (path: string) => {
     const url = request.nextUrl.clone()
-    url.pathname = pathname === "/" ? "/landing" : "/login"
-    return NextResponse.redirect(url)
+    url.pathname = path
+    const redirect = NextResponse.redirect(url)
+    for (const cookie of supabaseResponse.cookies.getAll()) {
+      redirect.cookies.set(cookie)
+    }
+    return redirect
   }
 
-  const authOnlyRedirects = ["/login", "/signup", "/recover-password"]
-  if (token && authOnlyRedirects.some((r) => pathname.startsWith(r))) {
-    const url = request.nextUrl.clone()
-    url.pathname = "/"
-    return NextResponse.redirect(url)
+  if (!user && !isPublic) {
+    return redirectWithCookies(pathname === "/" ? "/landing" : "/login")
   }
 
-  return NextResponse.next()
+  if (user && authOnlyRedirects.some((r) => pathname.startsWith(r))) {
+    return redirectWithCookies("/")
+  }
+
+  return supabaseResponse
 }
 
 export const config = {

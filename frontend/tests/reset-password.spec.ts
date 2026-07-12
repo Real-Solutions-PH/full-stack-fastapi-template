@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test"
-import { findLastEmail } from "./utils/mailcatcher"
+import { findRecoveryLink } from "./utils/mailpit"
 import { randomEmail, randomPassword } from "./utils/random"
 import { logInUser, signUpNewUser } from "./utils/user"
 
@@ -43,26 +43,18 @@ test("User can reset password successfully using the link", async ({
   await page.getByTestId("email-input").fill(email)
 
   await page.getByRole("button", { name: "Continue" }).click()
+  await expect(
+    page.getByText("Password recovery email sent successfully"),
+  ).toBeVisible()
 
-  const emailData = await findLastEmail({
-    request,
-    filter: (e) => e.recipients.includes(`<${email}>`),
-    timeout: 5000,
-  })
+  // Supabase (GoTrue) sends the recovery email through the local Mailpit
+  // instance; the /auth/v1/verify link redirects to /reset-password?code=...
+  const url = await findRecoveryLink({ request, email })
 
-  await page.goto(
-    `${process.env.MAILCATCHER_HOST}/messages/${emailData.id}.html`,
-  )
-
-  const selector = 'a[href*="/reset-password?token="]'
-
-  let url = await page.getAttribute(selector, "href")
-
-  // TODO: update var instead of doing a replace
-  url = url!.replace("http://localhost/", "http://localhost:5173/")
-
-  // Set the new password and confirm it
+  // Set the new password and confirm it (the PKCE code verifier lives in
+  // this browser context — the link must be opened in the same one).
   await page.goto(url)
+  await page.waitForURL(/reset-password/)
 
   await page.getByTestId("new-password-input").fill(newPassword)
   await page.getByTestId("confirm-password-input").fill(newPassword)
@@ -74,16 +66,13 @@ test("User can reset password successfully using the link", async ({
 })
 
 test("Expired or invalid reset link", async ({ page }) => {
-  const password = randomPassword()
-  const invalidUrl = "/reset-password?token=invalidtoken"
+  // No valid recovery code: the exchange fails and the form is disabled.
+  await page.goto("/reset-password?code=invalid-code")
 
-  await page.goto(invalidUrl)
-
-  await page.getByTestId("new-password-input").fill(password)
-  await page.getByTestId("confirm-password-input").fill(password)
-  await page.getByRole("button", { name: "Reset Password" }).click()
-
-  await expect(page.getByText("Invalid token")).toBeVisible()
+  await expect(page.getByText("Invalid or expired reset link")).toBeVisible()
+  await expect(
+    page.getByRole("button", { name: "Reset Password" }),
+  ).toBeDisabled()
 })
 
 test("Weak new password validation", async ({ page, request }) => {
@@ -98,23 +87,15 @@ test("Weak new password validation", async ({ page, request }) => {
   await page.goto("/recover-password")
   await page.getByTestId("email-input").fill(email)
   await page.getByRole("button", { name: "Continue" }).click()
+  await expect(
+    page.getByText("Password recovery email sent successfully"),
+  ).toBeVisible()
 
-  const emailData = await findLastEmail({
-    request,
-    filter: (e) => e.recipients.includes(`<${email}>`),
-    timeout: 5000,
-  })
-
-  await page.goto(
-    `${process.env.MAILCATCHER_HOST}/messages/${emailData.id}.html`,
-  )
-
-  const selector = 'a[href*="/reset-password?token="]'
-  let url = await page.getAttribute(selector, "href")
-  url = url!.replace("http://localhost/", "http://localhost:5173/")
+  const url = await findRecoveryLink({ request, email })
 
   // Set a weak new password
   await page.goto(url)
+  await page.waitForURL(/reset-password/)
   await page.getByTestId("new-password-input").fill(weakPassword)
   await page.getByTestId("confirm-password-input").fill(weakPassword)
   await page.getByRole("button", { name: "Reset Password" }).click()

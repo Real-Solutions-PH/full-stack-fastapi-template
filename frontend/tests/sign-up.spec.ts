@@ -79,15 +79,18 @@ test("Sign up with existing email", async ({ page }) => {
 
   await fillForm(page, fullName, email, password, password)
   await page.getByRole("button", { name: "Sign Up" }).click()
+  // Wait out the app's own post-signup navigation before re-visiting the
+  // form — otherwise its late router.push("/login") wipes the second form.
+  await page.waitForURL("/login")
 
   await page.goto("/signup")
 
   await fillForm(page, fullName, email, password, password)
   await page.getByRole("button", { name: "Sign Up" }).click()
 
-  await page
-    .getByText("The user with this email already exists in the system")
-    .click()
+  // GoTrue's error copy for a duplicate signup (local stack has email
+  // confirmations disabled, so no success-with-obfuscation applies).
+  await expect(page.getByText("User already registered")).toBeVisible()
 })
 
 test("Sign up with weak password", async ({ page }) => {

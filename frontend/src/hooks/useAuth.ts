@@ -2,46 +2,84 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { useRouter } from "next/navigation"
+import { useEffect, useState } from "react"
 
-import {
-  type Body_login_login_access_token as AccessToken,
-  LoginService,
-  type UserPublic,
-  type UserRegister,
-  UsersService,
-} from "@/client"
-import { clearAuthCookie, isLoggedIn, setAuthCookie } from "@/lib/auth"
-import { handleError } from "@/utils"
+import { type UserPublic, UsersService } from "@/client"
+import { createClient } from "@/lib/supabase/client"
 import useCustomToast from "./useCustomToast"
+
+export interface LoginCredentials {
+  email: string
+  password: string
+}
+
+export interface SignUpData {
+  email: string
+  password: string
+  full_name: string
+}
 
 const useAuth = () => {
   const router = useRouter()
   const queryClient = useQueryClient()
   const { showErrorToast } = useCustomToast()
+  const [hasSession, setHasSession] = useState(false)
 
+  // createClient() is only called in effects and event handlers (never at
+  // render time) so pages using this hook can still be prerendered without
+  // Supabase env vars at build time.
+  useEffect(() => {
+    const supabase = createClient()
+    supabase.auth.getSession().then(({ data }) => {
+      setHasSession(data.session !== null)
+    })
+    const { data: subscription } = supabase.auth.onAuthStateChange(
+      (_event, session) => {
+        setHasSession(session !== null)
+      },
+    )
+    return () => subscription.subscription.unsubscribe()
+  }, [])
+
+  // The backend /users/me call JIT-provisions the local user row on the
+  // first authenticated request after a Supabase signup.
   const { data: user } = useQuery<UserPublic | null, Error>({
     queryKey: ["currentUser"],
     queryFn: UsersService.readUserMe,
-    enabled: isLoggedIn(),
+    enabled: hasSession,
   })
 
   const signUpMutation = useMutation({
-    mutationFn: (data: UserRegister) =>
-      UsersService.registerUser({ requestBody: data }),
+    mutationFn: async (data: SignUpData) => {
+      const supabase = createClient()
+      const { error } = await supabase.auth.signUp({
+        email: data.email,
+        password: data.password,
+        options: { data: { full_name: data.full_name } },
+      })
+      if (error) throw error
+      // Local Supabase config has email confirmations disabled, so signUp
+      // starts a session immediately; sign out to keep the signup -> login
+      // flow the app has always had.
+      await supabase.auth.signOut({ scope: "local" })
+    },
     onSuccess: () => {
       router.push("/login")
     },
-    onError: handleError.bind(showErrorToast),
+    onError: (err: Error) => {
+      showErrorToast(err.message)
+    },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ["users"] })
     },
   })
 
-  const login = async (data: AccessToken) => {
-    const response = await LoginService.loginAccessToken({
-      formData: data,
+  const login = async ({ email, password }: LoginCredentials) => {
+    const { error } = await createClient().auth.signInWithPassword({
+      email,
+      password,
     })
-    setAuthCookie(response.access_token)
+    if (error) throw error
   }
 
   const loginMutation = useMutation({
@@ -50,11 +88,16 @@ const useAuth = () => {
       router.push("/")
       router.refresh()
     },
-    onError: handleError.bind(showErrorToast),
+    onError: (err: Error) => {
+      showErrorToast(err.message)
+    },
   })
 
-  const logout = () => {
-    clearAuthCookie()
+  const logout = async () => {
+    // scope: "local" signs out this browser only (same semantics as the old
+    // cookie clearing) — the default "global" revokes every session the user
+    // has, including other devices.
+    await createClient().auth.signOut({ scope: "local" })
     queryClient.clear()
     router.push("/login")
     router.refresh()
@@ -68,5 +111,4 @@ const useAuth = () => {
   }
 }
 
-export { isLoggedIn }
 export default useAuth

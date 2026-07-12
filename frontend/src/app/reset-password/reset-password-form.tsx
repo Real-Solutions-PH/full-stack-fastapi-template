@@ -4,11 +4,10 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { useMutation } from "@tanstack/react-query"
 import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
 
-import { LoginService } from "@/client"
 import { AuthLayout } from "@/components/Common/AuthLayout"
 import {
   Form,
@@ -21,7 +20,7 @@ import {
 import { LoadingButton } from "@/components/ui/loading-button"
 import { PasswordInput } from "@/components/ui/password-input"
 import useCustomToast from "@/hooks/useCustomToast"
-import { handleError } from "@/utils"
+import { createClient } from "@/lib/supabase/client"
 
 const formSchema = z
   .object({
@@ -40,15 +39,52 @@ const formSchema = z
 
 type FormData = z.infer<typeof formSchema>
 
+type LinkState = "pending" | "ready" | "invalid"
+
 export default function ResetPasswordForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const token = searchParams.get("token") ?? ""
   const { showSuccessToast, showErrorToast } = useCustomToast()
+  const [linkState, setLinkState] = useState<LinkState>("pending")
 
+  const code = searchParams.get("code")
+
+  // createClient() is only called in effects and callbacks (never at render
+  // time) so this page can be prerendered without Supabase env at build time.
   useEffect(() => {
-    if (!token) router.push("/login")
-  }, [token, router])
+    const supabase = createClient()
+
+    // Late-arriving recovery sessions (implicit-flow PASSWORD_RECOVERY event
+    // or an auto-exchange finishing after the initial check below).
+    const { data: subscription } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        if (event === "PASSWORD_RECOVERY" || session) {
+          setLinkState("ready")
+        }
+      },
+    )
+
+    // getSession() awaits client initialization, which already auto-exchanges
+    // a ?code=... recovery link (detectSessionInUrl). Only exchange manually
+    // if that did not produce a session — a second exchange of a consumed
+    // code always fails.
+    supabase.auth.getSession().then(async ({ data }) => {
+      if (data.session) {
+        setLinkState("ready")
+        return
+      }
+      if (code) {
+        const { error } = await supabase.auth.exchangeCodeForSession(code)
+        setLinkState(error ? "invalid" : "ready")
+        return
+      }
+      // No code and no session — the page was reached without a valid
+      // recovery link.
+      setLinkState((state) => (state === "pending" ? "invalid" : state))
+    })
+
+    return () => subscription.subscription.unsubscribe()
+  }, [code])
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -61,18 +97,26 @@ export default function ResetPasswordForm() {
   })
 
   const mutation = useMutation({
-    mutationFn: (data: { new_password: string; token: string }) =>
-      LoginService.resetPassword({ requestBody: data }),
-    onSuccess: () => {
+    mutationFn: async (data: FormData) => {
+      const { error } = await createClient().auth.updateUser({
+        password: data.new_password,
+      })
+      if (error) throw error
+    },
+    onSuccess: async () => {
       showSuccessToast("Password updated successfully")
       form.reset()
+      await createClient().auth.signOut({ scope: "local" })
       router.push("/login")
     },
-    onError: handleError.bind(showErrorToast),
+    onError: (err: Error) => {
+      showErrorToast(err.message)
+    },
   })
 
   const onSubmit = (data: FormData) => {
-    mutation.mutate({ new_password: data.new_password, token })
+    if (mutation.isPending) return
+    mutation.mutate(data)
   }
 
   return (
@@ -85,6 +129,12 @@ export default function ResetPasswordForm() {
           <div className="flex flex-col items-center gap-2 text-center">
             <h1 className="text-2xl font-bold">Reset Password</h1>
           </div>
+
+          {linkState === "invalid" && (
+            <p className="text-center text-sm text-destructive">
+              Invalid or expired reset link. Please request a new one.
+            </p>
+          )}
 
           <div className="grid gap-4">
             <FormField
@@ -127,6 +177,7 @@ export default function ResetPasswordForm() {
               type="submit"
               className="w-full"
               loading={mutation.isPending}
+              disabled={linkState !== "ready"}
             >
               Reset Password
             </LoadingButton>

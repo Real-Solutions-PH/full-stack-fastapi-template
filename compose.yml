@@ -145,6 +145,10 @@ services:
       args:
         - NEXT_PUBLIC_API_URL=https://api.${DOMAIN?Variable not set}
         - NEXT_PUBLIC_SENTRY_DSN=${FRONTEND_SENTRY_DSN:-}
+        # The browser client reuses the same Supabase project URL/anon key
+        # the backend validates against (see .env.example).
+        - NEXT_PUBLIC_SUPABASE_URL=${SUPABASE_URL?Variable not set}
+        - NEXT_PUBLIC_SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY?Variable not set}
         - NODE_ENV=production
 
 volumes:

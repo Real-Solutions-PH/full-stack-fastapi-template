@@ -6,13 +6,18 @@ from app.core.security import get_password_hash, verify_password
 from app.db.models import User
 from app.modules.iam.users import repo as user_repo
 from app.modules.iam.users.schema import UserCreate
+from tests.utils.user import default_tenant_id
 from tests.utils.utils import random_email, random_lower_string
 
 
 def _create_user(db: Session, user_in: UserCreate) -> User:
     """Helper to create a user from a UserCreate schema via the repo layer."""
     db_user = User.model_validate(
-        user_in, update={"hashed_password": get_password_hash(user_in.password)}
+        user_in,
+        update={
+            "hashed_password": get_password_hash(user_in.password),
+            "tenant_id": default_tenant_id(db),
+        },
     )
     return user_repo.create(session=db, user=db_user)
 
@@ -115,7 +120,9 @@ def test_authenticate_user_with_bcrypt_upgrades_to_argon2(db: Session) -> None:
     assert bcrypt_hash.startswith("$2")  # bcrypt hashes start with $2
 
     # Create user with bcrypt hash directly in the database
-    user = User(email=email, hashed_password=bcrypt_hash)
+    user = User(
+        email=email, hashed_password=bcrypt_hash, tenant_id=default_tenant_id(db)
+    )
     user_repo.create(session=db, user=user)
 
     # Verify the hash is bcrypt before authentication

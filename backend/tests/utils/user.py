@@ -1,12 +1,19 @@
+import uuid
+
 from fastapi.testclient import TestClient
 from sqlmodel import Session
 
 from app.core.config import settings
 from app.core.security import get_password_hash
 from app.db.models import User
+from app.modules.iam.tenants import services as tenant_service
 from app.modules.iam.users import repo as user_repo
 from app.modules.iam.users.schema import UserCreate
 from tests.utils.utils import random_email, random_lower_string
+
+
+def default_tenant_id(db: Session) -> uuid.UUID:
+    return tenant_service.get_default_tenant(session=db).id
 
 
 def user_authentication_headers(
@@ -26,7 +33,11 @@ def create_random_user(db: Session) -> User:
     password = random_lower_string()
     user_in = UserCreate(email=email, password=password)
     db_user = User.model_validate(
-        user_in, update={"hashed_password": get_password_hash(user_in.password)}
+        user_in,
+        update={
+            "hashed_password": get_password_hash(user_in.password),
+            "tenant_id": default_tenant_id(db),
+        },
     )
     user = user_repo.create(session=db, user=db_user)
     return user
@@ -46,7 +57,10 @@ def authentication_token_from_email(
         user_in_create = UserCreate(email=email, password=password)
         db_user = User.model_validate(
             user_in_create,
-            update={"hashed_password": get_password_hash(user_in_create.password)},
+            update={
+                "hashed_password": get_password_hash(user_in_create.password),
+                "tenant_id": default_tenant_id(db),
+            },
         )
         user = user_repo.create(session=db, user=db_user)
     else:

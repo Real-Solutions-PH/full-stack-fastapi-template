@@ -43,4 +43,7 @@ class OcrDocument(SQLModel, table=True):
     owner_id: uuid.UUID = Field(
         foreign_key="user.id", nullable=False, ondelete="CASCADE"
     )
+    tenant_id: uuid.UUID = Field(
+        foreign_key="tenant.id", nullable=False, ondelete="CASCADE", index=True
+    )
     owner: User | None = Relationship()

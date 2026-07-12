@@ -9,7 +9,7 @@ from app.core.security import get_password_hash, verify_password
 from app.db.models import User
 from app.modules.iam.users import repo as user_repo
 from app.modules.iam.users.schema import UserCreate
-from tests.utils.user import create_random_user
+from tests.utils.user import create_random_user, default_tenant_id
 from tests.utils.utils import random_email, random_lower_string
 
 
@@ -67,7 +67,11 @@ def test_get_existing_user_as_superuser(
     user = user_repo.create(
         session=db,
         user=User.model_validate(
-            user_in, update={"hashed_password": get_password_hash(user_in.password)}
+            user_in,
+            update={
+                "hashed_password": get_password_hash(user_in.password),
+                "tenant_id": default_tenant_id(db),
+            },
         ),
     )
     user_id = user.id
@@ -104,7 +108,11 @@ def test_get_existing_user_current_user(client: TestClient, db: Session) -> None
     user = user_repo.create(
         session=db,
         user=User.model_validate(
-            user_in, update={"hashed_password": get_password_hash(user_in.password)}
+            user_in,
+            update={
+                "hashed_password": get_password_hash(user_in.password),
+                "tenant_id": default_tenant_id(db),
+            },
         ),
     )
     user_id = user.id
@@ -176,7 +184,11 @@ def test_create_user_existing_username(
     user_repo.create(
         session=db,
         user=User.model_validate(
-            user_in, update={"hashed_password": get_password_hash(user_in.password)}
+            user_in,
+            update={
+                "hashed_password": get_password_hash(user_in.password),
+                "tenant_id": default_tenant_id(db),
+            },
         ),
     )
     data = {"email": username, "password": password}
@@ -213,7 +225,11 @@ def test_retrieve_users(
     user_repo.create(
         session=db,
         user=User.model_validate(
-            user_in, update={"hashed_password": get_password_hash(user_in.password)}
+            user_in,
+            update={
+                "hashed_password": get_password_hash(user_in.password),
+                "tenant_id": default_tenant_id(db),
+            },
         ),
     )
 
@@ -223,7 +239,11 @@ def test_retrieve_users(
     user_repo.create(
         session=db,
         user=User.model_validate(
-            user_in2, update={"hashed_password": get_password_hash(user_in2.password)}
+            user_in2,
+            update={
+                "hashed_password": get_password_hash(user_in2.password),
+                "tenant_id": default_tenant_id(db),
+            },
         ),
     )
 
@@ -326,7 +346,11 @@ def test_update_user_me_email_exists(
     user = user_repo.create(
         session=db,
         user=User.model_validate(
-            user_in, update={"hashed_password": get_password_hash(user_in.password)}
+            user_in,
+            update={
+                "hashed_password": get_password_hash(user_in.password),
+                "tenant_id": default_tenant_id(db),
+            },
         ),
     )
 
@@ -409,7 +433,11 @@ def test_update_user(
     user = user_repo.create(
         session=db,
         user=User.model_validate(
-            user_in, update={"hashed_password": get_password_hash(user_in.password)}
+            user_in,
+            update={
+                "hashed_password": get_password_hash(user_in.password),
+                "tenant_id": default_tenant_id(db),
+            },
         ),
     )
 
@@ -453,7 +481,11 @@ def test_update_user_email_exists(
     user = user_repo.create(
         session=db,
         user=User.model_validate(
-            user_in, update={"hashed_password": get_password_hash(user_in.password)}
+            user_in,
+            update={
+                "hashed_password": get_password_hash(user_in.password),
+                "tenant_id": default_tenant_id(db),
+            },
         ),
     )
 
@@ -463,7 +495,11 @@ def test_update_user_email_exists(
     user2 = user_repo.create(
         session=db,
         user=User.model_validate(
-            user_in2, update={"hashed_password": get_password_hash(user_in2.password)}
+            user_in2,
+            update={
+                "hashed_password": get_password_hash(user_in2.password),
+                "tenant_id": default_tenant_id(db),
+            },
         ),
     )
 
@@ -484,7 +520,11 @@ def test_delete_user_me(client: TestClient, db: Session) -> None:
     user = user_repo.create(
         session=db,
         user=User.model_validate(
-            user_in, update={"hashed_password": get_password_hash(user_in.password)}
+            user_in,
+            update={
+                "hashed_password": get_password_hash(user_in.password),
+                "tenant_id": default_tenant_id(db),
+            },
         ),
     )
     user_id = user.id
@@ -534,7 +574,11 @@ def test_delete_user_super_user(
     user = user_repo.create(
         session=db,
         user=User.model_validate(
-            user_in, update={"hashed_password": get_password_hash(user_in.password)}
+            user_in,
+            update={
+                "hashed_password": get_password_hash(user_in.password),
+                "tenant_id": default_tenant_id(db),
+            },
         ),
     )
     user_id = user.id
@@ -584,7 +628,11 @@ def test_delete_user_without_privileges(
     user = user_repo.create(
         session=db,
         user=User.model_validate(
-            user_in, update={"hashed_password": get_password_hash(user_in.password)}
+            user_in,
+            update={
+                "hashed_password": get_password_hash(user_in.password),
+                "tenant_id": default_tenant_id(db),
+            },
         ),
     )
 

@@ -6,13 +6,21 @@ from sqlmodel import Session, col, func, select
 from app.modules.items.models import Item
 
 
-def get_by_id(*, session: Session, item_id: uuid.UUID) -> Item | None:
-    return session.get(Item, item_id)
+def get_by_id(
+    *, session: Session, item_id: uuid.UUID, tenant_id: uuid.UUID | None
+) -> Item | None:
+    """Tenant filter lives in the query: rows outside ``tenant_id`` are
+    invisible (natural 404). ``tenant_id=None`` = superuser bypass."""
+    item = session.get(Item, item_id)
+    if item is not None and tenant_id is not None and item.tenant_id != tenant_id:
+        return None
+    return item
 
 
 def get_multi(
     *,
     session: Session,
+    tenant_id: uuid.UUID | None,
     owner_id: uuid.UUID | None = None,
     skip: int = 0,
     limit: int = 100,
@@ -21,6 +29,9 @@ def get_multi(
     items_query = (
         select(Item).order_by(col(Item.created_at).desc()).offset(skip).limit(limit)
     )
+    if tenant_id is not None:
+        count_query = count_query.where(Item.tenant_id == tenant_id)
+        items_query = items_query.where(Item.tenant_id == tenant_id)
     if owner_id is not None:
         count_query = count_query.where(Item.owner_id == owner_id)
         items_query = items_query.where(Item.owner_id == owner_id)

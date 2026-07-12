@@ -39,6 +39,7 @@ class UpdatePassword(SQLModel):
 
 class UserPublic(UserBase):
     id: uuid.UUID
+    tenant_id: uuid.UUID
     created_at: datetime | None = None
 
 

@@ -18,6 +18,10 @@ def _utcnow() -> datetime:
 class User(UserBase, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     hashed_password: str
+    # RESTRICT: a tenant with users must not be deletable out from under them.
+    tenant_id: uuid.UUID = Field(
+        foreign_key="tenant.id", nullable=False, ondelete="RESTRICT", index=True
+    )
     created_at: datetime | None = Field(
         default_factory=_utcnow,
         sa_type=DateTime(timezone=True),  # type: ignore

@@ -6,13 +6,21 @@ from sqlmodel import Session, col, func, select
 from app.modules.ocr.models import OcrDocument
 
 
-def get_by_id(*, session: Session, doc_id: uuid.UUID) -> OcrDocument | None:
-    return session.get(OcrDocument, doc_id)
+def get_by_id(
+    *, session: Session, doc_id: uuid.UUID, tenant_id: uuid.UUID | None
+) -> OcrDocument | None:
+    """Tenant filter lives in the query: rows outside ``tenant_id`` are
+    invisible (natural 404). ``tenant_id=None`` = superuser bypass."""
+    doc = session.get(OcrDocument, doc_id)
+    if doc is not None and tenant_id is not None and doc.tenant_id != tenant_id:
+        return None
+    return doc
 
 
 def get_multi(
     *,
     session: Session,
+    tenant_id: uuid.UUID | None,
     owner_id: uuid.UUID | None = None,
     status: str | None = None,
     skip: int = 0,
@@ -25,6 +33,9 @@ def get_multi(
         .offset(skip)
         .limit(limit)
     )
+    if tenant_id is not None:
+        count_q = count_q.where(OcrDocument.tenant_id == tenant_id)
+        items_q = items_q.where(OcrDocument.tenant_id == tenant_id)
     if owner_id is not None:
         count_q = count_q.where(OcrDocument.owner_id == owner_id)
         items_q = items_q.where(OcrDocument.owner_id == owner_id)

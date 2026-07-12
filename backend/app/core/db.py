@@ -16,6 +16,7 @@ def init_db(session: Session) -> None:
     # re-import ``engine`` from here, which would deadlock at module load.
     from app.modules.iam.permissions.seed import seed_permissions
     from app.modules.iam.roles.seed import seed_roles
+    from app.modules.iam.tenants import services as tenant_service
     from app.modules.iam.tenants.seed import seed_tenants
     from app.modules.iam.users import repo as user_repo
     from app.modules.iam.users.models import User
@@ -23,6 +24,11 @@ def init_db(session: Session) -> None:
     from app.modules.items.models import Item  # noqa: F401  resolve User.items mapper
 
     # Tables are managed by Alembic migrations.
+    # Tenants are seeded first: users (including FIRST_SUPERUSER) need one.
+    seed_roles(session)
+    seed_permissions(session)
+    seed_tenants(session)
+
     user = session.exec(
         select(User).where(User.email == settings.FIRST_SUPERUSER)
     ).first()
@@ -33,13 +39,13 @@ def init_db(session: Session) -> None:
             is_superuser=True,
         )
         db_user = User.model_validate(
-            user_in, update={"hashed_password": get_password_hash(user_in.password)}
+            user_in,
+            update={
+                "hashed_password": get_password_hash(user_in.password),
+                "tenant_id": tenant_service.get_default_tenant(session=session).id,
+            },
         )
         user_repo.create(session=session, user=db_user)
-
-    seed_roles(session)
-    seed_permissions(session)
-    seed_tenants(session)
 
     if settings.AI_ENABLED:
         from app.modules.ai.agents.seed import seed_agents

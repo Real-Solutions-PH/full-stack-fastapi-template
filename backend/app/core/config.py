@@ -96,6 +96,9 @@ class Settings(BaseSettings):
     FIRST_SUPERUSER: EmailStr
     FIRST_SUPERUSER_PASSWORD: str
 
+    # Tenancy: slug of the tenant new signups are assigned to (#38).
+    DEFAULT_TENANT_SLUG: str = "default"
+
     MINIO_ENDPOINT: str = "http://minio:9000"
     MINIO_ROOT_USER: str = "minioadmin"
     MINIO_ROOT_PASSWORD: str = "minioadmin"

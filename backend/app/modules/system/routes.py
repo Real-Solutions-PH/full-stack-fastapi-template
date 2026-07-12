@@ -6,6 +6,7 @@ from pydantic.networks import EmailStr
 
 from app.core.security import get_password_hash
 from app.modules.iam.deps import get_current_active_superuser
+from app.modules.iam.tenants import services as tenant_service
 from app.modules.iam.users import repo as user_repo
 from app.modules.iam.users.models import User
 from app.modules.iam.users.schema import UserPublic
@@ -52,5 +53,6 @@ def create_user(user_in: PrivateUserCreate, session: SessionDep) -> Any:
         email=user_in.email,
         full_name=user_in.full_name,
         hashed_password=get_password_hash(user_in.password),
+        tenant_id=tenant_service.get_default_tenant(session=session).id,
     )
     return user_repo.create(session=session, user=user)

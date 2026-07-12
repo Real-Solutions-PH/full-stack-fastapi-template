@@ -25,7 +25,7 @@ def read_conversations(
     limit: int = 50,
 ) -> Any:
     conversations, count = conv_service.list_conversations(
-        session=session, user_id=current_user.id, skip=skip, limit=limit
+        session=session, current_user=current_user, skip=skip, limit=limit
     )
     return ConversationsPublic(
         data=[ConversationPublic.model_validate(c) for c in conversations],
@@ -41,7 +41,7 @@ def read_conversation(
 ) -> Any:
     return conv_service.get_conversation_with_messages(
         session=session,
-        user_id=current_user.id,
+        current_user=current_user,
         conversation_id=conversation_id,
     )
 
@@ -54,7 +54,7 @@ def create_conversation(
     conv_in: ConversationCreate,
 ) -> Any:
     return conv_service.create_conversation(
-        session=session, user_id=current_user.id, conv_in=conv_in
+        session=session, current_user=current_user, conv_in=conv_in
     )
 
 
@@ -66,7 +66,7 @@ def delete_conversation(
 ) -> Message:
     conv_service.delete_conversation(
         session=session,
-        user_id=current_user.id,
+        current_user=current_user,
         conversation_id=conversation_id,
     )
     return Message(message="Conversation deleted successfully")

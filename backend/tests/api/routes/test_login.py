@@ -10,7 +10,7 @@ from app.db.models import User
 from app.modules.iam.auth.utils import generate_password_reset_token
 from app.modules.iam.users import repo as user_repo
 from app.modules.iam.users.schema import UserCreate
-from tests.utils.user import user_authentication_headers
+from tests.utils.user import default_tenant_id, user_authentication_headers
 from tests.utils.utils import random_email, random_lower_string
 
 
@@ -93,7 +93,11 @@ def test_reset_password(client: TestClient, db: Session) -> None:
         is_superuser=False,
     )
     db_user = User.model_validate(
-        user_create, update={"hashed_password": get_password_hash(user_create.password)}
+        user_create,
+        update={
+            "hashed_password": get_password_hash(user_create.password),
+            "tenant_id": default_tenant_id(db),
+        },
     )
     user = user_repo.create(session=db, user=db_user)
     token = generate_password_reset_token(email=email)
@@ -142,7 +146,12 @@ def test_login_with_bcrypt_password_upgrades_to_argon2(
     bcrypt_hash = bcrypt_hasher.hash(password)
     assert bcrypt_hash.startswith("$2")  # bcrypt hashes start with $2
 
-    user = User(email=email, hashed_password=bcrypt_hash, is_active=True)
+    user = User(
+        email=email,
+        hashed_password=bcrypt_hash,
+        is_active=True,
+        tenant_id=default_tenant_id(db),
+    )
     db.add(user)
     db.commit()
     db.refresh(user)
@@ -176,7 +185,12 @@ def test_login_with_argon2_password_keeps_hash(client: TestClient, db: Session) 
     assert argon2_hash.startswith("$argon2")
 
     # Create user with argon2 hash
-    user = User(email=email, hashed_password=argon2_hash, is_active=True)
+    user = User(
+        email=email,
+        hashed_password=argon2_hash,
+        is_active=True,
+        tenant_id=default_tenant_id(db),
+    )
     db.add(user)
     db.commit()
     db.refresh(user)

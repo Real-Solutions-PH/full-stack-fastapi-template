@@ -6,6 +6,7 @@ from sqlmodel import Session
 from app.core.config import settings
 from app.core.security import get_password_hash, verify_password
 from app.modules.iam.auth.utils import generate_new_account_email
+from app.modules.iam.tenants import services as tenant_service
 from app.modules.iam.users import repo as user_repo
 from app.modules.iam.users.models import User
 from app.modules.iam.users.schema import (
@@ -35,8 +36,13 @@ def create_user(*, session: Session, user_in: UserCreate) -> User:
             status_code=400,
             detail="The user with this email already exists in the system.",
         )
+    tenant = tenant_service.get_default_tenant(session=session)
     db_user = User.model_validate(
-        user_in, update={"hashed_password": get_password_hash(user_in.password)}
+        user_in,
+        update={
+            "hashed_password": get_password_hash(user_in.password),
+            "tenant_id": tenant.id,
+        },
     )
     user = user_repo.create(session=session, user=db_user)
     if settings.emails_enabled and user_in.email:
@@ -59,8 +65,13 @@ def register_user(*, session: Session, user_in: UserRegister) -> User:
             detail="The user with this email already exists in the system",
         )
     user_create = UserCreate.model_validate(user_in)
+    tenant = tenant_service.get_default_tenant(session=session)
     db_user = User.model_validate(
-        user_create, update={"hashed_password": get_password_hash(user_create.password)}
+        user_create,
+        update={
+            "hashed_password": get_password_hash(user_create.password),
+            "tenant_id": tenant.id,
+        },
     )
     return user_repo.create(session=session, user=db_user)
 

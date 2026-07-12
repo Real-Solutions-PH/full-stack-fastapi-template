@@ -30,3 +30,5 @@ openapi.json
 /blob-report/
 /playwright/.cache/
 /playwright/.auth/
+
+*.tsbuildinfo

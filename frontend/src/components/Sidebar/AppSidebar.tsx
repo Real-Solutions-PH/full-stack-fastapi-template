@@ -19,9 +19,7 @@ const aiEnabled = process.env.NEXT_PUBLIC_AI_ENABLED === "true"
 const baseItems: Item[] = [
   { icon: Home, title: "Dashboard", path: "/" },
   { icon: Briefcase, title: "Items", path: "/items" },
-  ...(aiEnabled
-    ? [{ icon: MessageSquare, title: "Chat", path: "/chat" }]
-    : []),
+  ...(aiEnabled ? [{ icon: MessageSquare, title: "Chat", path: "/chat" }] : []),
 ]
 
 export function AppSidebar() {

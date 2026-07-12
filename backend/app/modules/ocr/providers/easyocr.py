@@ -46,7 +46,11 @@ class EasyOcrProvider(OcrProvider):
             result = converter.convert(str(tmp_path))
             markdown = result.document.export_to_markdown()
             raw_text = markdown
-            page_count = max(len(result.document.pages), 1) if hasattr(result.document, "pages") else 1
+            page_count = (
+                max(len(result.document.pages), 1)
+                if hasattr(result.document, "pages")
+                else 1
+            )
         finally:
             tmp_path.unlink(missing_ok=True)
 

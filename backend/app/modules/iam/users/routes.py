@@ -93,9 +93,7 @@ def update_user(
     user_id: uuid.UUID,
     user_in: UserUpdate,
 ) -> Any:
-    return user_service.update_user(
-        session=session, user_id=user_id, user_in=user_in
-    )
+    return user_service.update_user(session=session, user_id=user_id, user_in=user_in)
 
 
 @router.delete("/{user_id}", dependencies=[Depends(get_current_active_superuser)])

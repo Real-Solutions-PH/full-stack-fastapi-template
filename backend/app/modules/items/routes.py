@@ -25,9 +25,7 @@ def read_items(
 
 @router.get("/{id}", response_model=ItemPublic)
 def read_item(session: SessionDep, current_user: CurrentUser, id: uuid.UUID) -> Any:
-    return item_service.get_item(
-        session=session, current_user=current_user, item_id=id
-    )
+    return item_service.get_item(session=session, current_user=current_user, item_id=id)
 
 
 @router.post("/", response_model=ItemPublic)
@@ -56,7 +54,5 @@ def update_item(
 def delete_item(
     session: SessionDep, current_user: CurrentUser, id: uuid.UUID
 ) -> Message:
-    item_service.delete_item(
-        session=session, current_user=current_user, item_id=id
-    )
+    item_service.delete_item(session=session, current_user=current_user, item_id=id)
     return Message(message="Item deleted successfully")

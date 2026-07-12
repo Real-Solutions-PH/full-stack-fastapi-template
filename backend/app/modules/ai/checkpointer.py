@@ -1,4 +1,6 @@
 from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
+from psycopg import AsyncConnection
+from psycopg.rows import dict_row
 
 from app.core.config import settings
 
@@ -12,6 +14,9 @@ async def get_checkpointer() -> AsyncPostgresSaver:
     conn_string = str(settings.SQLALCHEMY_DATABASE_URI).replace(
         "postgresql+psycopg", "postgresql"
     )
-    checkpointer = AsyncPostgresSaver.from_conn_string(conn_string)
+    conn = await AsyncConnection.connect(
+        conn_string, autocommit=True, row_factory=dict_row
+    )
+    checkpointer = AsyncPostgresSaver(conn)
     await checkpointer.setup()
     return checkpointer

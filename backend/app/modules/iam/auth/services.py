@@ -7,8 +7,8 @@ from app.core import security
 from app.core.config import settings
 from app.modules.iam.auth.schema import NewPassword, Token
 from app.modules.iam.auth.utils import (
-    generate_reset_password_email,
     generate_password_reset_token,
+    generate_reset_password_email,
     verify_password_reset_token,
 )
 from app.modules.iam.users import repo as user_repo

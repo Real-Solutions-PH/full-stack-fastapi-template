@@ -96,9 +96,7 @@ def test_update_user(db: Session) -> None:
     new_password = random_lower_string()
     if user.id is not None:
         hashed = get_password_hash(new_password)
-        user_repo.update(
-            session=db, user=user, update_data={"hashed_password": hashed}
-        )
+        user_repo.update(session=db, user=user, update_data={"hashed_password": hashed})
     user_2 = user_repo.get_by_id(session=db, user_id=user.id)
     assert user_2
     assert user.email == user_2.email

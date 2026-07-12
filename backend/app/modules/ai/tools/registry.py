@@ -1,11 +1,11 @@
-from langchain_core.tools import BaseTool
 from langchain_community.tools import BraveSearch
+from langchain_core.tools import BaseTool
 
 from app.core.config import settings
 
 
 def _build_brave_search() -> BaseTool | None:
-    if not settings.brave_search_enabled:
+    if not settings.brave_search_enabled or settings.BRAVE_API_KEY is None:
         return None
     return BraveSearch.from_api_key(
         api_key=settings.BRAVE_API_KEY,

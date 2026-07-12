@@ -1,4 +1,7 @@
 """Plan and Execute agent: Creates a plan then executes steps."""
+
+from typing import Any
+
 from langgraph.graph import END, MessagesState, StateGraph
 from langgraph.prebuilt import create_react_agent
 
@@ -7,41 +10,41 @@ from app.modules.ai.tools.registry import get_langchain_tools
 
 
 class PlanExecuteState(MessagesState):
-    plan: list[str] = []
-    current_step: int = 0
+    plan: list[str]
+    current_step: int
 
 
 def build_plan_and_execute_agent(
-    config: dict | None = None, tool_names: list[str] | None = None
-) -> StateGraph:
+    config: dict[str, Any] | None = None, tool_names: list[str] | None = None
+) -> StateGraph[PlanExecuteState, None]:
     llm = get_chat_model(**(config or {}))
     tools = get_langchain_tools(tool_names or [])
 
-    async def create_plan(state: PlanExecuteState) -> dict:
+    async def create_plan(state: PlanExecuteState) -> dict[str, Any]:
         planning_prompt = (
             "You are a planning assistant. Given the user's request, "
             "create a step-by-step plan to accomplish it. "
             "Return each step on a new line, numbered. "
             "Keep the plan concise (3-5 steps max)."
         )
-        messages = [{"role": "system", "content": planning_prompt}] + state[
-            "messages"
-        ]
+        messages = [{"role": "system", "content": planning_prompt}] + state["messages"]
         response = await llm.ainvoke(messages)
+        content = response.content
+        text = content if isinstance(content, str) else str(content)
         steps = [
-            s.strip()
-            for s in response.content.split("\n")
-            if s.strip() and s.strip()[0].isdigit()
+            s.strip() for s in text.split("\n") if s.strip() and s.strip()[0].isdigit()
         ]
-        return {"plan": steps, "messages": [response]}
+        return {"plan": steps, "current_step": 0, "messages": [response]}
 
     executor = create_react_agent(llm, tools) if tools else None
 
-    async def execute_step(state: PlanExecuteState) -> dict:
-        if state["current_step"] >= len(state["plan"]):
+    async def execute_step(state: PlanExecuteState) -> dict[str, Any]:
+        plan = state.get("plan", [])
+        current_step = state.get("current_step", 0)
+        if current_step >= len(plan):
             return {"messages": []}
 
-        step = state["plan"][state["current_step"]]
+        step = plan[current_step]
         step_message = {"role": "user", "content": f"Execute this step: {step}"}
 
         if executor:
@@ -55,11 +58,11 @@ def build_plan_and_execute_agent(
 
         return {
             "messages": new_messages,
-            "current_step": state["current_step"] + 1,
+            "current_step": current_step + 1,
         }
 
     def should_continue(state: PlanExecuteState) -> str:
-        if state["current_step"] >= len(state["plan"]):
+        if state.get("current_step", 0) >= len(state.get("plan", [])):
             return END
         return "execute_step"
 

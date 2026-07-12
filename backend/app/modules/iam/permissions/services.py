@@ -13,9 +13,7 @@ def list_permissions(
     return permission_repo.get_multi(session=session, skip=skip, limit=limit)
 
 
-def get_permission(
-    *, session: Session, permission_id: uuid.UUID
-) -> Permission:
+def get_permission(*, session: Session, permission_id: uuid.UUID) -> Permission:
     perm = permission_repo.get_by_id(session=session, permission_id=permission_id)
     if not perm:
         raise HTTPException(status_code=404, detail="Permission not found")

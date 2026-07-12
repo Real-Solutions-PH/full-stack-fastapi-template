@@ -20,24 +20,20 @@ router = APIRouter(prefix="/tools", tags=["ai-tools"])
 
 @router.get("/", response_model=ToolsPublic)
 def read_tools(
-    session: SessionDep, current_user: CurrentUser, skip: int = 0, limit: int = 100
+    session: SessionDep, _current_user: CurrentUser, skip: int = 0, limit: int = 100
 ) -> Any:
     tools, count = tool_service.list_tools(session=session, skip=skip, limit=limit)
-    return ToolsPublic(
-        data=[ToolPublic.model_validate(t) for t in tools], count=count
-    )
+    return ToolsPublic(data=[ToolPublic.model_validate(t) for t in tools], count=count)
 
 
 @router.get("/{id}", response_model=ToolPublic)
-def read_tool(
-    session: SessionDep, current_user: CurrentUser, id: uuid.UUID
-) -> Any:
+def read_tool(session: SessionDep, _current_user: CurrentUser, id: uuid.UUID) -> Any:
     return tool_service.get_tool(session=session, tool_id=id)
 
 
 @router.post("/", response_model=ToolPublic)
 def create_tool(
-    *, session: SessionDep, current_user: CurrentUser, tool_in: ToolCreate
+    *, session: SessionDep, _current_user: CurrentUser, tool_in: ToolCreate
 ) -> Any:
     return tool_service.create_tool(session=session, tool_in=tool_in)
 
@@ -46,7 +42,7 @@ def create_tool(
 def update_tool(
     *,
     session: SessionDep,
-    current_user: CurrentUser,
+    _current_user: CurrentUser,
     id: uuid.UUID,
     tool_in: ToolUpdate,
 ) -> Any:
@@ -55,7 +51,7 @@ def update_tool(
 
 @router.delete("/{id}")
 def delete_tool(
-    session: SessionDep, current_user: CurrentUser, id: uuid.UUID
+    session: SessionDep, _current_user: CurrentUser, id: uuid.UUID
 ) -> Message:
     tool_service.delete_tool(session=session, tool_id=id)
     return Message(message="Tool deleted successfully")
@@ -63,7 +59,7 @@ def delete_tool(
 
 @router.get("/agent/{agent_id}", response_model=ToolsPublic)
 def read_agent_tools(
-    session: SessionDep, current_user: CurrentUser, agent_id: uuid.UUID
+    session: SessionDep, _current_user: CurrentUser, agent_id: uuid.UUID
 ) -> Any:
     tools = tool_service.get_tools_for_agent(session=session, agent_id=agent_id)
     return ToolsPublic(
@@ -75,7 +71,7 @@ def read_agent_tools(
 def assign_tool(
     *,
     session: SessionDep,
-    current_user: CurrentUser,
+    _current_user: CurrentUser,
     agent_id: uuid.UUID,
     body: AgentToolAssign,
 ) -> Message:
@@ -88,7 +84,7 @@ def assign_tool(
 @router.delete("/agent/{agent_id}/{tool_id}")
 def unassign_tool(
     session: SessionDep,
-    current_user: CurrentUser,
+    _current_user: CurrentUser,
     agent_id: uuid.UUID,
     tool_id: uuid.UUID,
 ) -> Message:

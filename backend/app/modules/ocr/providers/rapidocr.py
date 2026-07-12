@@ -46,7 +46,11 @@ class RapidOcrProvider(OcrProvider):
             result = converter.convert(str(tmp_path))
             markdown = result.document.export_to_markdown()
             raw_text = markdown
-            page_count = max(len(result.document.pages), 1) if hasattr(result.document, "pages") else 1
+            page_count = (
+                max(len(result.document.pages), 1)
+                if hasattr(result.document, "pages")
+                else 1
+            )
         finally:
             tmp_path.unlink(missing_ok=True)
 
@@ -56,6 +60,7 @@ class RapidOcrProvider(OcrProvider):
             page_count=page_count,
             provider_name="rapidocr",
         )
+
 
 def _mime_to_suffix(mime_type: str) -> str:
     mapping = {

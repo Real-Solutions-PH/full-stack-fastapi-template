@@ -63,9 +63,7 @@ def authenticate(*, session: Session, email: str, password: str) -> User | None:
     if not db_user:
         verify_password(password, DUMMY_HASH)
         return None
-    verified, updated_password_hash = verify_password(
-        password, db_user.hashed_password
-    )
+    verified, updated_password_hash = verify_password(password, db_user.hashed_password)
     if not verified:
         return None
     if updated_password_hash:

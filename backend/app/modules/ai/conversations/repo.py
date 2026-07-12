@@ -6,9 +6,7 @@ from sqlmodel import Session, col, func, select
 from app.modules.ai.conversations.models import Conversation, Message
 
 
-def get_by_id(
-    *, session: Session, conversation_id: uuid.UUID
-) -> Conversation | None:
+def get_by_id(*, session: Session, conversation_id: uuid.UUID) -> Conversation | None:
     return session.get(Conversation, conversation_id)
 
 
@@ -55,9 +53,7 @@ def create_message(*, session: Session, message: Message) -> Message:
     return message
 
 
-def get_messages(
-    *, session: Session, conversation_id: uuid.UUID
-) -> list[Message]:
+def get_messages(*, session: Session, conversation_id: uuid.UUID) -> list[Message]:
     return list(
         session.exec(
             select(Message)

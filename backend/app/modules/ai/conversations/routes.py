@@ -33,9 +33,7 @@ def read_conversations(
     )
 
 
-@router.get(
-    "/conversations/{conversation_id}", response_model=ConversationWithMessages
-)
+@router.get("/conversations/{conversation_id}", response_model=ConversationWithMessages)
 def read_conversation(
     session: SessionDep,
     current_user: CurrentUser,

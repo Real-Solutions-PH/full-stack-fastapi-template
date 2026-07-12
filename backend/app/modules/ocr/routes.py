@@ -60,9 +60,7 @@ def get_available_providers(
 
 
 @router.get("/{id}", response_model=OcrDocumentPublic)
-def get_document(
-    session: SessionDep, current_user: CurrentUser, id: uuid.UUID
-) -> Any:
+def get_document(session: SessionDep, current_user: CurrentUser, id: uuid.UUID) -> Any:
     """Get a single OCR document by ID."""
     return ocr_service.get_document(
         session=session, current_user=current_user, doc_id=id
@@ -74,7 +72,5 @@ def delete_document(
     session: SessionDep, current_user: CurrentUser, id: uuid.UUID
 ) -> Message:
     """Delete an OCR document and its MinIO file."""
-    ocr_service.delete_document(
-        session=session, current_user=current_user, doc_id=id
-    )
+    ocr_service.delete_document(session=session, current_user=current_user, doc_id=id)
     return Message(message="OCR document deleted successfully")

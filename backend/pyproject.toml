@@ -54,6 +54,11 @@ build-backend = "hatchling.build"
 strict = true
 exclude = ["venv", ".venv", "alembic"]
 
+[[tool.mypy.overrides]]
+# docling ships in the optional "ocr" extra; CI type-checks without it installed.
+module = ["app.modules.ocr.providers.*"]
+disable_error_code = ["import-not-found"]
+
 [tool.ruff]
 target-version = "py310"
 exclude = ["alembic"]

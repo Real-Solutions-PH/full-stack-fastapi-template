@@ -23,11 +23,11 @@ class Conversation(SQLModel, table=True):
     agent_id: uuid.UUID | None = Field(
         default=None, foreign_key="agent.id", ondelete="SET NULL"
     )
-    created_at: datetime | None = Field(
+    created_at: datetime | None = Field(  # type: ignore[call-overload]
         default_factory=_utcnow,
         sa_type=DateTime(timezone=True),
     )
-    updated_at: datetime | None = Field(
+    updated_at: datetime | None = Field(  # type: ignore[call-overload]
         default_factory=_utcnow,
         sa_type=DateTime(timezone=True),
     )
@@ -47,7 +47,7 @@ class Message(SQLModel, table=True):
     metadata_: dict[str, Any] | None = Field(
         default=None, sa_column=Column("metadata", JSONB)
     )
-    created_at: datetime | None = Field(
+    created_at: datetime | None = Field(  # type: ignore[call-overload]
         default_factory=_utcnow,
         sa_type=DateTime(timezone=True),
     )

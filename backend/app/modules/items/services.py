@@ -18,9 +18,7 @@ def list_items(
     )
 
 
-def get_item(
-    *, session: Session, current_user: User, item_id: uuid.UUID
-) -> Item:
+def get_item(*, session: Session, current_user: User, item_id: uuid.UUID) -> Item:
     item = item_repo.get_by_id(session=session, item_id=item_id)
     if not item:
         raise HTTPException(status_code=404, detail="Item not found")
@@ -29,9 +27,7 @@ def get_item(
     return item
 
 
-def create_item(
-    *, session: Session, current_user: User, item_in: ItemCreate
-) -> Item:
+def create_item(*, session: Session, current_user: User, item_in: ItemCreate) -> Item:
     db_item = Item.model_validate(item_in, update={"owner_id": current_user.id})
     return item_repo.create(session=session, item=db_item)
 
@@ -52,9 +48,7 @@ def update_item(
     return item_repo.update(session=session, item=item, update_data=update_data)
 
 
-def delete_item(
-    *, session: Session, current_user: User, item_id: uuid.UUID
-) -> None:
+def delete_item(*, session: Session, current_user: User, item_id: uuid.UUID) -> None:
     item = item_repo.get_by_id(session=session, item_id=item_id)
     if not item:
         raise HTTPException(status_code=404, detail="Item not found")

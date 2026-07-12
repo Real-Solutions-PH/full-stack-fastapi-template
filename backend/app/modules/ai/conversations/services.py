@@ -19,9 +19,7 @@ def list_conversations(
 def get_conversation_with_messages(
     *, session: Session, user_id: uuid.UUID, conversation_id: uuid.UUID
 ) -> Conversation:
-    conversation = conv_repo.get_by_id(
-        session=session, conversation_id=conversation_id
-    )
+    conversation = conv_repo.get_by_id(session=session, conversation_id=conversation_id)
     if not conversation or conversation.user_id != user_id:
         raise HTTPException(status_code=404, detail="Conversation not found")
     return conversation
@@ -41,9 +39,7 @@ def create_conversation(
 def delete_conversation(
     *, session: Session, user_id: uuid.UUID, conversation_id: uuid.UUID
 ) -> None:
-    conversation = conv_repo.get_by_id(
-        session=session, conversation_id=conversation_id
-    )
+    conversation = conv_repo.get_by_id(session=session, conversation_id=conversation_id)
     if not conversation or conversation.user_id != user_id:
         raise HTTPException(status_code=404, detail="Conversation not found")
     conv_repo.delete(session=session, conversation=conversation)

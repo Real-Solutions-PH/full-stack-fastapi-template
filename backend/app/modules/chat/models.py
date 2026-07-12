@@ -80,7 +80,9 @@ class ChatSession(SQLModel, table=True):
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     title: str | None = Field(default=None, max_length=255)
-    user_id: uuid.UUID = Field(foreign_key="user.id", nullable=False, ondelete="CASCADE")
+    user_id: uuid.UUID = Field(
+        foreign_key="user.id", nullable=False, ondelete="CASCADE"
+    )
     tenant_id: uuid.UUID = Field(
         foreign_key="tenant.id", nullable=False, ondelete="CASCADE"
     )

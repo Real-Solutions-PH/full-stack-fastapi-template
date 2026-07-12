@@ -19,7 +19,7 @@ router = APIRouter(prefix="/agents", tags=["ai-agents"])
 
 @router.get("/", response_model=AgentsPublic)
 def read_agents(
-    session: SessionDep, current_user: CurrentUser, skip: int = 0, limit: int = 100
+    session: SessionDep, _current_user: CurrentUser, skip: int = 0, limit: int = 100
 ) -> Any:
     agents, count = agent_service.list_agents(session=session, skip=skip, limit=limit)
     return AgentsPublic(
@@ -28,15 +28,13 @@ def read_agents(
 
 
 @router.get("/{id}", response_model=AgentPublic)
-def read_agent(
-    session: SessionDep, current_user: CurrentUser, id: uuid.UUID
-) -> Any:
+def read_agent(session: SessionDep, _current_user: CurrentUser, id: uuid.UUID) -> Any:
     return agent_service.get_agent(session=session, agent_id=id)
 
 
 @router.post("/", response_model=AgentPublic)
 def create_agent(
-    *, session: SessionDep, current_user: CurrentUser, agent_in: AgentCreate
+    *, session: SessionDep, _current_user: CurrentUser, agent_in: AgentCreate
 ) -> Any:
     return agent_service.create_agent(session=session, agent_in=agent_in)
 
@@ -45,18 +43,16 @@ def create_agent(
 def update_agent(
     *,
     session: SessionDep,
-    current_user: CurrentUser,
+    _current_user: CurrentUser,
     id: uuid.UUID,
     agent_in: AgentUpdate,
 ) -> Any:
-    return agent_service.update_agent(
-        session=session, agent_id=id, agent_in=agent_in
-    )
+    return agent_service.update_agent(session=session, agent_id=id, agent_in=agent_in)
 
 
 @router.delete("/{id}")
 def delete_agent(
-    session: SessionDep, current_user: CurrentUser, id: uuid.UUID
+    session: SessionDep, _current_user: CurrentUser, id: uuid.UUID
 ) -> Message:
     agent_service.delete_agent(session=session, agent_id=id)
     return Message(message="Agent deleted successfully")

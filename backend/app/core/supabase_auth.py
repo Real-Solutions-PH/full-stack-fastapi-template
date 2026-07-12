@@ -67,25 +67,40 @@ def _auth_url(path: str) -> str:
     return f"{settings.SUPABASE_URL}/auth/v1{path}"
 
 
+# Admin user listing: page size and a defensive cap on how many pages we
+# walk when resolving an email. ``filter=`` narrows server-side (substring
+# match on email/phone in the pinned local GoTrue), so in practice the
+# match is on page 1; the cap only guards against a pathological number of
+# substring collisions.
+_ADMIN_LIST_PER_PAGE = 50
+_ADMIN_LIST_MAX_PAGES = 20
+
+
 def admin_get_user_id_by_email(email: str) -> uuid.UUID | None:
     """Return the auth UID for an existing GoTrue user, or None.
 
-    GoTrue's admin list endpoint has no email filter, but
-    ``/admin/generate_link`` (type=magiclink) returns the full user object
-    for an existing email without sending anything.
+    Uses the admin list endpoint (``GET /admin/users``) with the ``filter``
+    query param — probed live against the pinned local stack: the response
+    shape is ``{"users": [...], "aud": ...}`` and ``filter`` substring-matches
+    email/phone. The exact-match check happens client-side; pagination is
+    walked defensively up to ``_ADMIN_LIST_MAX_PAGES``.
     """
-    r = httpx.post(
-        _auth_url("/admin/generate_link"),
-        headers=_admin_headers(),
-        json={"type": "magiclink", "email": email},
-        timeout=10,
-    )
-    if r.status_code == 200:
-        return uuid.UUID(r.json()["id"])
-    if r.status_code in (404, 422):
-        return None
-    r.raise_for_status()
-    return None  # pragma: no cover - raise_for_status always raises here
+    wanted = email.lower()
+    for page in range(1, _ADMIN_LIST_MAX_PAGES + 1):
+        r = httpx.get(
+            _auth_url("/admin/users"),
+            headers=_admin_headers(),
+            params={"page": page, "per_page": _ADMIN_LIST_PER_PAGE, "filter": email},
+            timeout=10,
+        )
+        r.raise_for_status()
+        users: list[dict[str, Any]] = r.json().get("users", [])
+        for user in users:
+            if str(user.get("email", "")).lower() == wanted:
+                return uuid.UUID(user["id"])
+        if len(users) < _ADMIN_LIST_PER_PAGE:
+            return None
+    return None
 
 
 def admin_get_or_create_user(email: str, password: str | None = None) -> uuid.UUID:

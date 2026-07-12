@@ -41,6 +41,9 @@ def verify_token(token: str) -> dict[str, Any]:
     ``iss`` (the Supabase auth endpoint). Raises ``jwt.PyJWTError`` (or a
     subclass) on any failure — including JWKS fetch/key-lookup errors.
     """
+    # Note: keys are cached for 300s, so a JWKS rotation can take up to
+    # 5 minutes to propagate here — tokens signed with a brand-new key may
+    # fail key lookup until the cache expires.
     signing_key = _get_jwk_client().get_signing_key_from_jwt(token)
     claims: dict[str, Any] = jwt.decode(
         token,
@@ -48,6 +51,8 @@ def verify_token(token: str) -> dict[str, Any]:
         algorithms=["ES256", "RS256"],
         audience=AUDIENCE,
         issuer=settings.supabase_issuer,
+        # Small clock-skew allowance between GoTrue and this host.
+        leeway=10,
         options={"require": ["exp", "sub", "aud", "iss"]},
     )
     return claims

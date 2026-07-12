@@ -7,6 +7,7 @@ from app.modules.iam.deps import CurrentUser
 from app.modules.items import services as item_service
 from app.modules.items.schema import ItemCreate, ItemPublic, ItemsPublic, ItemUpdate
 from app.shared.deps import SessionDep
+from app.shared.rate_limit import rate_limited
 from app.shared.schema import Message
 
 router = APIRouter(prefix="/items", tags=["items"])
@@ -28,7 +29,7 @@ def read_item(session: SessionDep, current_user: CurrentUser, id: uuid.UUID) -> 
     return item_service.get_item(session=session, current_user=current_user, item_id=id)
 
 
-@router.post("/", response_model=ItemPublic)
+@router.post("/", response_model=ItemPublic, dependencies=[rate_limited("items")])
 def create_item(
     *, session: SessionDep, current_user: CurrentUser, item_in: ItemCreate
 ) -> Any:
@@ -37,7 +38,7 @@ def create_item(
     )
 
 
-@router.put("/{id}", response_model=ItemPublic)
+@router.put("/{id}", response_model=ItemPublic, dependencies=[rate_limited("items")])
 def update_item(
     *,
     session: SessionDep,
@@ -50,7 +51,7 @@ def update_item(
     )
 
 
-@router.delete("/{id}")
+@router.delete("/{id}", dependencies=[rate_limited("items")])
 def delete_item(
     session: SessionDep, current_user: CurrentUser, id: uuid.UUID
 ) -> Message:

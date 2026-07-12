@@ -12,6 +12,7 @@ from app.modules.ai.conversations.schema import (
 )
 from app.modules.iam.deps import CurrentUser
 from app.shared.deps import SessionDep
+from app.shared.rate_limit import rate_limited
 from app.shared.schema import Message
 
 router = APIRouter(prefix="/chat", tags=["ai-chat"])
@@ -46,7 +47,11 @@ def read_conversation(
     )
 
 
-@router.post("/conversations", response_model=ConversationPublic)
+@router.post(
+    "/conversations",
+    response_model=ConversationPublic,
+    dependencies=[rate_limited("ai-chat")],
+)
 def create_conversation(
     *,
     session: SessionDep,
@@ -58,7 +63,9 @@ def create_conversation(
     )
 
 
-@router.delete("/conversations/{conversation_id}")
+@router.delete(
+    "/conversations/{conversation_id}", dependencies=[rate_limited("ai-chat")]
+)
 def delete_conversation(
     session: SessionDep,
     current_user: CurrentUser,

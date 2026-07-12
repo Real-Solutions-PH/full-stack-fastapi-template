@@ -14,11 +14,11 @@ real backend is swapped in at the module level.
 """
 
 import uuid
-from typing import Protocol
+from typing import Any, Protocol
 
-from fastapi import HTTPException, status
+from fastapi import Depends, HTTPException, status
 
-from app.shared.tenancy import TenantContext
+from app.shared.tenancy import TenantContext, TenantDep
 
 
 class RateLimitBackend(Protocol):
@@ -44,3 +44,16 @@ def check_rate_limit(tenant: TenantContext, key: str = "api", *, cost: int = 1) 
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,
             detail="Rate limit exceeded for tenant",
         )
+
+
+def rate_limited(key: str = "api", *, cost: int = 1) -> Any:
+    """Route-level ``dependencies=[rate_limited(...)]`` marker.
+
+    Resolves the tenant from the authenticated user and runs the rate check
+    without touching the route's OpenAPI request/response models.
+    """
+
+    def _check(tenant: TenantDep) -> None:
+        check_rate_limit(tenant, key, cost=cost)
+
+    return Depends(_check)

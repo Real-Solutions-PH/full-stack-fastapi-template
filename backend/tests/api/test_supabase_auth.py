@@ -191,6 +191,26 @@ def test_update_me_email_propagates_to_gotrue(client: TestClient) -> None:
     assert supabase_auth.admin_get_user_id_by_email(new_email) == auth_uid
 
 
+def test_inactive_user_is_rejected_with_400(client: TestClient, db: Session) -> None:
+    """A real, valid token for a deactivated local user gets 400."""
+    email = random_email()
+    password = random_lower_string()
+    auth_uid = supabase_auth.admin_get_or_create_user(email=email, password=password)
+    headers = auth_headers(email, password)
+    # Materialize the mirror row, then deactivate it.
+    r = client.get(f"{settings.API_V1_STR}/users/me", headers=headers)
+    assert r.status_code == 200
+    user = db.get(User, auth_uid)
+    assert user is not None
+    user.is_active = False
+    db.add(user)
+    db.commit()
+
+    r = client.get(f"{settings.API_V1_STR}/users/me", headers=headers)
+    assert r.status_code == 400
+    assert r.json()["message"] == "Inactive user"
+
+
 def test_jwks_outage_is_503_not_403(
     client: TestClient, monkeypatch: pytest.MonkeyPatch
 ) -> None:

@@ -12,29 +12,19 @@ class UserBase(SQLModel):
     full_name: str | None = Field(default=None, max_length=255)
 
 
+# Credentials live in Supabase Auth (#39): user creation goes through the
+# GoTrue admin API, so there are no password fields on these schemas.
 class UserCreate(UserBase):
-    password: str = Field(min_length=8, max_length=128)
-
-
-class UserRegister(SQLModel):
-    email: EmailStr = Field(max_length=255)
-    password: str = Field(min_length=8, max_length=128)
-    full_name: str | None = Field(default=None, max_length=255)
+    pass
 
 
 class UserUpdate(UserBase):
     email: EmailStr | None = Field(default=None, max_length=255)  # type: ignore[assignment]
-    password: str | None = Field(default=None, min_length=8, max_length=128)
 
 
 class UserUpdateMe(SQLModel):
     full_name: str | None = Field(default=None, max_length=255)
     email: EmailStr | None = Field(default=None, max_length=255)
-
-
-class UpdatePassword(SQLModel):
-    current_password: str = Field(min_length=8, max_length=128)
-    new_password: str = Field(min_length=8, max_length=128)
 
 
 class UserPublic(UserBase):

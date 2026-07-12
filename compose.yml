@@ -59,14 +59,22 @@ services:
     command: bash scripts/prestart.sh
     env_file:
       - .env
+    # The Supabase local stack (supabase start) runs on the HOST, so the
+    # container reaches it via host.docker.internal; tokens are still issued
+    # with the host-local URL, hence the explicit SUPABASE_JWT_ISSUER.
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     environment:
       - DOMAIN=${DOMAIN}
       - FRONTEND_HOST=${FRONTEND_HOST?Variable not set}
       - ENVIRONMENT=${ENVIRONMENT}
       - BACKEND_CORS_ORIGINS=${BACKEND_CORS_ORIGINS}
-      - SECRET_KEY=${SECRET_KEY?Variable not set}
       - FIRST_SUPERUSER=${FIRST_SUPERUSER?Variable not set}
       - FIRST_SUPERUSER_PASSWORD=${FIRST_SUPERUSER_PASSWORD?Variable not set}
+      - SUPABASE_URL=http://host.docker.internal:54321
+      - SUPABASE_JWT_ISSUER=${SUPABASE_URL?Variable not set}/auth/v1
+      - SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY?Variable not set}
+      - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY?Variable not set}
       - SMTP_HOST=${SMTP_HOST}
       - SMTP_USER=${SMTP_USER}
       - SMTP_PASSWORD=${SMTP_PASSWORD}
@@ -92,14 +100,21 @@ services:
         condition: service_completed_successfully
     env_file:
       - .env
+    # See prestart: the host-run Supabase stack is reached via
+    # host.docker.internal while token issuers stay host-local.
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     environment:
       - DOMAIN=${DOMAIN}
       - FRONTEND_HOST=${FRONTEND_HOST?Variable not set}
       - ENVIRONMENT=${ENVIRONMENT}
       - BACKEND_CORS_ORIGINS=${BACKEND_CORS_ORIGINS}
-      - SECRET_KEY=${SECRET_KEY?Variable not set}
       - FIRST_SUPERUSER=${FIRST_SUPERUSER?Variable not set}
       - FIRST_SUPERUSER_PASSWORD=${FIRST_SUPERUSER_PASSWORD?Variable not set}
+      - SUPABASE_URL=http://host.docker.internal:54321
+      - SUPABASE_JWT_ISSUER=${SUPABASE_URL?Variable not set}/auth/v1
+      - SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY?Variable not set}
+      - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY?Variable not set}
       - SMTP_HOST=${SMTP_HOST}
       - SMTP_USER=${SMTP_USER}
       - SMTP_PASSWORD=${SMTP_PASSWORD}

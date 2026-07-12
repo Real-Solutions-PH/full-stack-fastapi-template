@@ -1,10 +1,9 @@
 import logging
 
 from sqlalchemy import text
-from sqlmodel import Session, create_engine, select
+from sqlmodel import Session, create_engine
 
 from app.core.config import settings
-from app.core.security import get_password_hash
 
 logger = logging.getLogger(__name__)
 
@@ -54,13 +53,13 @@ def warn_if_rls_dormant() -> None:
 def init_db(session: Session) -> None:
     # Imported lazily: seeders live inside modules whose deps eventually
     # re-import ``engine`` from here, which would deadlock at module load.
+    from app.core import supabase_auth
     from app.modules.iam.permissions.seed import seed_permissions
     from app.modules.iam.roles.seed import seed_roles
     from app.modules.iam.tenants import services as tenant_service
     from app.modules.iam.tenants.seed import seed_tenants
     from app.modules.iam.users import repo as user_repo
     from app.modules.iam.users.models import User
-    from app.modules.iam.users.schema import UserCreate
     from app.modules.items.models import Item  # noqa: F401  resolve User.items mapper
 
     # Tables are managed by Alembic migrations.
@@ -69,23 +68,28 @@ def init_db(session: Session) -> None:
     seed_permissions(session)
     seed_tenants(session)
 
-    user = session.exec(
-        select(User).where(User.email == settings.FIRST_SUPERUSER)
-    ).first()
+    # FIRST_SUPERUSER bootstrap (#39): the auth identity lives in Supabase.
+    # Idempotent — create-or-fetch the GoTrue user (the password is set for
+    # local/CI convenience and test fixtures), then upsert the local mirror
+    # row keyed by the auth UID with is_superuser=True.
+    auth_uid = supabase_auth.admin_get_or_create_user(
+        email=settings.FIRST_SUPERUSER,
+        password=settings.FIRST_SUPERUSER_PASSWORD,
+    )
+    user = session.get(User, auth_uid)
     if not user:
-        user_in = UserCreate(
-            email=settings.FIRST_SUPERUSER,
-            password=settings.FIRST_SUPERUSER_PASSWORD,
-            is_superuser=True,
+        user_repo.create(
+            session=session,
+            user=User(
+                id=auth_uid,
+                email=settings.FIRST_SUPERUSER,
+                is_superuser=True,
+                is_active=True,
+                tenant_id=tenant_service.get_default_tenant(session=session).id,
+            ),
         )
-        db_user = User.model_validate(
-            user_in,
-            update={
-                "hashed_password": get_password_hash(user_in.password),
-                "tenant_id": tenant_service.get_default_tenant(session=session).id,
-            },
-        )
-        user_repo.create(session=session, user=db_user)
+    elif not user.is_superuser:
+        user_repo.update(session=session, user=user, update_data={"is_superuser": True})
 
     if settings.AI_ENABLED:
         from app.modules.ai.agents.seed import seed_agents

@@ -5,17 +5,14 @@ from copilotkit import CopilotKitRemoteEndpoint, LangGraphAGUIAgent
 from copilotkit.integrations.fastapi import add_fastapi_endpoint
 from fastapi import FastAPI, Request, Response, status
 from fastapi.responses import JSONResponse
-from jwt.exceptions import InvalidTokenError
-from pydantic import ValidationError
 
-from app.core import security
+from app.core import supabase_auth
 from app.core.config import settings
 from app.modules.ai.agents.definitions.fast import build_fast_agent
 from app.modules.ai.agents.definitions.plan_and_execute import (
     build_plan_and_execute_agent,
 )
 from app.modules.ai.agents.definitions.react import build_react_agent
-from app.modules.iam.auth.schema import TokenPayload
 
 COPILOTKIT_PATH = f"{settings.API_V1_STR}/copilotkit"
 
@@ -25,13 +22,8 @@ def _bearer_token_is_valid(request: Request) -> bool:
     if not auth.startswith("Bearer "):
         return False
     try:
-        payload = jwt.decode(
-            auth.removeprefix("Bearer "),
-            settings.SECRET_KEY,
-            algorithms=[security.ALGORITHM],
-        )
-        TokenPayload(**payload)
-    except (InvalidTokenError, ValidationError):
+        supabase_auth.verify_token(auth.removeprefix("Bearer "))
+    except jwt.PyJWTError:
         return False
     return True
 

@@ -1,4 +1,3 @@
-import secrets
 import warnings
 from typing import Annotated, Any, Literal
 
@@ -31,9 +30,6 @@ class Settings(BaseSettings):
         extra="ignore",
     )
     API_V1_STR: str = "/api/v1"
-    SECRET_KEY: str = secrets.token_urlsafe(32)
-    # 60 minutes * 24 hours * 8 days = 8 days
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 8
     FRONTEND_HOST: str = "http://localhost:3000"
     ENVIRONMENT: Literal["local", "staging", "production"] = "local"
 
@@ -85,16 +81,37 @@ class Settings(BaseSettings):
             self.EMAILS_FROM_NAME = self.PROJECT_NAME
         return self
 
-    EMAIL_RESET_TOKEN_EXPIRE_HOURS: int = 48
-
     @computed_field  # type: ignore[prop-decorator]
     @property
     def emails_enabled(self) -> bool:
         return bool(self.SMTP_HOST and self.EMAILS_FROM_EMAIL)
 
     EMAIL_TEST_USER: EmailStr = "test@example.com"
+    # Email of the bootstrap superuser; created in GoTrue (with
+    # FIRST_SUPERUSER_PASSWORD, for local/CI convenience and test fixtures)
+    # and mirrored as a local row with is_superuser=True.
     FIRST_SUPERUSER: EmailStr
     FIRST_SUPERUSER_PASSWORD: str
+
+    # Supabase Auth (#39). Defaults target the local CLI stack
+    # (`make supabase-up`); hosted projects override all of these.
+    SUPABASE_URL: str = "http://127.0.0.1:54321"
+    SUPABASE_ANON_KEY: str = ""
+    # Secret, backend-only: full GoTrue admin access.
+    SUPABASE_SERVICE_ROLE_KEY: str = ""
+    # Override when SUPABASE_URL differs from the issuer baked into tokens
+    # (e.g. a containerized backend reaching the stack via host.docker.internal).
+    SUPABASE_JWT_ISSUER: str | None = None
+
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def supabase_issuer(self) -> str:
+        return self.SUPABASE_JWT_ISSUER or f"{self.SUPABASE_URL}/auth/v1"
+
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def supabase_jwks_url(self) -> str:
+        return f"{self.SUPABASE_URL}/auth/v1/.well-known/jwks.json"
 
     # Tenancy: slug of the tenant new signups are assigned to (#38).
     DEFAULT_TENANT_SLUG: str = "default"
@@ -152,7 +169,6 @@ class Settings(BaseSettings):
 
     @model_validator(mode="after")
     def _enforce_non_default_secrets(self) -> Self:
-        self._check_default_secret("SECRET_KEY", self.SECRET_KEY)
         self._check_default_secret("POSTGRES_PASSWORD", self.POSTGRES_PASSWORD)
         self._check_default_secret(
             "FIRST_SUPERUSER_PASSWORD", self.FIRST_SUPERUSER_PASSWORD

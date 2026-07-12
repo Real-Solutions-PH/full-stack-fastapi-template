@@ -79,8 +79,3 @@ services:
           action: rebuild
         - path: ./bun.lock
           action: rebuild
-
-networks:
-  traefik-public:
-    # For local dev, don't expect an external Traefik network
-    external: false

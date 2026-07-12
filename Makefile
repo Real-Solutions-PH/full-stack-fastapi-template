@@ -23,6 +23,17 @@ ps: ## List running containers
 	docker compose ps
 
 # ---------------------------------------------------------------------------
+# Supabase (local auth stack — GoTrue + JWKS; app tables stay in compose db)
+# ---------------------------------------------------------------------------
+.PHONY: supabase-up supabase-down
+
+supabase-up: ## Start the local Supabase auth stack (required for backend tests)
+	supabase start
+
+supabase-down: ## Stop the local Supabase auth stack (drops its data)
+	supabase stop --no-backup
+
+# ---------------------------------------------------------------------------
 # Backend
 # ---------------------------------------------------------------------------
 .PHONY: backend-shell backend-lint backend-format backend-test backend-migrate backend-downgrade backend-revision backend-prestart

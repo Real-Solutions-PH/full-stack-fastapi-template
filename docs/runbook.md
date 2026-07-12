@@ -31,7 +31,36 @@ Deployment is a deliberate, manual promotion — single environment, no auto-dep
 
 ## Error monitoring & uptime
 
-Placeholder — detail lands with ticket #31.
+### GlitchTip (error monitoring, Sentry-SDK compatible)
+
+**Per-client setup:** one GlitchTip organization per client, with three projects: `{client}-backend`, `{client}-frontend`, `{client}-mobile`. Each project issues its own DSN.
+
+**Where each DSN goes** (all surfaces no-op silently when their DSN is unset):
+
+| Surface | Variable | How it's applied |
+|---------|----------|------------------|
+| Backend | `SENTRY_DSN` | Runtime env var (`.env` / deploy environment) — picked up by FastAPI on boot. |
+| Frontend | `FRONTEND_SENTRY_DSN` → `NEXT_PUBLIC_SENTRY_DSN` | Docker **build arg** (see `compose.yml`), inlined into the Next.js bundle at build time. Setting it only at runtime silently no-ops — rebuild the image after changing it. |
+| Mobile | `EXPO_PUBLIC_SENTRY_DSN` | EAS environment variable, or `mobile/.env` for local builds. Build-time inlined, same caveat as frontend. |
+
+**Verification:** after wiring a DSN, trigger a test error on each surface and confirm it appears in the matching GlitchTip project:
+- Backend: raise an exception from any endpoint (or temporarily add a `/sentry-debug` route that raises).
+- Frontend: throw inside a page component — the `error.tsx` / `global-error.tsx` boundaries report it.
+- Mobile: call `Sentry.captureException(new Error("test"))` from a dev build with the DSN set.
+
+**Alerts:** in each GlitchTip project, set alert rules to email the on-call address (e.g. notify on any new issue; tune noise later).
+
+### Better Stack (uptime)
+
+One Better Stack account per client (free tier: 10 monitors, 3-minute checks, status page).
+
+- **Monitors:** backend health check `https://api.{domain}/api/v1/utils/health-check/` and the frontend URL `https://{domain}/`.
+- **Escalation:** alert the on-call email/phone per the incident severities below (SEV1 path for prod-down).
+- **Status page:** publish a Better Stack status page for the client with both monitors.
+
+### DSN rotation at offboarding
+
+When a client engagement ends: rotate (regenerate) all three GlitchTip DSNs — or delete the projects — and remove the old values from deploy env, build args, and EAS. Hand the GlitchTip org and Better Stack account over to the client or tear them down per contract.
 
 ## Client-owned org setup
 

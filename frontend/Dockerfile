@@ -3,6 +3,8 @@ FROM oven/bun:1-alpine AS deps
 WORKDIR /app
 COPY package.json bun.lock /app/
 COPY frontend/package.json /app/frontend/
+# the root workspace manifest lists e2e — bun refuses to run without it
+COPY e2e/package.json /app/e2e/
 RUN bun install --frozen-lockfile
 
 # Stage "dev", run Next.js dev server with HMR for docker compose watch
@@ -11,6 +13,8 @@ WORKDIR /app
 COPY --from=deps /app/node_modules /app/node_modules
 COPY package.json bun.lock /app/
 COPY frontend/package.json /app/frontend/
+# the root workspace manifest lists e2e — bun refuses to run without it
+COPY e2e/package.json /app/e2e/
 COPY ./frontend /app/frontend
 WORKDIR /app/frontend
 ARG NEXT_PUBLIC_API_URL
@@ -36,6 +40,8 @@ WORKDIR /app
 COPY --from=deps /app/node_modules /app/node_modules
 COPY package.json bun.lock /app/
 COPY frontend/package.json /app/frontend/
+# the root workspace manifest lists e2e — bun refuses to run without it
+COPY e2e/package.json /app/e2e/
 COPY ./frontend /app/frontend
 
 WORKDIR /app/frontend

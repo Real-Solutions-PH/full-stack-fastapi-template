@@ -19,11 +19,7 @@
       "bundler": "metro",
       "output": "static"
     },
-    "plugins": [
-      "expo-router",
-      "expo-sqlite",
-      "@sentry/react-native/expo"
-    ],
+    "plugins": ["expo-router", "expo-sqlite", "@sentry/react-native/expo"],
     "experiments": {
       "typedRoutes": true,
       "tsconfigPaths": true

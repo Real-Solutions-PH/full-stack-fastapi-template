@@ -64,6 +64,8 @@ And then start the local frontend development server:
 bun run dev
 ```
 
+`bun` is the JS lockfile of record for both `frontend/` and `mobile/`; npm/yarn/pnpm lockfiles are gitignored deliberately (tooling ADR pending in #30).
+
 Or you could stop the `backend` Docker Compose service:
 
 ```bash

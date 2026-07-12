@@ -32,7 +32,7 @@ Internal template (RSPH-owned, §7.3) — founder decision on issue #25, 2026-07
 
 **Negative:**
 - Local/dev and CI flows must run against the Supabase CLI local stack (or a shim) instead of a bare Postgres container.
-- Alembic's role narrows (Supabase CLI migrations per §3.6 note) — migration tooling story must be decided in the tenant-model child ticket.
+- Alembic's role narrows (Supabase CLI migrations per §3.6 note) — decided in ADR-0006: Alembic stays the migration CLI.
 - Vendor coupling on the auth layer; exit path is standard Postgres + GoTrue-compatible JWTs (documented, per §1's adapter/exit-path rule).
 
 **Follow-ups:**

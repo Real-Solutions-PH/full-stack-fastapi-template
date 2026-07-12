@@ -9,7 +9,7 @@ is the single place that does this.
 
 Enforcement note: superusers and table owners bypass RLS, so Alembic,
 prestart seeding, and the current app engine (postgres owner) are unaffected.
-The policies become the live wall when #39 flips the app engine to
+The policies become the live wall when #44 flips the app engine to
 ``app_user`` (provisioned LOGIN out-of-band; see docs/runbook.md).
 
 Global catalog tables (agent, tool, mcpserver, agenttool, role, permission)
@@ -78,7 +78,7 @@ def upgrade():
         """
     )
 
-    # Non-owner role the app engine will connect as after #39. NOLOGIN and
+    # Non-owner role the app engine will connect as after #44. NOLOGIN and
     # passwordless here; ops provisions LOGIN + password out-of-band (§3.8).
     op.execute(
         """

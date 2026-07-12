@@ -5,7 +5,7 @@
 | Layer | Tool | Target coverage | Speed |
 |-------|------|-----------------|-------|
 | Unit | pytest / vitest | 80% | ms |
-| Integration | pytest + testcontainers | critical paths | s |
+| Integration | pytest (compose/throwaway containers) | critical paths | s |
 | E2E | Cypress (`e2e/`) | per user flow incl. edge cases | min |
 | Visual regression | Cypress screenshots | key surfaces | min |
 | Load | k6 / locust | critical endpoints | per release |
@@ -19,11 +19,10 @@
 ## Coverage Gates
 
 - PR fails if coverage drops > 1%.
-- Min 80% lines, 70% branches.
+- Backend: min 90% lines, enforced in CI (`coverage report --fail-under=90`).
 
 ## Test Data
 
-- Factories (factory_boy / fishery).
 - No prod data in tests.
 - Reset DB per test class.
 

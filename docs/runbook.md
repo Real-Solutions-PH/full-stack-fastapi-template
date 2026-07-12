@@ -84,7 +84,7 @@ Note: RSPH's own Free-tier project quota (2 active projects, counted across ever
 
 - Local development runs against the Supabase CLI local stack (`supabase start`) — no client credentials needed day-to-day.
 - `supabase link --project-ref <ref>` binds the repo to the client's hosted project once the invite/credentials are in hand.
-- Migrations are committed files pushed to the linked project; dashboard-only schema edits are prohibited (§3.6). Only one person pushes at a time to avoid ordering conflicts. *(Migration tooling — Alembic vs `supabase db push` — is decided in ticket #38; this section assumes committed-migration discipline either way.)*
+- Migrations are committed files pushed to the linked project; dashboard-only schema edits are prohibited (§3.6). Only one person pushes at a time to avoid ordering conflicts. *(Migration tooling: **Alembic** — decided in ADR-0006.)*
 
 **Rotation at handover / offboarding:**
 
@@ -103,7 +103,7 @@ Note: RSPH's own Free-tier project quota (2 active projects, counted across ever
 
 **RLS.** Migration `c8f2a1d47e56` enables RLS with tenant-isolation policies on `user`, `item`, `ocr_document`, `conversation`, `tenant`, and `message` (transitive via its conversation). Policies key on `current_setting('request.jwt.claims', true)` through the `app_tenant_id()` helper — byte-compatible with Supabase PostgREST, so they survive the Supabase migration unchanged.
 
-- **Why Alembic/seeds are unaffected:** Postgres superusers and table *owners* bypass RLS. Migrations, prestart seeding, and today's app engine all connect as the DB owner, so the policies are currently a dormant second wall — the app logs `RLS is DORMANT` at startup while this is true. Enforcement goes live when #39 flips the app engine to the non-owner `app_user` role. **#39 handoff:** the `user` policy hides all rows until per-request claims are set, so the login-by-email lookup (which runs before any tenant claim exists) needs either an owner-engine auth path or claims wired before the first query — and platform-operator (superuser) routes need the owner engine or a bypass claim, or they will see only their own tenant.
+- **Why Alembic/seeds are unaffected:** Postgres superusers and table *owners* bypass RLS. Migrations, prestart seeding, and today's app engine all connect as the DB owner, so the policies are currently a dormant second wall — the app logs `RLS is DORMANT` at startup while this is true. Enforcement goes live when #44 flips the app engine to the non-owner `app_user` role and wires per-request claims (verified Supabase claims are already stashed on `request.state.jwt_claims`). Note for #44: platform-operator (superuser) routes and seeds need the owner engine or a bypass claim, or they will see only their own tenant.
 - **`app_user` provisioning:** the migration creates `app_user` as `NOLOGIN` with no password (no secrets in the repo) plus DML grants and default privileges. Ops enables it out-of-band per §3.8 (value lives in Bitwarden): `ALTER ROLE app_user LOGIN PASSWORD '<from-bitwarden>';`
 - **Verifying isolation by hand:** in a transaction as `app_user`, `SELECT set_config('request.jwt.claims', '{"tenant_id": "<uuid>"}', true);` then query — only that tenant's rows are visible. A claim-less session sees zero rows. (Any SQL touching the claim must go through `app_tenant_id()`, which `NULLIF`-guards the empty-string GUC left behind after a transaction-local `set_config`.)
 

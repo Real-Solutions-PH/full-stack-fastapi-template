@@ -8,7 +8,7 @@ erDiagram
   USER {
     uuid id
     string email
-    string hashed_password
+    uuid tenant_id FK
     bool is_active
   }
   ITEM {
@@ -27,7 +27,7 @@ erDiagram
 |-------|------|-------------|-------|
 | id | uuid | PK | |
 | email | text | unique, not null | synthetic example: user@example.test |
-| hashed_password | text | not null | argon2/bcrypt hash |
+| (no password column) | — | — | auth lives in Supabase (GoTrue); `user.id` = the Supabase auth UID (#39) |
 | is_active | bool | default true | |
 | created_at | timestamptz | default now() | ISO-8601 UTC |
 
@@ -61,7 +61,7 @@ Bootstrap: migration `b7d4e12a9f03` and `seed_tenants` both insert a **Default**
 
 Enforcement: the tenant filter lives in repo queries — rows outside the caller's tenant are invisible (404, no existence leak); wrong-owner rows inside the same tenant keep 403. Superusers are platform operators and bypass the filter.
 
-DB-level RLS (2026-07-12, #40): migration `c8f2a1d47e56` adds tenant-isolation policies on `user`, `item`, `ocr_document`, `conversation`, `tenant`, and `message` (transitive through its conversation), keyed on the Supabase-compatible `request.jwt.claims` GUC via `app_tenant_id()`. Owners/superusers bypass RLS, so the policies stay dormant until #39 flips the app engine to the non-owner `app_user` role — see the runbook's "Row-Level Security & rate limiting" section for provisioning and verification.
+DB-level RLS (2026-07-12, #40): migration `c8f2a1d47e56` adds tenant-isolation policies on `user`, `item`, `ocr_document`, `conversation`, `tenant`, and `message` (transitive through its conversation), keyed on the Supabase-compatible `request.jwt.claims` GUC via `app_tenant_id()`. Owners/superusers bypass RLS, so the policies stay dormant until #44 flips the app engine to the non-owner `app_user` role — see the runbook's "Row-Level Security & rate limiting" section for provisioning and verification.
 
 ## Migrations
 

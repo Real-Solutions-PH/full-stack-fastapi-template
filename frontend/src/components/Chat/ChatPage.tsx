@@ -2,7 +2,6 @@
 
 import { CopilotChat } from "@copilotkit/react-core/v2"
 import { useState } from "react"
-import { AGENT_IDS } from "@/app/(app)/chat/chat"
 import { Card, CardContent } from "@/components/ui/card"
 import {
   Select,
@@ -11,6 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { AGENT_IDS } from "@/lib/agents"
 
 export default function ChatPage() {
   const [agentId, setAgentId] = useState<string>(AGENT_IDS[0])

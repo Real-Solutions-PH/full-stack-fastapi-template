@@ -18,10 +18,11 @@ GraphQL runtime anywhere. ``copilotkit.CopilotKitRemoteEndpoint`` /
 ``run()``) does not implement — that protocol is dead code for this path.
 """
 
+import logging
 from collections.abc import AsyncIterator, Awaitable, Callable
 
 import jwt
-from ag_ui.core import RunAgentInput
+from ag_ui.core import EventType, RunAgentInput, RunErrorEvent
 from ag_ui.encoder import EventEncoder
 from copilotkit import LangGraphAGUIAgent
 from fastapi import APIRouter, FastAPI, Request, Response, status
@@ -36,11 +37,24 @@ from app.modules.ai.agents.definitions.plan_and_execute import (
 )
 from app.modules.ai.agents.definitions.react import build_react_agent
 
+logger = logging.getLogger(__name__)
+
 COPILOTKIT_PATH = f"{settings.API_V1_STR}/copilotkit"
 
 
-def _envelope(status_code: int, code: str, message: str) -> JSONResponse:
-    headers = {"WWW-Authenticate": "Bearer"} if status_code == 401 else None
+def _envelope(
+    status_code: int, code: str, message: str, request: Request
+) -> JSONResponse:
+    headers: dict[str, str] = {"Vary": "Origin"}
+    if status_code == 401:
+        headers["WWW-Authenticate"] = "Bearer"
+    # This middleware sits OUTSIDE CORSMiddleware, so error responses must
+    # echo CORS themselves or the browser can't read them (same pattern as
+    # the 500 handler in app/shared/errors.py).
+    origin = request.headers.get("origin")
+    if origin and origin in settings.all_cors_origins:
+        headers["Access-Control-Allow-Origin"] = origin
+        headers["Access-Control-Allow-Credentials"] = "true"
     return JSONResponse(
         status_code=status_code,
         content={"code": code, "message": message, "details": None},
@@ -58,7 +72,7 @@ def _auth_failure_response(request: Request) -> JSONResponse | None:
     auth = request.headers.get("Authorization", "")
     if not auth.startswith("Bearer "):
         return _envelope(
-            status.HTTP_401_UNAUTHORIZED, "unauthorized", "Not authenticated"
+            status.HTTP_401_UNAUTHORIZED, "unauthorized", "Not authenticated", request
         )
     try:
         supabase_auth.verify_token(auth.removeprefix("Bearer "))
@@ -67,10 +81,11 @@ def _auth_failure_response(request: Request) -> JSONResponse | None:
             status.HTTP_503_SERVICE_UNAVAILABLE,
             "auth_unavailable",
             "Authentication service unavailable",
+            request,
         )
     except jwt.PyJWTError:
         return _envelope(
-            status.HTTP_401_UNAUTHORIZED, "unauthorized", "Not authenticated"
+            status.HTTP_401_UNAUTHORIZED, "unauthorized", "Not authenticated", request
         )
     return None
 
@@ -87,7 +102,9 @@ def install_copilotkit_auth(app: FastAPI) -> None:
     async def copilotkit_auth(
         request: Request, call_next: Callable[[Request], Awaitable[Response]]
     ) -> Response:
-        if request.url.path.startswith(COPILOTKIT_PATH):
+        # CORS preflights carry no Authorization header and must reach
+        # CORSMiddleware (which sits INSIDE this middleware) untouched.
+        if request.method != "OPTIONS" and request.url.path.startswith(COPILOTKIT_PATH):
             failure = _auth_failure_response(request)
             if failure is not None:
                 return failure
@@ -137,10 +154,24 @@ def _make_run_handler(
         request_agent = agent.clone()
 
         async def event_stream() -> AsyncIterator[str]:
-            async for event in request_agent.run(input_data):
-                yield encoder.encode(event)
+            # The upstream adapter propagates run exceptions (LLM auth
+            # failure, tool crash) instead of emitting a terminal event —
+            # emit RUN_ERROR ourselves so clients see an error, not a
+            # truncated stream.
+            try:
+                async for event in request_agent.run(input_data):
+                    yield encoder.encode(event)
+            except Exception as exc:  # noqa: BLE001 - terminal stream event
+                logger.exception("AG-UI run failed", exc_info=exc)
+                yield encoder.encode(
+                    RunErrorEvent(type=EventType.RUN_ERROR, message="Agent run failed")
+                )
 
-        return StreamingResponse(event_stream(), media_type=encoder.get_content_type())
+        return StreamingResponse(
+            event_stream(),
+            media_type=encoder.get_content_type(),
+            headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+        )
 
     return run_agent
 

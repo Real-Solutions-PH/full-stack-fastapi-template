@@ -5,6 +5,7 @@ import { CopilotKitProvider } from "@copilotkit/react-core/v2"
 import "@copilotkit/react-core/v2/styles.css"
 import { useMemo } from "react"
 import ChatPage from "@/components/Chat/ChatPage"
+import { AGENT_IDS } from "@/lib/agents"
 import { createClient } from "@/lib/supabase/client"
 
 /**
@@ -23,8 +24,6 @@ class SupabaseHttpAgent extends HttpAgent {
     return super.runAgent(...args)
   }
 }
-
-export const AGENT_IDS = ["fast", "react", "plan_and_execute"] as const
 
 export default function Chat() {
   const agents = useMemo(() => {

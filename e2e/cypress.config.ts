@@ -14,6 +14,12 @@ export default defineConfig({
     baseUrl: process.env.FRONTEND_HOST || "http://localhost:3000",
     testIsolation: true,
   },
+  // CI runs the frontend as `next dev` in a container: routes compile on
+  // demand (2-4s each on a shared GitHub runner) and dev evicts idle entries,
+  // so a first navigation after login can legitimately take longer than the
+  // 4s default before the URL commits. Locally everything is warm and fast;
+  // this only buys headroom on slow runners.
+  defaultCommandTimeout: 15000,
   env: {
     FIRST_SUPERUSER: process.env.FIRST_SUPERUSER,
     FIRST_SUPERUSER_PASSWORD: process.env.FIRST_SUPERUSER_PASSWORD,

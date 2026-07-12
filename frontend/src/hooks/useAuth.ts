@@ -85,8 +85,16 @@ const useAuth = () => {
   const loginMutation = useMutation({
     mutationFn: login,
     onSuccess: () => {
+      // Single router action on purpose: push() + refresh() in the same
+      // handler batch two async router actions into one transition, and the
+      // URL only commits once BOTH RSC fetches settle. On slow machines (CI
+      // runners, containerized next dev compiling routes on demand) that
+      // commit is delayed past test timeouts or dropped outright — the
+      // browser stays on /login even though both GET /?_rsc return 200.
+      // refresh() is redundant here anyway: Next 15 does not reuse dynamic
+      // RSC payloads (staleTimes.dynamic = 0), so the pushed route is always
+      // fetched fresh with the new session cookie.
       router.push("/")
-      router.refresh()
     },
     onError: (err: Error) => {
       showErrorToast(err.message)
@@ -99,8 +107,9 @@ const useAuth = () => {
     // has, including other devices.
     await createClient().auth.signOut({ scope: "local" })
     queryClient.clear()
+    // Single router action — see loginMutation.onSuccess for why there is no
+    // router.refresh() here.
     router.push("/login")
-    router.refresh()
   }
 
   return {

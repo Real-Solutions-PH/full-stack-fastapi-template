@@ -79,6 +79,11 @@ services:
       NEXT_PUBLIC_SUPABASE_URL: ${SUPABASE_URL:-http://127.0.0.1:54321}
       NEXT_PUBLIC_SUPABASE_ANON_KEY: ${SUPABASE_ANON_KEY:-}
       SUPABASE_URL: http://host.docker.internal:54321
+      # Server-side (SSR) backend base URL: NEXT_PUBLIC_API_URL points at the
+      # HOST's localhost:8000 and is unreachable from inside this container —
+      # SSR of useSuspenseQuery pages was failing with ECONNREFUSED. See
+      # frontend/src/components/providers.tsx.
+      API_URL: http://backend:8000
     develop:
       watch:
         - path: ./frontend

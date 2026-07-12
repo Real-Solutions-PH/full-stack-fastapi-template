@@ -36,7 +36,7 @@ const features: Feature[] = [
   },
   {
     title: "Tested",
-    description: "Pytest on the backend, Playwright E2E on the frontend.",
+    description: "Pytest on the backend, Cypress E2E per user flow.",
   },
 ]
 

@@ -48,6 +48,10 @@ services:
       SMTP_TLS: "false"
       EMAILS_FROM_EMAIL: "noreply@example.com"
 
+  # Catches the BACKEND's app-notification SMTP emails only (SMTP_HOST above).
+  # Auth emails (signup/recovery) are sent by Supabase GoTrue and land in the
+  # local Supabase stack's Mailpit (http://127.0.0.1:54324) — the E2E suite
+  # reads those from Mailpit, not from here.
   mailcatcher:
     image: schickling/mailcatcher
     ports:
@@ -88,32 +92,30 @@ services:
         - path: ./bun.lock
           action: rebuild
 
-  playwright:
+  cypress:
+    profiles:
+      - e2e
     build:
       context: .
-      dockerfile: frontend/Dockerfile.playwright
-      args:
-        - NEXT_PUBLIC_API_URL=http://backend:8000
-        - NODE_ENV=production
+      dockerfile: e2e/Dockerfile
     ipc: host
     depends_on:
       - backend
-      - mailcatcher
+      - frontend
+    # The frontend image bakes browser-facing URLs for a HOST browser
+    # (NEXT_PUBLIC_API_URL=http://localhost:8000, Supabase on
+    # 127.0.0.1:54321), so the Cypress browser must see the stack exactly
+    # like the host does: host networking makes the published ports
+    # (frontend :3000, backend :8000, Supabase :54321, Mailpit :54324)
+    # reachable on localhost. Linux-only (fine: CI runners + `cypress open`
+    # on macOS runs from the host, not this container).
+    network_mode: host
     env_file:
       - .env
-    # Both the dev server and the browser run inside this container, so
-    # host.docker.internal works for every Supabase URL; Mailpit is the
-    # local Supabase stack's email catcher (auth emails, port 54324).
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
     environment:
-      - NEXT_PUBLIC_API_URL=http://backend:8000
-      - NEXT_PUBLIC_SUPABASE_URL=http://host.docker.internal:54321
-      # Override the 127.0.0.1 value inherited from env_file (.env).
-      - SUPABASE_URL=http://host.docker.internal:54321
-      - MAILPIT_HOST=http://host.docker.internal:54324
-      # For the reports when run locally
-      - PLAYWRIGHT_HTML_HOST=0.0.0.0
+      - CYPRESS_BASE_URL=http://localhost:3000
+      - CYPRESS_API_URL=http://localhost:8000
+      - CYPRESS_MAILPIT_HOST=http://127.0.0.1:54324
       - CI=${CI:-}
     volumes:
-      - ./frontend/blob-report:/app/frontend/blob-report
+      - ./e2e/cypress/screenshots:/e2e/cypress/screenshots

@@ -2,28 +2,22 @@
   "$schema": "https://biomejs.dev/schemas/2.3.14/schema.json",
   "assist": { "actions": { "source": { "organizeImports": "on" } } },
   "files": {
-    "includes": [
-      "**",
-      "!**/.next/**/*",
-      "!**/node_modules/**/*",
-      "!**/public/**/*",
-      "!**/src/client/**/*",
-      "!**/src/components/ui/**/*"
-    ]
+    "includes": ["**", "!**/node_modules/**/*", "!**/cypress/screenshots/**/*"]
   },
   "linter": {
     "enabled": true,
     "rules": {
       "recommended": true,
       "suspicious": {
-        "noExplicitAny": "off",
-        "noArrayIndexKey": "off"
+        "noExplicitAny": "off"
       },
       "style": {
         "noNonNullAssertion": "off",
         "noParameterAssign": "error",
-        "useSelfClosingElements": "error",
         "noUselessElse": "error"
+      },
+      "correctness": {
+        "noUndeclaredVariables": "off"
       }
     }
   },
@@ -34,11 +28,6 @@
     "formatter": {
       "quoteStyle": "double",
       "semicolons": "asNeeded"
-    }
-  },
-  "css": {
-    "parser": {
-      "tailwindDirectives": true
     }
   }
 }

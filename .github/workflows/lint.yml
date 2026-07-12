@@ -41,6 +41,11 @@ jobs:
         working-directory: frontend
       - run: bunx tsc --noEmit
         working-directory: frontend
+      # e2e/ is a workspace member too — same install covers it
+      - run: bunx biome ci ./
+        working-directory: e2e
+      - run: bunx tsc --noEmit
+        working-directory: e2e
 
   lint-mobile:
     runs-on: ubuntu-latest

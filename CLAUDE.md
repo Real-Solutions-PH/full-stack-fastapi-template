@@ -7,6 +7,7 @@ This repo is governed by the **Engineering Constitution v2.0**, pinned at [docs/
 - `backend/` — FastAPI + SQLModel, managed with `uv`.
 - `frontend/` — Next.js 15 (App Router), a bun workspace member of the root `package.json`, linted with Biome.
 - `mobile/` — Expo SDK 52, a **standalone** bun project **not** part of the root workspace — run bun commands from inside `mobile/`.
+- `e2e/` — Cypress E2E suite (ADR-0004), a bun workspace member of the root `package.json`, linted with Biome.
 - `docs/` — numbered context pack + pinned constitution + `adr/` + `runbook.md`.
 - `scripts/` — repo-level scripts (client generation, test runners).
 - `Makefile` — task entry points for the above.
@@ -23,7 +24,8 @@ This repo is governed by the **Engineering Constitution v2.0**, pinned at [docs/
 | frontend | install deps | `bun install` (root) |
 | frontend | dev server | `bun run dev` |
 | frontend | lint | `bun run lint` (Biome — **mutates**, runs `--write`) |
-| frontend | test | `bun run test` (Playwright — needs the stack running) |
+| e2e | test | `make e2e-test` / `bun run test` (Cypress headless — needs the stack running) |
+| e2e | interactive runner | `make e2e-test-ui` / `bun run test:ui` (Cypress open) |
 | mobile | install deps | `cd mobile && bun install` |
 | mobile | typecheck | `bun run typecheck` (from `mobile/`) |
 | mobile | lint | `bun run lint` (from `mobile/`, Biome) |

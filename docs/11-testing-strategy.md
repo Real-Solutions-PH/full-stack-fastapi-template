@@ -6,8 +6,8 @@
 |-------|------|-----------------|-------|
 | Unit | pytest / vitest | 80% | ms |
 | Integration | pytest + testcontainers | critical paths | s |
-| E2E | Playwright | golden paths | min |
-| Visual regression | Playwright screenshots | key surfaces | min |
+| E2E | Cypress (`e2e/`) | per user flow incl. edge cases | min |
+| Visual regression | Cypress screenshots | key surfaces | min |
 | Load | k6 / locust | critical endpoints | per release |
 
 ## TDD Workflow

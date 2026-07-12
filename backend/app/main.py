@@ -9,6 +9,7 @@ from starlette.middleware.cors import CORSMiddleware
 from app.api import v1_router
 from app.core.config import settings
 from app.core.storage import ensure_bucket
+from app.shared.errors import register_exception_handlers
 
 
 def custom_generate_unique_id(route: APIRoute) -> str:
@@ -33,6 +34,8 @@ app = FastAPI(
     generate_unique_id_function=custom_generate_unique_id,
     lifespan=lifespan,
 )
+
+register_exception_handlers(app)
 
 # Set all CORS enabled origins
 if settings.all_cors_origins:

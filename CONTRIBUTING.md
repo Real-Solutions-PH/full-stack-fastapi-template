@@ -21,7 +21,7 @@ Dependabot opens weekly grouped PRs per ecosystem: bun (root + `mobile/`), uv, d
 Exceptions that need a human look before merge:
 
 - Any PR failing CI.
-- Major-version bumps of core frameworks (`fastapi`, `next`, `react`, `expo`, `react-native`), especially `expo-*` / `react-native-*` bumps — these are version-coupled and there is no mobile CI gate yet (see ticket #26).
+- Major-version bumps of core frameworks (`fastapi`, `next`, `react`, `expo`, `react-native`), especially `expo-*` / `react-native-*` bumps — these are version-coupled and mobile has lint/type-check CI but no unit-test gate yet (see ticket #34).
 
 ## License gate
 

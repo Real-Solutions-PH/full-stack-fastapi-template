@@ -46,7 +46,7 @@ Deploying this template's backend to Vercel free tier requires work that has del
 
 ## ADR Escape Hatch
 
-A project generated from this template may adopt a self-hosted Docker Compose + Traefik deployment **only** via an Architecture Decision Record in `docs/adr/` (per constitution §0.3; the ADR directory is being created in ticket #28). The old self-hosted deployment guide is preserved in git history: `deployment.md` at commit `d3a9c71`.
+A project generated from this template may adopt a self-hosted Docker Compose + Traefik deployment **only** via an Architecture Decision Record in `docs/adr/` (per constitution §0.3; see [adr/](adr/)). The old self-hosted deployment guide is preserved in git history: `deployment.md` at commit `d3a9c71`.
 
 ## Reference: Secrets and Environment Variables
 

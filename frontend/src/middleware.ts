@@ -1,6 +1,8 @@
 import { createServerClient } from "@supabase/ssr"
 import { type NextRequest, NextResponse } from "next/server"
 
+import { AUTH_COOKIE_OPTIONS } from "@/lib/supabase/cookie"
+
 const publicRoutes = [
   "/landing",
   "/login",
@@ -23,6 +25,7 @@ export async function middleware(request: NextRequest) {
     process.env.SUPABASE_URL ?? process.env.NEXT_PUBLIC_SUPABASE_URL ?? "",
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "",
     {
+      cookieOptions: AUTH_COOKIE_OPTIONS,
       cookies: {
         getAll() {
           return request.cookies.getAll()

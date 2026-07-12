@@ -43,6 +43,8 @@ Deployment is a deliberate, manual promotion — single environment, no auto-dep
 | Frontend | `FRONTEND_SENTRY_DSN` → `NEXT_PUBLIC_SENTRY_DSN` | Docker **build arg** (see `compose.yml`), inlined into the Next.js bundle at build time. Setting it only at runtime silently no-ops — rebuild the image after changing it. |
 | Mobile | `EXPO_PUBLIC_SENTRY_DSN` | EAS environment variable, or `mobile/.env` for local builds. Build-time inlined, same caveat as frontend. |
 
+**Mobile native builds:** the `@sentry/react-native/expo` plugin injects a source-map upload step into prebuild/EAS builds that **fails the build** when no `SENTRY_AUTH_TOKEN` is configured (and defaults to sentry.io, not GlitchTip). Set `SENTRY_DISABLE_AUTO_UPLOAD=true` in the build environment (see `mobile/.env.example`) until uploads are deliberately configured with the GlitchTip `url`/`organization`/`project` plugin options.
+
 **Verification:** after wiring a DSN, trigger a test error on each surface and confirm it appears in the matching GlitchTip project:
 - Backend: raise an exception from any endpoint (or temporarily add a `/sentry-debug` route that raises).
 - Frontend: throw inside a page component — the `error.tsx` / `global-error.tsx` boundaries report it.

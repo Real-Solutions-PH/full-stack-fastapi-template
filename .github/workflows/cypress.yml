@@ -71,6 +71,13 @@ jobs:
       run: curl --retry 60 --retry-delay 5 --retry-all-errors --fail --silent --output /dev/null http://localhost:3000/login
     - name: Run Cypress tests
       run: docker compose run --rm cypress
+    - name: Dump stack logs on failure
+      if: failure()
+      run: |
+        docker compose logs frontend --no-color | tail -150
+        docker compose logs backend --no-color | tail -60
+        echo "--- reachability from the frontend container ---"
+        docker compose exec -T frontend sh -c 'wget -q -O- http://host.docker.internal:54321/auth/v1/health || echo UNREACHABLE'
     - run: docker compose down -v --remove-orphans
     - name: Upload screenshots of failures
       if: ${{ failure() }}

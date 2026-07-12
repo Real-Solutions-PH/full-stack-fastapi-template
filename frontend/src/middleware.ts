@@ -47,7 +47,13 @@ export async function middleware(request: NextRequest) {
   // replace it with getSession(), which trusts the cookie unverified.
   const {
     data: { user },
+    error: getUserError,
   } = await supabase.auth.getUser()
+  if (getUserError && getUserError.name !== "AuthSessionMissingError") {
+    // Surfaces topology problems (e.g. the container cannot reach the
+    // Supabase stack) in the server logs instead of a silent login loop.
+    console.error("middleware getUser failed:", getUserError.message)
+  }
 
   const { pathname } = request.nextUrl
   const isPublic = publicRoutes.some((route) => pathname.startsWith(route))

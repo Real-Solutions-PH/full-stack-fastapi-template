@@ -66,7 +66,32 @@ When a client engagement ends: rotate (regenerate) all three GlitchTip DSNs — 
 
 ## Client-owned org setup
 
-Placeholder — TBD, ticket #25.
+**Per-client setup:** the client creates their own Supabase organization and project (ADR-0005) — RSPH never owns the org. As of 2026-07, Supabase orgs support unlimited team members on every plan including Free, so **inviting RSPH as a full (non-project-scoped) member is the default path**: client sends the invite from Organization → Team, RSPH accepts within the 24h window. Fall back to **shared credentials** (constitution §3.5) only if the client's account genuinely can't invite (e.g. an SSO-gated org that only accepts same-IdP invites) — record the reason in the client's onboarding notes if this path is used.
+
+Note: RSPH's own Free-tier project quota (2 active projects, counted across every org where the account is Owner/Admin) can block accepting a new invite even though the *client's* org has no member limit — check RSPH's active project count before accepting; consider a dedicated RSPH agency account that only accepts invites and never owns projects.
+
+**Credential placement** (§3.8 — Bitwarden is the source of truth, `.env` is generated from it, credentials never travel via chat/email):
+
+| Credential | Dashboard location | Where it's used |
+|---|---|---|
+| Project URL | Settings → API Keys | Public — frontend + backend `.env` |
+| anon / publishable key | Settings → API Keys → Publishable key (Legacy tab: `anon`) | Public — frontend `.env` |
+| service_role / secret key | Settings → API Keys → Secret keys (Legacy tab: `service_role`) | **Backend `.env` only — never frontend or mobile.** |
+| DB connection string | Settings → Database → Connection string | Backend `.env` only |
+| JWT secret / signing keys | Settings → JWT Keys | Backend `.env` only |
+
+**Local dev vs. client project:**
+
+- Local development runs against the Supabase CLI local stack (`supabase start`) — no client credentials needed day-to-day.
+- `supabase link --project-ref <ref>` binds the repo to the client's hosted project once the invite/credentials are in hand.
+- Migrations are committed files pushed to the linked project; dashboard-only schema edits are prohibited (§3.6). Only one person pushes at a time to avoid ordering conflicts. *(Migration tooling — Alembic vs `supabase db push` — is decided in ticket #38; this section assumes committed-migration discipline either way.)*
+
+**Rotation at handover / offboarding:**
+
+- Regenerate (or have the client regenerate) the anon and service_role keys; rotate the JWT signing key.
+- Remove RSPH as an org member (or revoke shared credentials if that path was used).
+- Purge the old values from Bitwarden, `.env`, deploy env, and build args.
+- Hand the org fully to the client, or tear it down per contract.
 
 ## Incidents & escalation
 

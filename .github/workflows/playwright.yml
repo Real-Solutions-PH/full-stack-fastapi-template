@@ -55,6 +55,15 @@ jobs:
       working-directory: frontend
     - name: Seed .env for CI
       run: cp .env.example .env
+    - name: Set up Supabase CLI
+      uses: supabase/setup-cli@v1
+      with:
+        version: latest
+    - name: Start Supabase auth stack
+      # supabase/config.toml disables studio/realtime/storage/edge-runtime/
+      # analytics; .env (seeded from .env.example) carries the CLI's
+      # well-known demo keys, so no `supabase status` export is needed.
+      run: supabase start
     - run: bash scripts/generate-client.sh
     - run: docker compose build
     - run: docker compose down -v --remove-orphans

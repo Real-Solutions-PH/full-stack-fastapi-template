@@ -19,7 +19,7 @@ Context pack for human + AI programmers building this SaaS. Fill each template; 
 | [10-implementation-plan.md](10-implementation-plan.md) | Phases, tasks, dependencies | Tech lead |
 | [11-testing-strategy.md](11-testing-strategy.md) | Unit/integration/E2E, coverage targets | QA/Eng |
 | [12-security.md](12-security.md) | Threat model, controls, compliance | Security |
-| [13-deployment.md](13-deployment.md) | Envs, CI/CD, infra, rollback | DevOps |
+| [13-deployment.md](13-deployment.md) | Single-environment policy, manual promotion | DevOps |
 | [14-observability.md](14-observability.md) | Logs, metrics, traces, alerts | DevOps |
 | [15-pricing-monetization.md](15-pricing-monetization.md) | Plans, billing, gates | PM/Finance |
 | [16-go-to-market.md](16-go-to-market.md) | Launch, channels, growth loops | Marketing |

@@ -50,7 +50,7 @@ URLs:
 2. TDD — see [11-testing-strategy.md](11-testing-strategy.md).
 3. PR with description, screenshots, test plan.
 4. Reviewer + CI green -> squash merge.
-5. Auto-deploy to staging.
+5. No auto-deploy — promotion is manual, per [13-deployment.md](13-deployment.md).
 
 ## AI Agent Context
 

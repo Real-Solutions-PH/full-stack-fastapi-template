@@ -18,9 +18,7 @@
 - 📫 Email based password recovery.
 - 📬 [Mailcatcher](https://mailcatcher.me) for local email testing during development.
 - ✅ Tests with [Pytest](https://pytest.org).
-- 📞 [Traefik](https://traefik.io) as a reverse proxy / load balancer.
-- 🚢 Deployment instructions using Docker Compose, including how to set up a frontend Traefik proxy to handle automatic HTTPS certificates.
-- 🏭 CI (continuous integration) and CD (continuous deployment) based on GitHub Actions.
+- 🏭 CI (continuous integration) based on GitHub Actions. Nothing deploys automatically on push or merge — promotion to a deployed environment is a deliberate manual act (see [docs/13-deployment.md](./docs/13-deployment.md)).
 
 ### Dashboard Login
 
@@ -63,7 +61,7 @@ Before deploying it, make sure you change at least the values for:
 
 You can (and should) pass these as environment variables from secrets.
 
-Read the [deployment.md](./deployment.md) docs for more details.
+Read the [docs/13-deployment.md](./docs/13-deployment.md) docs for more details.
 
 ### Generate Secret Keys
 
@@ -87,7 +85,7 @@ Frontend docs: [frontend/README.md](./frontend/README.md).
 
 ## Deployment
 
-Deployment docs: [deployment.md](./deployment.md).
+Deployment docs: [docs/13-deployment.md](./docs/13-deployment.md).
 
 ## Development
 

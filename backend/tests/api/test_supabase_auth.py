@@ -80,6 +80,57 @@ def test_jit_provisioning_creates_local_mirror_row(
     assert user.tenant_id == tenant_service.get_default_tenant(session=db).id
 
 
+def test_delete_me_revokes_auth_identity_no_resurrection(
+    client: TestClient, db: Session
+) -> None:
+    """DELETE /users/me removes the GoTrue user too, and the same
+    still-valid token cannot resurrect the account via JIT provisioning."""
+    email = random_email()
+    password = random_lower_string()
+    auth_uid = supabase_auth.admin_get_or_create_user(email=email, password=password)
+    headers = auth_headers(email, password)
+
+    r = client.delete(f"{settings.API_V1_STR}/users/me", headers=headers)
+    assert r.status_code == 200
+
+    # Auth identity is gone.
+    assert supabase_auth.admin_user_exists(auth_uid) is False
+    # The token is still signature-valid (< jwt_expiry) but must NOT
+    # re-provision a local row: the JIT path checks GoTrue first.
+    r = client.get(f"{settings.API_V1_STR}/users/me", headers=headers)
+    assert r.status_code == 401
+    assert db.get(User, auth_uid) is None
+
+
+def test_admin_delete_user_tolerates_already_gone() -> None:
+    email = random_email()
+    auth_uid = supabase_auth.admin_get_or_create_user(email=email)
+    supabase_auth.admin_delete_user(auth_uid)
+    # Second delete: GoTrue answers 404, helper swallows it.
+    supabase_auth.admin_delete_user(auth_uid)
+    assert supabase_auth.admin_user_exists(auth_uid) is False
+
+
+def test_superuser_delete_revokes_auth_identity(
+    client: TestClient, superuser_token_headers: dict[str, str], db: Session
+) -> None:
+    email = random_email()
+    password = random_lower_string()
+    auth_uid = supabase_auth.admin_get_or_create_user(email=email, password=password)
+    # Materialize the local mirror row via a first authenticated request.
+    r = client.get(
+        f"{settings.API_V1_STR}/users/me", headers=auth_headers(email, password)
+    )
+    assert r.status_code == 200
+
+    r = client.delete(
+        f"{settings.API_V1_STR}/users/{auth_uid}", headers=superuser_token_headers
+    )
+    assert r.status_code == 200
+    assert supabase_auth.admin_user_exists(auth_uid) is False
+    assert db.get(User, auth_uid) is None
+
+
 def test_bootstrap_is_idempotent(db: Session) -> None:
     from sqlmodel import select
 

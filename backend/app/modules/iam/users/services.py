@@ -52,7 +52,14 @@ def provision_user_from_claims(
 
     Race-safe: a concurrent insert of the same id loses the unique check,
     rolls back, and re-reads the winner's row.
+
+    Before creating anything, the auth identity is re-checked against
+    GoTrue: a deleted user's access token stays signature-valid until
+    ``exp``, and without this check it would silently resurrect the
+    account (local row re-created from stale claims).
     """
+    if not supabase_auth.admin_user_exists(user_id):
+        raise HTTPException(status_code=401, detail="Auth user no longer exists")
     tenant = tenant_service.get_default_tenant(session=session)
     user = User(id=user_id, email=email, is_active=True, tenant_id=tenant.id)
     session.add(user)
@@ -108,7 +115,11 @@ def delete_user_me(*, session: Session, current_user: User) -> None:
             status_code=403,
             detail="Super users are not allowed to delete themselves",
         )
+    user_id = current_user.id
     user_repo.delete_user(session=session, user=current_user)
+    # Revoke the auth identity too — otherwise the person can keep signing
+    # in and JIT-provisioning would recreate the local row.
+    supabase_auth.admin_delete_user(user_id)
 
 
 def delete_user(*, session: Session, current_user: User, user_id: uuid.UUID) -> None:
@@ -121,6 +132,8 @@ def delete_user(*, session: Session, current_user: User, user_id: uuid.UUID) -> 
             detail="Super users are not allowed to delete themselves",
         )
     user_repo.delete_user_cascade(session=session, user=user)
+    # Revoke the auth identity too (tolerates already-gone in GoTrue).
+    supabase_auth.admin_delete_user(user_id)
 
 
 def read_user_by_id(

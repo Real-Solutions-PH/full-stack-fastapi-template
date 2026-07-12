@@ -103,6 +103,27 @@ def admin_get_user_id_by_email(email: str) -> uuid.UUID | None:
     return None
 
 
+def admin_user_exists(auth_uid: uuid.UUID) -> bool:
+    """True if the GoTrue user with this auth UID still exists."""
+    r = httpx.get(
+        _auth_url(f"/admin/users/{auth_uid}"), headers=_admin_headers(), timeout=10
+    )
+    if r.status_code == 404:
+        return False
+    r.raise_for_status()
+    return True
+
+
+def admin_delete_user(auth_uid: uuid.UUID) -> None:
+    """Delete the GoTrue user with this auth UID; tolerates already-gone."""
+    r = httpx.delete(
+        _auth_url(f"/admin/users/{auth_uid}"), headers=_admin_headers(), timeout=10
+    )
+    if r.status_code == 404:
+        return
+    r.raise_for_status()
+
+
 def admin_get_or_create_user(email: str, password: str | None = None) -> uuid.UUID:
     """Idempotently ensure a GoTrue user exists; return its auth UID.
 

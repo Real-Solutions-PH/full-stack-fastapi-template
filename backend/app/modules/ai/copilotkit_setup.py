@@ -17,15 +17,40 @@ from app.modules.ai.agents.definitions.react import build_react_agent
 COPILOTKIT_PATH = f"{settings.API_V1_STR}/copilotkit"
 
 
-def _bearer_token_is_valid(request: Request) -> bool:
+def _envelope(status_code: int, code: str, message: str) -> JSONResponse:
+    headers = {"WWW-Authenticate": "Bearer"} if status_code == 401 else None
+    return JSONResponse(
+        status_code=status_code,
+        content={"code": code, "message": message, "details": None},
+        headers=headers,
+    )
+
+
+def _auth_failure_response(request: Request) -> JSONResponse | None:
+    """Return an error envelope if the bearer token doesn't authenticate.
+
+    None means the token verified. A JWKS connection failure is surfaced
+    as 503 (upstream outage), not 401 — same distinction as
+    ``get_current_user``.
+    """
     auth = request.headers.get("Authorization", "")
     if not auth.startswith("Bearer "):
-        return False
+        return _envelope(
+            status.HTTP_401_UNAUTHORIZED, "unauthorized", "Not authenticated"
+        )
     try:
         supabase_auth.verify_token(auth.removeprefix("Bearer "))
+    except jwt.exceptions.PyJWKClientConnectionError:
+        return _envelope(
+            status.HTTP_503_SERVICE_UNAVAILABLE,
+            "auth_unavailable",
+            "Authentication service unavailable",
+        )
     except jwt.PyJWTError:
-        return False
-    return True
+        return _envelope(
+            status.HTTP_401_UNAUTHORIZED, "unauthorized", "Not authenticated"
+        )
+    return None
 
 
 def install_copilotkit_auth(app: FastAPI) -> None:
@@ -41,18 +66,10 @@ def install_copilotkit_auth(app: FastAPI) -> None:
     async def copilotkit_auth(
         request: Request, call_next: Callable[[Request], Awaitable[Response]]
     ) -> Response:
-        if request.url.path.startswith(COPILOTKIT_PATH) and not _bearer_token_is_valid(
-            request
-        ):
-            return JSONResponse(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                content={
-                    "code": "unauthorized",
-                    "message": "Not authenticated",
-                    "details": None,
-                },
-                headers={"WWW-Authenticate": "Bearer"},
-            )
+        if request.url.path.startswith(COPILOTKIT_PATH):
+            failure = _auth_failure_response(request)
+            if failure is not None:
+                return failure
         return await call_next(request)
 
 

@@ -191,6 +191,69 @@ def test_update_me_email_propagates_to_gotrue(client: TestClient) -> None:
     assert supabase_auth.admin_get_user_id_by_email(new_email) == auth_uid
 
 
+def test_jwks_outage_is_503_not_403(
+    client: TestClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A JWKS fetch failure is an upstream outage, not a bad token."""
+
+    def _raise(_token: str) -> dict[str, object]:
+        raise jwt.exceptions.PyJWKClientConnectionError("jwks unreachable")
+
+    monkeypatch.setattr(supabase_auth, "verify_token", _raise)
+    r = client.get(
+        f"{settings.API_V1_STR}/users/me",
+        headers={"Authorization": "Bearer whatever"},
+    )
+    assert r.status_code == 503
+    assert r.json()["message"] == "Authentication service unavailable"
+
+
+def test_copilotkit_guard_jwks_outage_is_503(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from starlette.requests import Request
+
+    from app.modules.ai import copilotkit_setup
+
+    def _raise(_token: str) -> dict[str, object]:
+        raise jwt.exceptions.PyJWKClientConnectionError("jwks unreachable")
+
+    monkeypatch.setattr(supabase_auth, "verify_token", _raise)
+    request = Request(
+        {
+            "type": "http",
+            "method": "POST",
+            "path": "/",
+            "headers": [(b"authorization", b"Bearer whatever")],
+        }
+    )
+    response = copilotkit_setup._auth_failure_response(request)
+    assert response is not None
+    assert response.status_code == 503
+
+
+def test_copilotkit_guard_bad_token_is_401(monkeypatch: pytest.MonkeyPatch) -> None:
+    from starlette.requests import Request
+
+    from app.modules.ai import copilotkit_setup
+
+    def _raise(_token: str) -> dict[str, object]:
+        raise jwt.InvalidTokenError("bad token")
+
+    monkeypatch.setattr(supabase_auth, "verify_token", _raise)
+    request = Request(
+        {
+            "type": "http",
+            "method": "POST",
+            "path": "/",
+            "headers": [(b"authorization", b"Bearer whatever")],
+        }
+    )
+    response = copilotkit_setup._auth_failure_response(request)
+    assert response is not None
+    assert response.status_code == 401
+
+
 def test_bootstrap_is_idempotent(db: Session) -> None:
     from sqlmodel import select
 

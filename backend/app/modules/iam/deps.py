@@ -33,6 +33,13 @@ def get_current_user(request: Request, session: SessionDep, token: TokenDep) -> 
     try:
         claims = supabase_auth.verify_token(token)
         user_id = uuid.UUID(str(claims["sub"]))
+    except jwt.exceptions.PyJWKClientConnectionError:
+        # JWKS endpoint unreachable — an upstream outage, not a bad token.
+        # Caught before PyJWTError (it's a subclass) so callers can retry.
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Authentication service unavailable",
+        )
     except (jwt.PyJWTError, KeyError, ValueError):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,

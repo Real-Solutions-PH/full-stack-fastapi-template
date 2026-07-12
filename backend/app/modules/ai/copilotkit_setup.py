@@ -1,10 +1,32 @@
-from collections.abc import Awaitable, Callable
+"""AG-UI chat transport (constitution §5.2, ADR-0007).
+
+The three LangGraph agents are exposed as AG-UI endpoints served straight
+from this FastAPI app — LangGraph runs in-process, events stream to the
+browser as SSE, and there is no webhook hop or sidecar runtime service.
+
+Routes (all guarded by the bearer-token middleware below):
+
+- ``GET  {COPILOTKIT_PATH}``                    — info: lists the agents.
+- ``POST {COPILOTKIT_PATH}/agents/{name}``      — run: AG-UI ``RunAgentInput``
+  in, SSE event stream out.
+
+The frontend talks to the run routes directly with ``@ag-ui/client``'s
+``HttpAgent`` (CopilotKit v2 ``selfManagedAgents``) — there is no CopilotKit
+GraphQL runtime anywhere. ``copilotkit.CopilotKitRemoteEndpoint`` /
+``add_fastapi_endpoint`` are deliberately NOT used: their agent routes call
+``agent.execute()``, which ``LangGraphAGUIAgent`` (an AG-UI agent with
+``run()``) does not implement — that protocol is dead code for this path.
+"""
+
+from collections.abc import AsyncIterator, Awaitable, Callable
 
 import jwt
-from copilotkit import CopilotKitRemoteEndpoint, LangGraphAGUIAgent
-from copilotkit.integrations.fastapi import add_fastapi_endpoint
-from fastapi import FastAPI, Request, Response, status
-from fastapi.responses import JSONResponse
+from ag_ui.core import RunAgentInput
+from ag_ui.encoder import EventEncoder
+from copilotkit import LangGraphAGUIAgent
+from fastapi import APIRouter, FastAPI, Request, Response, status
+from fastapi.responses import JSONResponse, StreamingResponse
+from langgraph.checkpoint.memory import InMemorySaver
 
 from app.core import supabase_auth
 from app.core.config import settings
@@ -54,12 +76,11 @@ def _auth_failure_response(request: Request) -> JSONResponse | None:
 
 
 def install_copilotkit_auth(app: FastAPI) -> None:
-    """Require a valid bearer token on the copilotkit mount.
+    """Require a valid bearer token on every route under the chat mount.
 
-    ``add_fastapi_endpoint`` registers routes on the raw app, bypassing the
-    per-route ``CurrentUser`` dependencies — without this middleware the chat
-    runtime is anonymous LLM/tool invocation (cost abuse). Signature-only
-    check (no DB lookup); #39 swaps the decode to Supabase JWT verification.
+    The AG-UI routes are registered without per-route ``CurrentUser``
+    dependencies — without this middleware the chat transport is anonymous
+    LLM/tool invocation (cost abuse). Signature-only check (no DB lookup).
     """
 
     @app.middleware("http")
@@ -73,28 +94,83 @@ def install_copilotkit_auth(app: FastAPI) -> None:
         return await call_next(request)
 
 
-def setup_copilotkit(app: FastAPI) -> None:
-    """Register LangGraph agents with CopilotKit and mount the endpoint."""
-    install_copilotkit_auth(app)
-    agents = [
+def build_agents() -> list[LangGraphAGUIAgent]:
+    """Build the chat agent catalog exposed over AG-UI.
+
+    Graphs get an in-process ``InMemorySaver`` checkpointer: the AG-UI
+    LangGraph adapter requires one (``aget_state`` on every run). Thread
+    state therefore lives in RAM per backend process — acceptable for the
+    template; swap in ``langgraph-checkpoint-postgres`` for durable threads.
+    """
+    return [
         LangGraphAGUIAgent(
             name="fast",
             description="Simple direct LLM - fastest response, no tools",
-            graph=build_fast_agent().compile(),
+            graph=build_fast_agent().compile(checkpointer=InMemorySaver()),
         ),
         LangGraphAGUIAgent(
             name="react",
             description="ReAct agent with tool calling",
-            graph=build_react_agent(tool_names=["brave_search"]),
+            graph=build_react_agent(
+                tool_names=["brave_search"], checkpointer=InMemorySaver()
+            ),
         ),
         LangGraphAGUIAgent(
             name="plan_and_execute",
             description="Plans then executes step by step",
-            graph=build_plan_and_execute_agent(tool_names=["brave_search"]).compile(),
+            graph=build_plan_and_execute_agent(tool_names=["brave_search"]).compile(
+                checkpointer=InMemorySaver()
+            ),
         ),
     ]
 
-    # copilotkit's own docs pass LangGraphAGUIAgent here, but the parameter is
-    # annotated as list[copilotkit.agent.Agent] upstream.
-    sdk = CopilotKitRemoteEndpoint(agents=agents)  # type: ignore[arg-type]
-    add_fastapi_endpoint(app, sdk, COPILOTKIT_PATH)
+
+def _make_run_handler(
+    agent: LangGraphAGUIAgent,
+) -> Callable[[RunAgentInput, Request], Awaitable[StreamingResponse]]:
+    async def run_agent(
+        input_data: RunAgentInput, request: Request
+    ) -> StreamingResponse:
+        encoder = EventEncoder(accept=request.headers.get("accept", ""))
+        # Clone per request: LangGraphAgent keeps per-run state on the
+        # instance; sharing one across concurrent requests corrupts it.
+        request_agent = agent.clone()
+
+        async def event_stream() -> AsyncIterator[str]:
+            async for event in request_agent.run(input_data):
+                yield encoder.encode(event)
+
+        return StreamingResponse(event_stream(), media_type=encoder.get_content_type())
+
+    return run_agent
+
+
+def build_agui_router(agents: list[LangGraphAGUIAgent]) -> APIRouter:
+    """AG-UI routes: one info route plus a run route per agent.
+
+    ``include_in_schema=False`` — the AG-UI protocol is not part of the REST
+    surface, so it must not leak into OpenAPI / the generated clients.
+    """
+    # tags: main.py's generate_unique_id derives route ids from tags[0];
+    # untagged routes crash app startup even when excluded from the schema.
+    router = APIRouter(include_in_schema=False, tags=["copilotkit"])
+    catalog = [{"name": a.name, "description": a.description} for a in agents]
+
+    @router.get(COPILOTKIT_PATH)
+    async def copilotkit_info() -> dict[str, object]:
+        return {"protocol": "ag-ui", "agents": catalog}
+
+    for agent in agents:
+        router.add_api_route(
+            f"{COPILOTKIT_PATH}/agents/{agent.name}",
+            _make_run_handler(agent),
+            methods=["POST"],
+            name=f"copilotkit_run_{agent.name}",
+        )
+    return router
+
+
+def setup_copilotkit(app: FastAPI) -> None:
+    """Mount the AG-UI chat transport with bearer-token auth."""
+    install_copilotkit_auth(app)
+    app.include_router(build_agui_router(build_agents()))

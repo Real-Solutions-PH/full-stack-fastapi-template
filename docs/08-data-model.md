@@ -59,7 +59,9 @@ Global (deliberately tenant-free, per ADR-0006): `agent`, `tool`, `mcpserver`, `
 
 Bootstrap: migration `b7d4e12a9f03` and `seed_tenants` both insert a **Default** tenant (slug `default`, fixed UUID `00000000-0000-4000-8000-000000000001`, idempotent on slug) and legacy rows are backfilled to it. New signups are assigned the tenant named by `settings.DEFAULT_TENANT_SLUG`.
 
-Enforcement: the tenant filter lives in repo queries — rows outside the caller's tenant are invisible (404, no existence leak); wrong-owner rows inside the same tenant keep 403. Superusers are platform operators and bypass the filter. DB-level RLS lands with #40.
+Enforcement: the tenant filter lives in repo queries — rows outside the caller's tenant are invisible (404, no existence leak); wrong-owner rows inside the same tenant keep 403. Superusers are platform operators and bypass the filter.
+
+DB-level RLS (2026-07-12, #40): migration `c8f2a1d47e56` adds tenant-isolation policies on `user`, `item`, `ocr_document`, `conversation`, `tenant`, and `message` (transitive through its conversation), keyed on the Supabase-compatible `request.jwt.claims` GUC via `app_tenant_id()`. Owners/superusers bypass RLS, so the policies stay dormant until #39 flips the app engine to the non-owner `app_user` role — see the runbook's "Row-Level Security & rate limiting" section for provisioning and verification.
 
 ## Migrations
 

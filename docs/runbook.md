@@ -93,6 +93,16 @@ Note: RSPH's own Free-tier project quota (2 active projects, counted across ever
 - Purge the old values from Bitwarden, `.env`, deploy env, and build args.
 - Hand the org fully to the client, or tear it down per contract.
 
+## Row-Level Security & rate limiting (2026-07-12, #40)
+
+**RLS.** Migration `c8f2a1d47e56` enables RLS with tenant-isolation policies on `user`, `item`, `ocr_document`, `conversation`, `tenant`, and `message` (transitive via its conversation). Policies key on `current_setting('request.jwt.claims', true)` through the `app_tenant_id()` helper — byte-compatible with Supabase PostgREST, so they survive the Supabase migration unchanged.
+
+- **Why Alembic/seeds are unaffected:** Postgres superusers and table *owners* bypass RLS. Migrations, prestart seeding, and today's app engine all connect as the DB owner, so the policies are currently a dormant second wall — the app logs `RLS is DORMANT` at startup while this is true. Enforcement goes live when #39 flips the app engine to the non-owner `app_user` role.
+- **`app_user` provisioning:** the migration creates `app_user` as `NOLOGIN` with no password (no secrets in the repo) plus DML grants and default privileges. Ops enables it out-of-band per §3.8 (value lives in Bitwarden): `ALTER ROLE app_user LOGIN PASSWORD '<from-bitwarden>';`
+- **Verifying isolation by hand:** in a transaction as `app_user`, `SELECT set_config('request.jwt.claims', '{"tenant_id": "<uuid>"}', true);` then query — only that tenant's rows are visible. A claim-less session sees zero rows. (Any SQL touching the claim must go through `app_tenant_id()`, which `NULLIF`-guards the empty-string GUC left behind after a transaction-local `set_config`.)
+
+**Rate limiting.** Write routes (items / OCR / AI chat) pass through a per-tenant seam (`app/shared/rate_limit.py`). The default `NullBackend` allows everything; denials surface as 429 in the standard error envelope. Upgrade path: swap the module-level backend for a Redis token bucket (redis already ships in compose) keyed on `(tenant_id, key)` — the same hook meters constitution §4 per-tenant AI spend caps. There is no per-tenant kill switch yet; deactivating a tenant (`tenant.is_active`) is not consulted by the seam.
+
 ## Incidents & escalation
 
 Per constitution §4: SEV1 (prod down / data breach) ack < 4 PH business hours (best effort < 24h any calendar day); SEV2 (major feature degraded) ack < 8 working hours; SEV3 (minor) ack next business day. First move is rollback, not forward-fix. SEV1 gets a written postmortem within 5 business days.

@@ -1,4 +1,5 @@
 import { useNetworkStatus } from "@/hooks/useNetworkStatus"
+import { useSupabaseAuthSync } from "@/hooks/useSupabaseAuthSync"
 import { useSyncOnForeground } from "@/hooks/useSyncOnForeground"
 import { initializeDatabase } from "@/lib/database"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
@@ -30,6 +31,7 @@ interface ProvidersProps {
 function AppInitializer() {
   useNetworkStatus()
   useSyncOnForeground()
+  useSupabaseAuthSync()
   return null
 }
 

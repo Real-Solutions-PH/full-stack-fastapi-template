@@ -2,169 +2,12 @@
   "openapi": "3.1.0",
   "info": { "title": "Full Stack FastAPI Project", "version": "0.1.0" },
   "paths": {
-    "/api/v1/login/access-token": {
-      "post": {
-        "tags": ["login"],
-        "summary": "Login Access Token",
-        "operationId": "login-login_access_token",
-        "requestBody": {
-          "content": {
-            "application/x-www-form-urlencoded": {
-              "schema": {
-                "$ref": "#/components/schemas/Body_login-login_access_token"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": { "$ref": "#/components/schemas/Token" }
-              }
-            }
-          },
-          "4XX": {
-            "description": "Client Error",
-            "content": {
-              "application/json": {
-                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/login/test-token": {
-      "post": {
-        "tags": ["login"],
-        "summary": "Test Token",
-        "operationId": "login-test_token",
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": { "$ref": "#/components/schemas/UserPublic" }
-              }
-            }
-          },
-          "4XX": {
-            "description": "Client Error",
-            "content": {
-              "application/json": {
-                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
-              }
-            }
-          }
-        },
-        "security": [{ "OAuth2PasswordBearer": [] }]
-      }
-    },
-    "/api/v1/password-recovery/{email}": {
-      "post": {
-        "tags": ["login"],
-        "summary": "Recover Password",
-        "operationId": "login-recover_password",
-        "parameters": [
-          {
-            "name": "email",
-            "in": "path",
-            "required": true,
-            "schema": { "type": "string", "title": "Email" }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": { "$ref": "#/components/schemas/Message" }
-              }
-            }
-          },
-          "4XX": {
-            "content": {
-              "application/json": {
-                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
-              }
-            },
-            "description": "Client Error"
-          }
-        }
-      }
-    },
-    "/api/v1/reset-password/": {
-      "post": {
-        "tags": ["login"],
-        "summary": "Reset Password",
-        "operationId": "login-reset_password",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": { "$ref": "#/components/schemas/NewPassword" }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": { "$ref": "#/components/schemas/Message" }
-              }
-            }
-          },
-          "4XX": {
-            "description": "Client Error",
-            "content": {
-              "application/json": {
-                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/password-recovery-html-content/{email}": {
-      "post": {
-        "tags": ["login"],
-        "summary": "Recover Password Html Content",
-        "operationId": "login-recover_password_html_content",
-        "security": [{ "OAuth2PasswordBearer": [] }],
-        "parameters": [
-          {
-            "name": "email",
-            "in": "path",
-            "required": true,
-            "schema": { "type": "string", "title": "Email" }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": { "text/html": { "schema": { "type": "string" } } }
-          },
-          "4XX": {
-            "content": {
-              "text/html": {
-                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
-              }
-            },
-            "description": "Client Error"
-          }
-        }
-      }
-    },
     "/api/v1/users/": {
       "get": {
         "tags": ["users"],
         "summary": "Read Users",
         "operationId": "users-read_users",
-        "security": [{ "OAuth2PasswordBearer": [] }],
+        "security": [{ "HTTPBearer": [] }],
         "parameters": [
           {
             "name": "skip",
@@ -202,7 +45,7 @@
         "tags": ["users"],
         "summary": "Create User",
         "operationId": "users-create_user",
-        "security": [{ "OAuth2PasswordBearer": [] }],
+        "security": [{ "HTTPBearer": [] }],
         "requestBody": {
           "required": true,
           "content": {
@@ -254,7 +97,7 @@
             }
           }
         },
-        "security": [{ "OAuth2PasswordBearer": [] }]
+        "security": [{ "HTTPBearer": [] }]
       },
       "delete": {
         "tags": ["users"],
@@ -278,7 +121,7 @@
             }
           }
         },
-        "security": [{ "OAuth2PasswordBearer": [] }]
+        "security": [{ "HTTPBearer": [] }]
       },
       "patch": {
         "tags": ["users"],
@@ -310,74 +153,7 @@
             }
           }
         },
-        "security": [{ "OAuth2PasswordBearer": [] }]
-      }
-    },
-    "/api/v1/users/me/password": {
-      "patch": {
-        "tags": ["users"],
-        "summary": "Update Password Me",
-        "operationId": "users-update_password_me",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": { "$ref": "#/components/schemas/UpdatePassword" }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": { "$ref": "#/components/schemas/Message" }
-              }
-            }
-          },
-          "4XX": {
-            "description": "Client Error",
-            "content": {
-              "application/json": {
-                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
-              }
-            }
-          }
-        },
-        "security": [{ "OAuth2PasswordBearer": [] }]
-      }
-    },
-    "/api/v1/users/signup": {
-      "post": {
-        "tags": ["users"],
-        "summary": "Register User",
-        "operationId": "users-register_user",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": { "$ref": "#/components/schemas/UserRegister" }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": { "$ref": "#/components/schemas/UserPublic" }
-              }
-            }
-          },
-          "4XX": {
-            "description": "Client Error",
-            "content": {
-              "application/json": {
-                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
-              }
-            }
-          }
-        }
+        "security": [{ "HTTPBearer": [] }]
       }
     },
     "/api/v1/users/{user_id}": {
@@ -385,7 +161,7 @@
         "tags": ["users"],
         "summary": "Read User By Id",
         "operationId": "users-read_user_by_id",
-        "security": [{ "OAuth2PasswordBearer": [] }],
+        "security": [{ "HTTPBearer": [] }],
         "parameters": [
           {
             "name": "user_id",
@@ -417,7 +193,7 @@
         "tags": ["users"],
         "summary": "Update User",
         "operationId": "users-update_user",
-        "security": [{ "OAuth2PasswordBearer": [] }],
+        "security": [{ "HTTPBearer": [] }],
         "parameters": [
           {
             "name": "user_id",
@@ -457,7 +233,7 @@
         "tags": ["users"],
         "summary": "Delete User",
         "operationId": "users-delete_user",
-        "security": [{ "OAuth2PasswordBearer": [] }],
+        "security": [{ "HTTPBearer": [] }],
         "parameters": [
           {
             "name": "user_id",
@@ -491,7 +267,7 @@
         "tags": ["roles"],
         "summary": "Read Roles",
         "operationId": "roles-read_roles",
-        "security": [{ "OAuth2PasswordBearer": [] }],
+        "security": [{ "HTTPBearer": [] }],
         "parameters": [
           {
             "name": "skip",
@@ -531,7 +307,7 @@
         "tags": ["roles"],
         "summary": "Read Role",
         "operationId": "roles-read_role",
-        "security": [{ "OAuth2PasswordBearer": [] }],
+        "security": [{ "HTTPBearer": [] }],
         "parameters": [
           {
             "name": "role_id",
@@ -565,7 +341,7 @@
         "tags": ["permissions"],
         "summary": "Read Permissions",
         "operationId": "permissions-read_permissions",
-        "security": [{ "OAuth2PasswordBearer": [] }],
+        "security": [{ "HTTPBearer": [] }],
         "parameters": [
           {
             "name": "skip",
@@ -605,7 +381,7 @@
         "tags": ["permissions"],
         "summary": "Read Permission",
         "operationId": "permissions-read_permission",
-        "security": [{ "OAuth2PasswordBearer": [] }],
+        "security": [{ "HTTPBearer": [] }],
         "parameters": [
           {
             "name": "permission_id",
@@ -643,7 +419,7 @@
         "tags": ["tenants"],
         "summary": "Read Tenants",
         "operationId": "tenants-read_tenants",
-        "security": [{ "OAuth2PasswordBearer": [] }],
+        "security": [{ "HTTPBearer": [] }],
         "parameters": [
           {
             "name": "skip",
@@ -683,7 +459,7 @@
         "tags": ["tenants"],
         "summary": "Read Tenant",
         "operationId": "tenants-read_tenant",
-        "security": [{ "OAuth2PasswordBearer": [] }],
+        "security": [{ "HTTPBearer": [] }],
         "parameters": [
           {
             "name": "tenant_id",
@@ -721,7 +497,7 @@
         "tags": ["items"],
         "summary": "Read Items",
         "operationId": "items-read_items",
-        "security": [{ "OAuth2PasswordBearer": [] }],
+        "security": [{ "HTTPBearer": [] }],
         "parameters": [
           {
             "name": "skip",
@@ -759,7 +535,7 @@
         "tags": ["items"],
         "summary": "Create Item",
         "operationId": "items-create_item",
-        "security": [{ "OAuth2PasswordBearer": [] }],
+        "security": [{ "HTTPBearer": [] }],
         "requestBody": {
           "required": true,
           "content": {
@@ -793,7 +569,7 @@
         "tags": ["items"],
         "summary": "Read Item",
         "operationId": "items-read_item",
-        "security": [{ "OAuth2PasswordBearer": [] }],
+        "security": [{ "HTTPBearer": [] }],
         "parameters": [
           {
             "name": "id",
@@ -825,7 +601,7 @@
         "tags": ["items"],
         "summary": "Update Item",
         "operationId": "items-update_item",
-        "security": [{ "OAuth2PasswordBearer": [] }],
+        "security": [{ "HTTPBearer": [] }],
         "parameters": [
           {
             "name": "id",
@@ -865,7 +641,7 @@
         "tags": ["items"],
         "summary": "Delete Item",
         "operationId": "items-delete_item",
-        "security": [{ "OAuth2PasswordBearer": [] }],
+        "security": [{ "HTTPBearer": [] }],
         "parameters": [
           {
             "name": "id",
@@ -899,7 +675,7 @@
         "tags": ["utils"],
         "summary": "Test Email",
         "operationId": "utils-test_email",
-        "security": [{ "OAuth2PasswordBearer": [] }],
+        "security": [{ "HTTPBearer": [] }],
         "parameters": [
           {
             "name": "email_to",
@@ -996,36 +772,6 @@
   },
   "components": {
     "schemas": {
-      "Body_login-login_access_token": {
-        "properties": {
-          "grant_type": {
-            "anyOf": [
-              { "type": "string", "pattern": "^password$" },
-              { "type": "null" }
-            ],
-            "title": "Grant Type"
-          },
-          "username": { "type": "string", "title": "Username" },
-          "password": {
-            "type": "string",
-            "format": "password",
-            "title": "Password"
-          },
-          "scope": { "type": "string", "title": "Scope", "default": "" },
-          "client_id": {
-            "anyOf": [{ "type": "string" }, { "type": "null" }],
-            "title": "Client Id"
-          },
-          "client_secret": {
-            "anyOf": [{ "type": "string" }, { "type": "null" }],
-            "format": "password",
-            "title": "Client Secret"
-          }
-        },
-        "type": "object",
-        "required": ["username", "password"],
-        "title": "Body_login-login_access_token"
-      },
       "ErrorResponse": {
         "properties": {
           "code": { "type": "string", "title": "Code" },
@@ -1128,20 +874,6 @@
         "type": "object",
         "required": ["message"],
         "title": "Message"
-      },
-      "NewPassword": {
-        "properties": {
-          "token": { "type": "string", "title": "Token" },
-          "new_password": {
-            "type": "string",
-            "maxLength": 128,
-            "minLength": 8,
-            "title": "New Password"
-          }
-        },
-        "type": "object",
-        "required": ["token", "new_password"],
-        "title": "NewPassword"
       },
       "PermissionPublic": {
         "properties": {
@@ -1257,38 +989,6 @@
         "required": ["data", "count"],
         "title": "TenantsPublic"
       },
-      "Token": {
-        "properties": {
-          "access_token": { "type": "string", "title": "Access Token" },
-          "token_type": {
-            "type": "string",
-            "title": "Token Type",
-            "default": "bearer"
-          }
-        },
-        "type": "object",
-        "required": ["access_token"],
-        "title": "Token"
-      },
-      "UpdatePassword": {
-        "properties": {
-          "current_password": {
-            "type": "string",
-            "maxLength": 128,
-            "minLength": 8,
-            "title": "Current Password"
-          },
-          "new_password": {
-            "type": "string",
-            "maxLength": 128,
-            "minLength": 8,
-            "title": "New Password"
-          }
-        },
-        "type": "object",
-        "required": ["current_password", "new_password"],
-        "title": "UpdatePassword"
-      },
       "UserCreate": {
         "properties": {
           "email": {
@@ -1313,16 +1013,10 @@
               { "type": "null" }
             ],
             "title": "Full Name"
-          },
-          "password": {
-            "type": "string",
-            "maxLength": 128,
-            "minLength": 8,
-            "title": "Password"
           }
         },
         "type": "object",
-        "required": ["email", "password"],
+        "required": ["email"],
         "title": "UserCreate"
       },
       "UserPublic": {
@@ -1351,6 +1045,11 @@
             "title": "Full Name"
           },
           "id": { "type": "string", "format": "uuid", "title": "Id" },
+          "tenant_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Tenant Id"
+          },
           "created_at": {
             "anyOf": [
               { "type": "string", "format": "date-time" },
@@ -1360,34 +1059,8 @@
           }
         },
         "type": "object",
-        "required": ["email", "id"],
+        "required": ["email", "id", "tenant_id"],
         "title": "UserPublic"
-      },
-      "UserRegister": {
-        "properties": {
-          "email": {
-            "type": "string",
-            "maxLength": 255,
-            "format": "email",
-            "title": "Email"
-          },
-          "password": {
-            "type": "string",
-            "maxLength": 128,
-            "minLength": 8,
-            "title": "Password"
-          },
-          "full_name": {
-            "anyOf": [
-              { "type": "string", "maxLength": 255 },
-              { "type": "null" }
-            ],
-            "title": "Full Name"
-          }
-        },
-        "type": "object",
-        "required": ["email", "password"],
-        "title": "UserRegister"
       },
       "UserUpdate": {
         "properties": {
@@ -1414,13 +1087,6 @@
               { "type": "null" }
             ],
             "title": "Full Name"
-          },
-          "password": {
-            "anyOf": [
-              { "type": "string", "maxLength": 128, "minLength": 8 },
-              { "type": "null" }
-            ],
-            "title": "Password"
           }
         },
         "type": "object",
@@ -1460,13 +1126,6 @@
         "title": "UsersPublic"
       }
     },
-    "securitySchemes": {
-      "OAuth2PasswordBearer": {
-        "type": "oauth2",
-        "flows": {
-          "password": { "scopes": {}, "tokenUrl": "/api/v1/login/access-token" }
-        }
-      }
-    }
+    "securitySchemes": { "HTTPBearer": { "type": "http", "scheme": "bearer" } }
   }
 }

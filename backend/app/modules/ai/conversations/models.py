@@ -16,8 +16,8 @@ class Conversation(SQLModel, table=True):
     user_id: uuid.UUID = Field(
         foreign_key="user.id", nullable=False, ondelete="CASCADE"
     )
-    tenant_id: uuid.UUID | None = Field(
-        default=None, foreign_key="tenant.id", ondelete="SET NULL"
+    tenant_id: uuid.UUID = Field(
+        foreign_key="tenant.id", nullable=False, ondelete="CASCADE", index=True
     )
     title: str = Field(default="New conversation", max_length=255)
     agent_id: uuid.UUID | None = Field(

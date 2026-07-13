@@ -7,6 +7,7 @@ This repo follows the **Engineering Constitution** in [docs/constitution.md](doc
 - `backend/` — FastAPI + SQLModel, managed with `uv`.
 - `frontend/` — Next.js 15 (App Router), a bun workspace member of the root `package.json`, linted with Biome.
 - `mobile/` — Expo SDK 52, a **standalone** bun project **not** part of the root workspace — run bun commands from inside `mobile/`.
+- `e2e/` — Cypress E2E suite (ADR-0004), a bun workspace member of the root `package.json`, linted with Biome.
 - `docs/` — numbered context pack + pinned constitution + `adr/` + `runbook.md`.
 - `scripts/` — repo-level scripts (client generation, test runners).
 - `Makefile` — task entry points for the above.
@@ -16,6 +17,7 @@ This repo follows the **Engineering Constitution** in [docs/constitution.md](doc
 | Workspace | Task | Command |
 |---|---|---|
 | all | watch stack | `make watch` — `docker compose up --build --force-recreate --watch` (foreground, rebuilds + file-watch) |
+| all | local auth stack | `make supabase-up` / `make supabase-down` — Supabase (GoTrue) is the auth provider (ADR-0005); backend tests and any auth flow REQUIRE it running |
 | backend | install deps | `uv sync` (from `backend/`) |
 | backend | lint | `make backend-lint` (mypy + ruff check + ruff format --check) |
 | backend | test | `make test-docker` (containerized) — `make backend-test` runs pytest directly against the configured DB |
@@ -23,10 +25,12 @@ This repo follows the **Engineering Constitution** in [docs/constitution.md](doc
 | frontend | install deps | `bun install` (root) |
 | frontend | dev server | `bun run dev` |
 | frontend | lint | `bun run lint` (Biome — **mutates**, runs `--write`) |
-| frontend | test | `bun run test` (Playwright — needs the stack running) |
+| e2e | test | `make e2e-test` / `bun run test` (Cypress headless — needs the stack running) |
+| e2e | interactive runner | `make e2e-test-ui` / `bun run test:ui` (Cypress open) |
 | mobile | install deps | `cd mobile && bun install` |
 | mobile | typecheck | `bun run typecheck` (from `mobile/`) |
 | mobile | lint | `bun run lint` (from `mobile/`, Biome) |
+| mobile | test | `bun run test` (from `mobile/`, jest-expo — always `bun run test`, never `bun test`, which invokes bun's own runner) |
 
 ## Codegen rule
 

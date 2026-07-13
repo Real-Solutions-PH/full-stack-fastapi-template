@@ -1,7 +1,7 @@
 import uuid
 from typing import Any
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 
 from app.modules.ai.agents import services as agent_service
 from app.modules.ai.agents.schema import (
@@ -10,7 +10,7 @@ from app.modules.ai.agents.schema import (
     AgentsPublic,
     AgentUpdate,
 )
-from app.modules.iam.deps import CurrentUser
+from app.modules.iam.deps import CurrentUser, get_current_active_superuser
 from app.shared.deps import SessionDep
 from app.shared.schema import Message
 
@@ -32,14 +32,22 @@ def read_agent(session: SessionDep, _current_user: CurrentUser, id: uuid.UUID) -
     return agent_service.get_agent(session=session, agent_id=id)
 
 
-@router.post("/", response_model=AgentPublic)
+@router.post(
+    "/",
+    dependencies=[Depends(get_current_active_superuser)],
+    response_model=AgentPublic,
+)
 def create_agent(
     *, session: SessionDep, _current_user: CurrentUser, agent_in: AgentCreate
 ) -> Any:
     return agent_service.create_agent(session=session, agent_in=agent_in)
 
 
-@router.put("/{id}", response_model=AgentPublic)
+@router.put(
+    "/{id}",
+    dependencies=[Depends(get_current_active_superuser)],
+    response_model=AgentPublic,
+)
 def update_agent(
     *,
     session: SessionDep,
@@ -50,7 +58,7 @@ def update_agent(
     return agent_service.update_agent(session=session, agent_id=id, agent_in=agent_in)
 
 
-@router.delete("/{id}")
+@router.delete("/{id}", dependencies=[Depends(get_current_active_superuser)])
 def delete_agent(
     session: SessionDep, _current_user: CurrentUser, id: uuid.UUID
 ) -> Message:

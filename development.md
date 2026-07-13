@@ -1,10 +1,24 @@
 # FastAPI Project - Development
 
-## Docker Compose
+## Supabase (auth)
 
-* Start the local stack with Docker Compose:
+Authentication is Supabase (GoTrue) — the backend validates Supabase JWTs and has no password endpoints of its own (ADR-0005). Local development and tests need the Supabase CLI local stack running:
 
 ```bash
+make supabase-up     # GoTrue + JWKS on http://127.0.0.1:54321, Mailpit on :54324
+make supabase-down   # stop it (drops its data)
+```
+
+The CLI is installed via `brew install supabase/tap/supabase`. `supabase/config.toml` disables the services this template doesn't use (Studio, Realtime, Storage — object storage stays MinIO). The `SUPABASE_*` values in `.env.example` are the CLI's public local demo keys. App tables stay in the compose `db` service; only auth lives in the Supabase stack.
+
+Recovery/confirmation emails from local Supabase land in Mailpit: <http://127.0.0.1:54324>.
+
+## Docker Compose
+
+* Start the local stack with Docker Compose (the backend reaches the host-run Supabase stack via `host.docker.internal`):
+
+```bash
+make supabase-up
 docker compose watch
 ```
 
@@ -62,7 +76,7 @@ And then start the local frontend development server:
 bun run dev
 ```
 
-`bun` is the JS lockfile of record for both `frontend/` and `mobile/`; npm/yarn/pnpm lockfiles are gitignored deliberately (tooling ADR pending in #30).
+`bun` is the JS lockfile of record for both `frontend/` and `mobile/`; npm/yarn/pnpm lockfiles are gitignored deliberately.
 
 Or you could stop the `backend` Docker Compose service:
 

@@ -41,6 +41,11 @@ jobs:
         working-directory: frontend
       - run: bunx tsc --noEmit
         working-directory: frontend
+      # e2e/ is a workspace member too — same install covers it
+      - run: bunx biome ci ./
+        working-directory: e2e
+      - run: bunx tsc --noEmit
+        working-directory: e2e
 
   lint-mobile:
     runs-on: ubuntu-latest
@@ -53,6 +58,9 @@ jobs:
       - run: bun run typecheck
         working-directory: mobile
       - run: bunx biome ci ./
+        working-directory: mobile
+      # jest-expo unit tests (bun run test → jest; bun's own `bun test` is NOT used)
+      - run: bun run test
         working-directory: mobile
 
   # https://github.com/marketplace/actions/alls-green#why

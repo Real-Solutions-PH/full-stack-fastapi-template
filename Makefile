@@ -26,6 +26,17 @@ ps: ## List running containers
 	docker compose ps
 
 # ---------------------------------------------------------------------------
+# Supabase (local auth stack — GoTrue + JWKS; app tables stay in compose db)
+# ---------------------------------------------------------------------------
+.PHONY: supabase-up supabase-down
+
+supabase-up: ## Start the local Supabase auth stack (required for backend tests)
+	supabase start
+
+supabase-down: ## Stop the local Supabase auth stack (drops its data)
+	supabase stop --no-backup
+
+# ---------------------------------------------------------------------------
 # Backend
 # ---------------------------------------------------------------------------
 .PHONY: backend-shell backend-lint backend-format backend-test backend-migrate backend-downgrade backend-revision backend-prestart
@@ -57,7 +68,7 @@ backend-prestart: ## Run prestart script (healthcheck + migrations + initial dat
 # ---------------------------------------------------------------------------
 # Frontend
 # ---------------------------------------------------------------------------
-.PHONY: frontend-dev frontend-build frontend-lint frontend-preview frontend-generate-client frontend-test frontend-test-ui
+.PHONY: frontend-dev frontend-build frontend-lint frontend-preview frontend-generate-client
 
 frontend-dev: ## Start Vite dev server
 	cd frontend && bun run dev
@@ -74,11 +85,16 @@ frontend-preview: ## Preview production build locally
 frontend-generate-client: ## Generate TypeScript API client from OpenAPI spec
 	bash scripts/generate-client.sh
 
-frontend-test: ## Run Playwright E2E tests
-	cd frontend && bunx playwright test
+# ---------------------------------------------------------------------------
+# E2E (Cypress, e2e/ workspace — needs the stack running)
+# ---------------------------------------------------------------------------
+.PHONY: e2e-test e2e-test-ui
 
-frontend-test-ui: ## Run Playwright tests with UI
-	cd frontend && bunx playwright test --ui
+e2e-test: ## Run Cypress E2E tests headlessly
+	cd e2e && bun run test
+
+e2e-test-ui: ## Open the interactive Cypress runner
+	cd e2e && bun run test:ui
 
 # ---------------------------------------------------------------------------
 # Dependencies

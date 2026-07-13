@@ -1,7 +1,7 @@
 import uuid
 from typing import Any
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 
 from app.modules.ai.mcp import services as mcp_service
 from app.modules.ai.mcp.schema import (
@@ -10,11 +10,17 @@ from app.modules.ai.mcp.schema import (
     MCPServersPublic,
     MCPServerUpdate,
 )
-from app.modules.iam.deps import CurrentUser
+from app.modules.iam.deps import CurrentUser, get_current_active_superuser
 from app.shared.deps import SessionDep
 from app.shared.schema import Message
 
-router = APIRouter(prefix="/mcp", tags=["ai-mcp"])
+# Superuser-only: MCPServer.config is a free-form dict that can hold
+# URLs/credentials; the catalog is a platform surface, not tenant data.
+router = APIRouter(
+    prefix="/mcp",
+    tags=["ai-mcp"],
+    dependencies=[Depends(get_current_active_superuser)],
+)
 
 
 @router.get("/", response_model=MCPServersPublic)

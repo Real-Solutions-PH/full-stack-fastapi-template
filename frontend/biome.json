@@ -1,5 +1,5 @@
 {
-  "$schema": "https://biomejs.dev/schemas/2.3.14/schema.json",
+  "$schema": "https://biomejs.dev/schemas/2.5.2/schema.json",
   "assist": { "actions": { "source": { "organizeImports": "on" } } },
   "files": {
     "includes": [
@@ -8,15 +8,13 @@
       "!**/node_modules/**/*",
       "!**/public/**/*",
       "!**/src/client/**/*",
-      "!**/src/components/ui/**/*",
-      "!**/playwright-report",
-      "!**/playwright.config.ts"
+      "!**/src/components/ui/**/*"
     ]
   },
   "linter": {
     "enabled": true,
     "rules": {
-      "recommended": true,
+      "preset": "recommended",
       "suspicious": {
         "noExplicitAny": "off",
         "noArrayIndexKey": "off"

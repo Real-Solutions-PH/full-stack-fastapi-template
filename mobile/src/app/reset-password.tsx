@@ -3,9 +3,9 @@ import { FormField } from "@/components/ui/form-field"
 import { Input } from "@/components/ui/input"
 import { Text } from "@/components/ui/text"
 import { useCustomToast } from "@/hooks/useCustomToast"
-import { api } from "@/lib/auth"
+import { getSupabase } from "@/lib/supabase"
 import { confirmPasswordRules, handleError, passwordRules } from "@/lib/utils"
-import { useLocalSearchParams, useRouter } from "expo-router"
+import { useRouter } from "expo-router"
 import { Controller, useForm } from "react-hook-form"
 import { View } from "react-native"
 import { SafeAreaView } from "react-native-safe-area-context"
@@ -18,7 +18,6 @@ interface ResetForm {
 export default function ResetPasswordScreen() {
   const toast = useCustomToast()
   const router = useRouter()
-  const { token } = useLocalSearchParams<{ token?: string }>()
   const {
     control,
     handleSubmit,
@@ -29,12 +28,12 @@ export default function ResetPasswordScreen() {
   })
 
   const onSubmit = async ({ new_password }: ResetForm) => {
-    if (!token) {
-      toast.error("Missing reset token")
-      return
-    }
     try {
-      await api.post("/api/v1/reset-password", { token, new_password })
+      // Requires an active session (recovery link or logged-in user).
+      const { error } = await getSupabase().auth.updateUser({
+        password: new_password,
+      })
+      if (error) throw error
       toast.success("Password reset. Please log in.")
       router.replace("/login")
     } catch (err) {

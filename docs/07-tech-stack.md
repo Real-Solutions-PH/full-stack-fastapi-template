@@ -15,7 +15,7 @@
 - Runtime: bun
 - Styling:
 - State:
-- Tests: Playwright + Vitest
+- Tests: Cypress (E2E, `e2e/`) + Vitest
 
 ## Data
 

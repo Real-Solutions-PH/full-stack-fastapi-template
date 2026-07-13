@@ -37,9 +37,11 @@ def test_unauthenticated_envelope_preserves_www_authenticate(
 def test_validation_error_returns_envelope_with_details(
     client: TestClient,
 ) -> None:
+    # /private/users is auth-free in ENVIRONMENT=local, so an incomplete
+    # body exercises pure request validation.
     response = client.post(
-        f"{settings.API_V1_STR}/login/access-token",
-        data={"username": "someone@example.com"},
+        f"{settings.API_V1_STR}/private/users/",
+        json={"email": "someone@example.com"},
     )
     assert response.status_code == 422
     content = response.json()
@@ -56,12 +58,12 @@ def test_validation_error_returns_envelope_with_details(
 def test_validation_error_never_reflects_submitted_values(
     client: TestClient,
 ) -> None:
-    # pydantic's errors() carries the submitted value under "input" — a login
+    # pydantic's errors() carries the submitted value under "input" — a
     # POST missing a field must not echo the posted password back.
     secret = "SuperSecretPW123"
     response = client.post(
-        f"{settings.API_V1_STR}/login/access-token",
-        data={"password": secret},
+        f"{settings.API_V1_STR}/private/users/",
+        json={"password": secret},
     )
     assert response.status_code == 422
     assert secret not in response.text

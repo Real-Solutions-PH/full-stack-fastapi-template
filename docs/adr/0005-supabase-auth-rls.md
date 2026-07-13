@@ -24,10 +24,11 @@ None — this aligns the template with §4.1 and §1. (The interim state — sel
 - No self-operated database: scaling, HA, backups, PITR are Supabase's problem.
 - Auth (sessions, recovery, MFA headroom) maintained by the platform; the custom crypto surface disappears.
 - Multi-tenant enforcement moves into the database (RLS) instead of query discipline.
+- Account deletion revokes the GoTrue identity along with the local row (no orphaned auth users). Caveat: the FIRST_SUPERUSER bootstrap adopts a pre-existing auth user by password-reset, but already-issued tokens stay valid up to `jwt_expiry` — bootstrap before exposing the auth endpoint (see runbook).
 
 **Negative:**
 - Local/dev and CI flows must run against the Supabase CLI local stack (or a shim) instead of a bare Postgres container.
-- Alembic's role narrows (Supabase CLI migrations per §2.6 note) — migration tooling story must be decided in the tenant-model child ticket.
+- Alembic's role narrows (Supabase CLI migrations per §2.6 note) — decided in ADR-0006: Alembic stays the migration CLI.
 - Vendor coupling on the auth layer; exit path is standard Postgres + GoTrue-compatible JWTs (documented, per §1's adapter/exit-path rule).
 
 **Follow-ups:**

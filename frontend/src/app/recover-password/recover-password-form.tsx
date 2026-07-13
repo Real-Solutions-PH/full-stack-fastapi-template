@@ -6,7 +6,6 @@ import Link from "next/link"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
 
-import { LoginService } from "@/client"
 import { AuthLayout } from "@/components/Common/AuthLayout"
 import {
   Form,
@@ -19,10 +18,10 @@ import {
 import { Input } from "@/components/ui/input"
 import { LoadingButton } from "@/components/ui/loading-button"
 import useCustomToast from "@/hooks/useCustomToast"
-import { handleError } from "@/utils"
+import { createClient } from "@/lib/supabase/client"
 
 const formSchema = z.object({
-  email: z.email(),
+  email: z.email({ message: "Invalid email address" }),
 })
 
 type FormData = z.infer<typeof formSchema>
@@ -37,9 +36,11 @@ export default function RecoverPasswordForm() {
   const { showSuccessToast, showErrorToast } = useCustomToast()
 
   const recoverPassword = async (data: FormData) => {
-    await LoginService.recoverPassword({
-      email: data.email,
-    })
+    const { error } = await createClient().auth.resetPasswordForEmail(
+      data.email,
+      { redirectTo: `${window.location.origin}/reset-password` },
+    )
+    if (error) throw error
   }
 
   const mutation = useMutation({
@@ -48,7 +49,9 @@ export default function RecoverPasswordForm() {
       showSuccessToast("Password recovery email sent successfully")
       form.reset()
     },
-    onError: handleError.bind(showErrorToast),
+    onError: (err: Error) => {
+      showErrorToast(err.message)
+    },
   })
 
   const onSubmit = async (data: FormData) => {

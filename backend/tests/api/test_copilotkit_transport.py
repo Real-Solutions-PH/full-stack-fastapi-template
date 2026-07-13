@@ -13,7 +13,7 @@ from fastapi import FastAPI, status
 from fastapi.testclient import TestClient
 
 from app.core.config import settings
-from app.modules.ai.copilotkit_setup import COPILOTKIT_PATH, setup_copilotkit
+from app.modules.ai.copilotkit import COPILOTKIT_PATH, setup_copilotkit
 from app.shared.errors import register_exception_handlers
 
 EXPECTED_AGENTS = {"fast", "react", "plan_and_execute"}

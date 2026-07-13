@@ -233,7 +233,7 @@ def test_copilotkit_guard_jwks_outage_is_503(
 ) -> None:
     from starlette.requests import Request
 
-    from app.modules.ai import copilotkit_setup
+    from app.modules.ai.copilotkit import auth as copilotkit_auth
 
     def _raise(_token: str) -> dict[str, object]:
         raise jwt.exceptions.PyJWKClientConnectionError("jwks unreachable")
@@ -247,7 +247,7 @@ def test_copilotkit_guard_jwks_outage_is_503(
             "headers": [(b"authorization", b"Bearer whatever")],
         }
     )
-    response = copilotkit_setup._auth_failure_response(request)
+    response = copilotkit_auth._auth_failure_response(request)
     assert response is not None
     assert response.status_code == 503
 
@@ -255,7 +255,7 @@ def test_copilotkit_guard_jwks_outage_is_503(
 def test_copilotkit_guard_bad_token_is_401(monkeypatch: pytest.MonkeyPatch) -> None:
     from starlette.requests import Request
 
-    from app.modules.ai import copilotkit_setup
+    from app.modules.ai.copilotkit import auth as copilotkit_auth
 
     def _raise(_token: str) -> dict[str, object]:
         raise jwt.InvalidTokenError("bad token")
@@ -269,7 +269,7 @@ def test_copilotkit_guard_bad_token_is_401(monkeypatch: pytest.MonkeyPatch) -> N
             "headers": [(b"authorization", b"Bearer whatever")],
         }
     )
-    response = copilotkit_setup._auth_failure_response(request)
+    response = copilotkit_auth._auth_failure_response(request)
     assert response is not None
     assert response.status_code == 401
 

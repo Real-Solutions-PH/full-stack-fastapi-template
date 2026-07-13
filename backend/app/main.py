@@ -9,7 +9,7 @@ from starlette.middleware.cors import CORSMiddleware
 
 from app.api import v1_router
 from app.core.config import settings
-from app.core.db import warn_if_rls_dormant
+from app.core.rls import warn_if_rls_dormant
 from app.core.storage import ensure_bucket
 from app.shared.errors import ErrorResponse, register_exception_handlers
 
@@ -79,6 +79,6 @@ original_openapi = app.openapi
 app.openapi = custom_openapi  # type: ignore[method-assign]  # ty: ignore[invalid-assignment]
 
 if settings.AI_ENABLED:
-    from app.modules.ai.copilotkit_setup import setup_copilotkit
+    from app.modules.ai.copilotkit import setup_copilotkit
 
     setup_copilotkit(app)

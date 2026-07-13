@@ -15,7 +15,7 @@ from fastapi import FastAPI, status
 from fastapi.testclient import TestClient
 
 from app.core.config import settings
-from app.modules.ai.copilotkit_setup import (
+from app.modules.ai.copilotkit import (
     COPILOTKIT_PATH,
     build_agui_router,
     install_copilotkit_auth,

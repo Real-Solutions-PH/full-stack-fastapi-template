@@ -14,7 +14,7 @@ from fastapi.testclient import TestClient
 
 from app.core.config import settings
 from app.modules.ai.agents.main import router as agents_router
-from app.modules.ai.copilotkit_setup import COPILOTKIT_PATH, install_copilotkit_auth
+from app.modules.ai.copilotkit import COPILOTKIT_PATH, install_copilotkit_auth
 from app.modules.ai.mcp.main import router as mcp_router
 from app.modules.ai.tools.main import router as tools_router
 from app.shared.errors import register_exception_handlers

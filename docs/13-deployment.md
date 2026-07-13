@@ -2,9 +2,9 @@
 
 ## Principle: One Environment, Manual Promotion
 
-Per constitution §3.5 there is exactly **one deployed environment at any time**, and per §3.2 **nothing deploys automatically on push or merge**. Promotion is always a deliberate human action.
+Per constitution §2.5 there is exactly **one deployed environment at any time**, and per §2.2 **nothing deploys automatically on push or merge**. Promotion is always a deliberate human action.
 
-- No per-environment branches, no auto-deploy from `main`/`master` (§3.2).
+- No per-environment branches, no auto-deploy from `main`/`master` (§2.2).
 - No standing staging environment running alongside production.
 - Production is always AWS, built during the production-targeting phase. When production goes live (cutover), the testing environment is torn down.
 
@@ -24,16 +24,16 @@ Promotion to production is a deliberate manual act:
 
 - A `workflow_dispatch`-only GitHub Actions workflow that deploys an explicitly chosen tag or commit SHA to AWS. This workflow will be added when the production environment is built.
 - **Never** a `push:` or `release:` trigger. No deploy may be a side effect of merging or tagging.
-- At cutover, the Vercel testing environment is torn down (§3.5).
+- At cutover, the Vercel testing environment is torn down (§2.5).
 
 ## What This Template Deliberately Does NOT Include
 
 Removed on purpose, per the constitution:
 
-- **Self-hosted GitHub Actions runners** and VPS deploy workflows — no self-hosted clusters or servers for a 2-person team (§1).
-- **Traefik reverse proxy** (`compose.traefik.yml` and all `traefik.*` labels) — there is no self-hosted server for it to front (§1, §3.5).
-- **Standing staging environments** and auto-deploy on merge to `master` (§3.2, §3.5).
-- **Railway or any third PaaS** — Vercel for testing, AWS for production; Hetzner only if EU data residency requires it (§3.5).
+- **Self-hosted GitHub Actions runners** and VPS deploy workflows — no self-hosted clusters or servers for a lean team (§1).
+- **Traefik reverse proxy** (`compose.traefik.yml` and all `traefik.*` labels) — there is no self-hosted server for it to front (§1, §2.5).
+- **Standing staging environments** and auto-deploy on merge to `master` (§2.2, §2.5).
+- **Railway or any third PaaS** — Vercel for testing, AWS for production; Hetzner only if EU data residency requires it (§2.5).
 
 ## Vercel Readiness Gaps (Documented, Not Yet Implemented)
 
@@ -42,7 +42,7 @@ Deploying this template's backend to Vercel free tier requires work that has del
 - **Serverless entrypoint**: FastAPI needs a Vercel-compatible entrypoint and a `vercel.json`; the current Docker-based backend image is not directly deployable to Vercel functions.
 - **Managed service replacements**: the Compose stack's Postgres, Redis, MinIO, and Mailcatcher/SMTP containers must be replaced with managed equivalents (e.g. managed Postgres, hosted Redis, S3-compatible storage, a transactional email provider).
 - **Migrations**: `prestart.sh` (which runs Alembic migrations) will not run in a serverless environment — migrations need an explicit story, e.g. run manually or from a one-off job before deploying.
-- **Free-tier limits**: 60s max function duration (300s with Fluid compute) and ~4h active CPU per month — fine for CRUD APIs, unsuitable for WebSockets or long-running jobs (§3.5).
+- **Free-tier limits**: 60s max function duration (300s with Fluid compute) and ~4h active CPU per month — fine for CRUD APIs, unsuitable for WebSockets or long-running jobs (§2.5).
 
 ## ADR Escape Hatch
 
@@ -80,4 +80,4 @@ Copy the content and use that as password / secret key. And run that again to ge
 
 ## Runbook
 
-See `docs/runbook.md` (ticket #28).
+See `docs/runbook.md`.

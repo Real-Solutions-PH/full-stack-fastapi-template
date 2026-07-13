@@ -14,11 +14,7 @@
 
 ## Constitution clause deviated from
 
-<e.g. §3.5 — or "None" if this ADR does not deviate from a constitution default.>
-
-## Client sign-off
-
-<Reference required when a clause is deviated from — link/date of the client's approval. "N/A" if no deviation.>
+<e.g. §2.5 — or "None" if this ADR does not deviate from a constitution default.>
 
 ## Consequences
 

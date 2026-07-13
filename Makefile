@@ -5,10 +5,13 @@ help: ## Show this help
 # ---------------------------------------------------------------------------
 # Docker
 # ---------------------------------------------------------------------------
-.PHONY: up down build logs ps
+.PHONY: up watch down build logs ps
 
 up: ## Start all services (dev mode with hot-reload)
 	docker compose up -d
+
+watch: ## Rebuild, recreate, and watch all services (foreground)
+	docker compose up --build --force-recreate --watch
 
 down: ## Stop all services
 	docker compose down

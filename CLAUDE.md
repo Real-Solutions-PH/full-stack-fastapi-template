@@ -16,6 +16,7 @@ This repo follows the **Engineering Constitution** in [docs/constitution.md](doc
 
 | Workspace | Task | Command |
 |---|---|---|
+| all | watch stack | `make watch` — `docker compose up --build --force-recreate --watch` (foreground, rebuilds + file-watch) |
 | all | local auth stack | `make supabase-up` / `make supabase-down` — Supabase (GoTrue) is the auth provider (ADR-0005); backend tests and any auth flow REQUIRE it running |
 | backend | install deps | `uv sync` (from `backend/`) |
 | backend | lint | `make backend-lint` (mypy + ruff check + ruff format --check) |
@@ -35,10 +36,18 @@ This repo follows the **Engineering Constitution** in [docs/constitution.md](doc
 
 **Never hand-edit `frontend/src/client/`.** Regenerate it via `bash scripts/generate-client.sh` after any backend API change — a pre-commit hook enforces this. The mobile client is generated separately via `mobile/openapi-ts.config.ts`.
 
+## Migrations (Alembic)
+
+- **Every schema change goes through Alembic** — no dashboard edits, no manual DDL.
+- **Generate:** `make backend-revision MSG="short description"` (autogenerates against the models). Always **read the generated script** — autogenerate misses server defaults, type/enum changes, renames, and any data migration.
+- **Apply / roll back:** `make backend-migrate` (upgrade head) · `make backend-downgrade` (one step). Every revision must run cleanly **up and down**.
+- **One linear head:** rebase your revision onto the current head rather than branching; don't ship divergent heads.
+- **Backfills go in the same revision as the constraint they satisfy** — e.g. add column nullable → backfill → set `NOT NULL` — so the migration is self-contained.
+- Commit the revision together with the code that depends on it.
+
 ## Conventions
 
 - Conventional commits (`feat:`, `fix:`, `chore:`, …).
-- Every schema change goes through Alembic — no dashboard or manual DDL.
 - Biome is the linter/formatter for TS — not ESLint, not Prettier.
 - Backend type-checking is mypy **strict**.
 - Docs use `YYYY-MM-DD` dates; update `docs/README.md`'s index when adding a doc.

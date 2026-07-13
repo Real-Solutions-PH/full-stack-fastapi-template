@@ -2,11 +2,11 @@
 
 - **Date:** 2026-07-12
 - **Status:** accepted
-- **Deciders:** Kairus (RSPH), per #30 approval
+- **Deciders:** maintainers
 
 ## Context
 
-Constitution §3.6 defaults TypeScript tooling to eslint + prettier. This template already runs Biome across `frontend/` and `mobile/`, wired into pre-commit and the CI Lint workflow. Switching to eslint + prettier would be churn with no functional gain: two tools and two config surfaces instead of one, materially slower runs, and a re-baselining of every existing suppression.
+Constitution §2.6 defaults TypeScript tooling to eslint + prettier. This template already runs Biome across `frontend/` and `mobile/`, wired into pre-commit and the CI Lint workflow. Switching to eslint + prettier would be churn with no functional gain: two tools and two config surfaces instead of one, materially slower runs, and a re-baselining of every existing suppression.
 
 ## Decision
 
@@ -14,11 +14,7 @@ Keep **Biome** as the single linter/formatter for all TypeScript workspaces. CI 
 
 ## Constitution clause deviated from
 
-§3.6 — "TypeScript: strict mode + eslint + prettier."
-
-## Client sign-off
-
-Internal template (RSPH-owned, §7.3) — founder approval on issue #30, 2026-07-12.
+§2.6 — "TypeScript: strict mode + eslint + prettier."
 
 ## Consequences
 

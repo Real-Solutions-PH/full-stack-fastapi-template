@@ -6,7 +6,7 @@ from app.modules.iam.tenants import repo as tenant_repo
 from app.modules.iam.tenants.models import Tenant
 
 # Fixed UUID for the bootstrap "default" tenant. The Alembic migration that
-# introduced tenant scoping (#38) inserts the same row with this id, so seed
+# introduced tenant scoping inserts the same row with this id, so seed
 # and migration stay idempotent with each other. Runtime lookups go by slug
 # (settings.DEFAULT_TENANT_SLUG), never by this constant.
 DEFAULT_TENANT_ID = uuid.UUID("00000000-0000-4000-8000-000000000001")

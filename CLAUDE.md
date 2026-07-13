@@ -1,6 +1,6 @@
 # CLAUDE.md
 
-This repo is governed by the **Engineering Constitution v2.0**, pinned at [docs/constitution.md](docs/constitution.md) (master lives in Notion; the repo copy is never edited). Any deviation from a constitution default requires an ADR in [docs/adr/](docs/adr/) with client sign-off (§0.3).
+This repo follows the **Engineering Constitution** in [docs/constitution.md](docs/constitution.md) — the engineering defaults for the stack. Any deviation from a default is recorded as an ADR in [docs/adr/](docs/adr/) (§0.3).
 
 ## Repo map
 

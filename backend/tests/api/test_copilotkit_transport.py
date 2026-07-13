@@ -1,4 +1,4 @@
-"""AG-UI chat transport smoke tests (#33, ADR-0007).
+"""AG-UI chat transport smoke tests (ADR-0007).
 
 Transport-level only — no LLM call is ever made (no provider creds in CI):
 the info route proves the handshake shape and agent catalog, the run routes

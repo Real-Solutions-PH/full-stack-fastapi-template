@@ -1,4 +1,4 @@
-"""Per-tenant rate-limit seam (#40).
+"""Per-tenant rate-limit seam.
 
 A deliberately minimal choke point: every write route calls
 :func:`check_rate_limit` with the request's :class:`TenantContext`. The

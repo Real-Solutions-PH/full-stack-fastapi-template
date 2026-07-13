@@ -1,4 +1,4 @@
-"""AG-UI run handler streaming behavior (#36).
+"""AG-UI run handler streaming behavior.
 
 test_copilotkit_transport.py proves the routes exist and are guarded; here
 we drive the streaming handler itself with fake agents (no LLM): a clean

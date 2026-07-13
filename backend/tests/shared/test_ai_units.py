@@ -1,4 +1,4 @@
-"""Offline unit tests for the AI module internals (#36).
+"""Offline unit tests for the AI module internals.
 
 Everything here runs without network: LLM clients are constructed but never
 invoked (or replaced by fakes), and LangGraph graphs are compiled/executed

@@ -28,7 +28,7 @@ def init_db(session: Session) -> None:
     seed_permissions(session)
     seed_tenants(session)
 
-    # FIRST_SUPERUSER bootstrap (#39): the auth identity lives in Supabase.
+    # FIRST_SUPERUSER bootstrap: the auth identity lives in Supabase.
     # Idempotent — create-or-fetch the GoTrue user (the password is set for
     # local/CI convenience and test fixtures), then upsert the local mirror
     # row keyed by the auth UID with is_superuser=True.

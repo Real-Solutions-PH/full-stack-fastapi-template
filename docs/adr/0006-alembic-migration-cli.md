@@ -2,11 +2,11 @@
 
 - **Date:** 2026-07-12
 - **Status:** accepted
-- **Deciders:** Kairus (RSPH), per #38
+- **Deciders:** maintainers
 
 ## Context
 
-Ticket #38 introduces a `tenant_id` column on every user-facing table (user,
+Tenant scoping introduces a `tenant_id` column on every user-facing table (user,
 item, ocr_document, conversation) and has to create the AI/OCR tables that were
 previously only defined as SQLModel classes with no Alembic revision. That
 forces a decision on which tool owns schema migrations going forward, since
@@ -16,18 +16,14 @@ Supabase CLI's SQL migrations).
 ## Decision
 
 Alembic stays the schema-migration CLI. All schema changes — including the
-tenant scoping in #38 — are expressed as Alembic revisions in
+tenant scoping — are expressed as Alembic revisions in
 `backend/app/alembic/versions/`, generated against the SQLModel metadata in
 `backend/app/db/models.py`.
 
 ## Constitution clause deviated from
 
-None (§3.6 — Alembic is a compliant migration CLI; the Supabase CLI was the
+None (§2.6 — Alembic is a compliant migration CLI; the Supabase CLI was the
 example, not a mandate).
-
-## Client sign-off
-
-N/A (no deviation).
 
 ## Consequences
 
@@ -47,7 +43,7 @@ N/A (no deviation).
 
 - Revisit if the models ever leave SQLModel, or when Supabase CLI ownership is
   decided in the production phase.
-- Tenancy scope note (per #38): `agent`, `tool`, `mcpserver`, `agenttool`,
+- Tenancy scope note: `agent`, `tool`, `mcpserver`, `agenttool`,
   `role`, and `permission` stay **global** (platform-level catalogs, not
   tenant-owned). Tenant-scoped tables are `user`, `item`, `ocr_document`,
   `conversation` (and `message` transitively via its conversation).

@@ -1,4 +1,4 @@
-"""Unit tests for the tenant-context dependency (#40)."""
+"""Unit tests for the tenant-context dependency."""
 
 import dataclasses
 import uuid

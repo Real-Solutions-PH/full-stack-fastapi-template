@@ -1,4 +1,4 @@
-"""Superuser CRUD flows over the AI catalog (agents / tools / mcp) (#36).
+"""Superuser CRUD flows over the AI catalog (agents / tools / mcp).
 
 Complements test_ai_catalog_authz.py (which proves the permission wall):
 these tests drive the happy paths and error branches of the routes ->

@@ -1,4 +1,4 @@
-"""OCR document flows: upload/list/get/delete via the routes (#36).
+"""OCR document flows: upload/list/get/delete via the routes.
 
 The OCR provider and the MinIO storage client are faked at the service
 seam (get_ocr_provider / MinioEngine.get_instance), so these tests

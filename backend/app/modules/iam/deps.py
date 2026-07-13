@@ -10,7 +10,7 @@ from app.modules.iam.users.models import User
 from app.shared.deps import SessionDep
 
 # auto_error=False so a missing header raises OUR 401 (with WWW-Authenticate,
-# preserving the pre-#39 envelope semantics) instead of HTTPBearer's 403.
+# preserving the prior envelope semantics) instead of HTTPBearer's 403.
 bearer_scheme = HTTPBearer(auto_error=False)
 
 
@@ -46,7 +46,7 @@ def get_current_user(request: Request, session: SessionDep, token: TokenDep) -> 
             detail="Could not validate credentials",
         )
     # Claims seam: stash the verified claims for downstream request handling
-    # (e.g. future request.jwt.claims GUC wiring for RLS — see #40 runbook).
+    # (e.g. future request.jwt.claims GUC wiring for RLS — see the runbook).
     request.state.jwt_claims = claims
     user = session.get(User, user_id)
     if not user:

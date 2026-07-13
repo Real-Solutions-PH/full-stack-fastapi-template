@@ -1,4 +1,4 @@
-"""AI chat conversation flows: routes, services, and the message helpers (#36).
+"""AI chat conversation flows: routes, services, and the message helpers.
 
 Cross-tenant invisibility is covered by test_tenant_scoping.py; here we
 drive the owner's own happy paths, the missing-row branches, and the

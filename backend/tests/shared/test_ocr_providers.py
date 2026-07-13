@@ -1,4 +1,4 @@
-"""OCR provider factory selection + provider plumbing (#36).
+"""OCR provider factory selection + provider plumbing.
 
 The docling-backed ``_extract_sync`` bodies are pragma-excluded (the
 optional "ocr" extra is not installed in CI); everything around them —

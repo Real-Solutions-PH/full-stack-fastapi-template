@@ -99,7 +99,7 @@ it("Logged-out user cannot access protected routes", () => {
 })
 
 // Dropped: "Redirects to /login when token is wrong". Auth moved from a
-// localStorage/app-cookie token to Supabase-managed sb-*-auth-token cookies
-// (#39); the middleware revalidates them via supabase.auth.getUser(), and
+// localStorage/app-cookie token to Supabase-managed sb-*-auth-token cookies;
+// the middleware revalidates them via supabase.auth.getUser(), and
 // the unauthenticated-redirect path is already covered by
 // "Logged-out user cannot access protected routes" above.

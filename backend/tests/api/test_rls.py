@@ -1,4 +1,4 @@
-"""RLS enforcement tests (#40) — direct SQL as a non-owner role.
+"""RLS enforcement tests — direct SQL as a non-owner role.
 
 The app engine (table owner) bypasses RLS, so these tests provision the
 ``app_user`` role with LOGIN and connect as it. Tenant claims are injected

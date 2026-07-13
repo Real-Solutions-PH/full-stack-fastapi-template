@@ -2,7 +2,7 @@
 
 - **Date:** 2026-07-12
 - **Status:** accepted
-- **Deciders:** Kairus (RSPH), per #33
+- **Deciders:** maintainers
 
 ## Context
 
@@ -36,12 +36,8 @@ version CopilotKit bundles; `@copilotkit/react-ui` (v1 UI) was dropped.
 The `copilotkit` Python package remains solely for `LangGraphAGUIAgent`; its
 `CopilotKitRemoteEndpoint`/`add_fastapi_endpoint` protocol is unused.
 
-## Constitution alignment (§5.2)
+## Constitution alignment (§4.2)
 
-None — this *implements* the §5.2 default: chat transport is AG-UI over SSE,
+None — this *implements* the §4.2 default: chat transport is AG-UI over SSE,
 LangGraph runs in-process in the FastAPI service, and there is no webhook hop
 and no extra service (the CopilotKit GraphQL runtime is not deployed at all).
-
-## Client sign-off
-
-N/A (no deviation).

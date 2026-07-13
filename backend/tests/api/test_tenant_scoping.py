@@ -1,4 +1,4 @@
-"""Cross-tenant isolation tests (#38).
+"""Cross-tenant isolation tests.
 
 Rule under test: the tenant filter lives in the query, so a row outside the
 caller's tenant is simply invisible -> 404. Owner mismatches *within* a tenant
@@ -263,9 +263,9 @@ def test_create_conversation_stamps_tenant(
 def test_first_login_assigns_default_tenant(
     client: TestClient, db: Session, default_tenant: Tenant
 ) -> None:
-    # Self-signup happens in Supabase (#39); the local mirror row is
+    # Self-signup happens in Supabase; the local mirror row is
     # JIT-provisioned on the first authenticated request with the default
-    # tenant — the post-#38 signup semantics, preserved.
+    # tenant — the current signup semantics, preserved.
     email = random_email()
     password = random_lower_string()
     supabase_auth.admin_get_or_create_user(email=email, password=password)

@@ -1,4 +1,4 @@
-"""Unit tests for the per-tenant rate-limit seam (#40)."""
+"""Unit tests for the per-tenant rate-limit seam."""
 
 import uuid
 

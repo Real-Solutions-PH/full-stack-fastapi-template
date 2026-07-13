@@ -1,4 +1,4 @@
-"""Supabase Auth integration (#39).
+"""Supabase Auth integration.
 
 Two concerns live here:
 

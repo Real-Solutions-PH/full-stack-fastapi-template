@@ -1,4 +1,4 @@
-"""Tenant identity resolution for authenticated requests (#40).
+"""Tenant identity resolution for authenticated requests.
 
 Every authenticated request can resolve a :class:`TenantContext` via
 ``TenantDep``; it is the single seam downstream code (rate limiting, RLS

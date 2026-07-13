@@ -1,4 +1,4 @@
-"""Drop user.hashed_password — credentials live in Supabase Auth (#39)
+"""Drop user.hashed_password — credentials live in Supabase Auth
 
 The backend no longer stores or verifies passwords: authentication is a
 Supabase-issued JWT verified against the project JWKS, and the local

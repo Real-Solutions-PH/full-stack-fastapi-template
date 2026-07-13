@@ -12,7 +12,7 @@ class UserBase(SQLModel):
     full_name: str | None = Field(default=None, max_length=255)
 
 
-# Credentials live in Supabase Auth (#39): user creation goes through the
+# Credentials live in Supabase Auth: user creation goes through the
 # GoTrue admin API, so there are no password fields on these schemas.
 class UserCreate(UserBase):
     pass

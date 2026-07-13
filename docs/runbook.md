@@ -1,6 +1,6 @@
 # Runbook
 
-Operational reference for this project. Skeleton per ticket #28 — sections get filled in as the relevant ticket lands.
+Operational reference for this project. Skeleton — sections get filled in as the relevant features land.
 
 ## Overview & environments
 
@@ -66,11 +66,9 @@ When a client engagement ends: rotate (regenerate) all three GlitchTip DSNs — 
 
 ## Client-owned org setup
 
-**Per-client setup:** the client creates their own Supabase organization and project (ADR-0005) — RSPH never owns the org. As of 2026-07, Supabase orgs support unlimited team members on every plan including Free, so **inviting RSPH as a full (non-project-scoped) member is the default path**: client sends the invite from Organization → Team, RSPH accepts within the 24h window. Fall back to **shared credentials** (constitution §3.5) only if the client's account genuinely can't invite (e.g. an SSO-gated org that only accepts same-IdP invites) — record the reason in the client's onboarding notes if this path is used.
+**Per-client setup:** the client creates their own Supabase organization and project (ADR-0005) and owns it. As of 2026-07, Supabase orgs support unlimited team members on every plan including Free, so **inviting the development team as a full (non-project-scoped) member is the default path**: the client sends the invite from Organization → Team. Fall back to **shared credentials** (constitution §2.5) only if the client's account genuinely can't invite (e.g. an SSO-gated org that only accepts same-IdP invites).
 
-Note: RSPH's own Free-tier project quota (2 active projects, counted across every org where the account is Owner/Admin) can block accepting a new invite even though the *client's* org has no member limit — check RSPH's active project count before accepting; consider a dedicated RSPH agency account that only accepts invites and never owns projects.
-
-**Credential placement** (§3.8 — Bitwarden is the source of truth, `.env` is generated from it, credentials never travel via chat/email):
+**Credential placement** (§2.8 — the team password manager is the source of truth, `.env` is generated from it, credentials never travel via chat/email):
 
 | Credential | Dashboard location | Where it's used |
 |---|---|---|
@@ -84,30 +82,30 @@ Note: RSPH's own Free-tier project quota (2 active projects, counted across ever
 
 - Local development runs against the Supabase CLI local stack (`supabase start`) — no client credentials needed day-to-day.
 - `supabase link --project-ref <ref>` binds the repo to the client's hosted project once the invite/credentials are in hand.
-- Migrations are committed files pushed to the linked project; dashboard-only schema edits are prohibited (§3.6). Only one person pushes at a time to avoid ordering conflicts. *(Migration tooling: **Alembic** — decided in ADR-0006.)*
+- Migrations are committed files pushed to the linked project; dashboard-only schema edits are prohibited (§2.6). Only one person pushes at a time to avoid ordering conflicts. *(Migration tooling: **Alembic** — decided in ADR-0006.)*
 
 **Rotation at handover / offboarding:**
 
 - Regenerate (or have the client regenerate) the anon and service_role keys; rotate the JWT signing key.
-- Remove RSPH as an org member (or revoke shared credentials if that path was used).
-- Purge the old values from Bitwarden, `.env`, deploy env, and build args.
+- Remove the development team from the org (or revoke shared credentials if that path was used).
+- Purge the old values from the password manager, `.env`, deploy env, and build args.
 - Hand the org fully to the client, or tear it down per contract.
 
-**Supabase Auth (#39) operational notes:**
+**Supabase Auth operational notes:**
 
 - **Re-harden self-hosted GoTrue:** `supabase/config.toml` relaxes `[auth.rate_limit] sign_in_sign_ups` to 500 strictly for the local E2E suite. Supabase Cloud ignores the file, but anyone self-hosting GoTrue from this repo's config MUST restore the default 30 (and review the other rate limits) before exposing the auth endpoint.
 - **Bootstrap before exposure:** run the FIRST_SUPERUSER bootstrap (backend prestart / `init_db`) *before* the auth endpoint is publicly reachable. The bootstrap adopts an already-registered email by password-reset; a squatter who pre-registered `FIRST_SUPERUSER` loses the password at bootstrap but any token they already hold stays signature-valid for up to `jwt_expiry` (1h default) — bootstrapping first closes that window entirely.
 - **Migrating pre-existing local users** (deliberate template non-goal, C1): the template only JIT-provisions Supabase-born identities. For a legacy row, the operator creates the GoTrue user via the admin API (`POST /auth/v1/admin/users`, service-role key) and re-keys the local row to the auth UID: `UPDATE "user" SET id = '<auth_uid>' WHERE email = '<email>';` (FKs on `item.owner_id` etc. must be updated in the same transaction or cascaded).
 
-## Row-Level Security & rate limiting (2026-07-12, #40)
+## Row-Level Security & rate limiting (2026-07-12)
 
 **RLS.** Migration `c8f2a1d47e56` enables RLS with tenant-isolation policies on `user`, `item`, `ocr_document`, `conversation`, `tenant`, and `message` (transitive via its conversation). Policies key on `current_setting('request.jwt.claims', true)` through the `app_tenant_id()` helper — byte-compatible with Supabase PostgREST, so they survive the Supabase migration unchanged.
 
-- **Why Alembic/seeds are unaffected:** Postgres superusers and table *owners* bypass RLS. Migrations, prestart seeding, and today's app engine all connect as the DB owner, so the policies are currently a dormant second wall — the app logs `RLS is DORMANT` at startup while this is true. Enforcement goes live when #44 flips the app engine to the non-owner `app_user` role and wires per-request claims (verified Supabase claims are already stashed on `request.state.jwt_claims`). Note for #44: platform-operator (superuser) routes and seeds need the owner engine or a bypass claim, or they will see only their own tenant.
-- **`app_user` provisioning:** the migration creates `app_user` as `NOLOGIN` with no password (no secrets in the repo) plus DML grants and default privileges. Ops enables it out-of-band per §3.8 (value lives in Bitwarden): `ALTER ROLE app_user LOGIN PASSWORD '<from-bitwarden>';`
+- **Why Alembic/seeds are unaffected:** Postgres superusers and table *owners* bypass RLS. Migrations, prestart seeding, and today's app engine all connect as the DB owner, so the policies are currently a dormant second wall — the app logs `RLS is DORMANT` at startup while this is true. Enforcement goes live when the app engine is flipped to the non-owner `app_user` role and wires per-request claims (verified Supabase claims are already stashed on `request.state.jwt_claims`). Note for that cutover: platform-operator (superuser) routes and seeds need the owner engine or a bypass claim, or they will see only their own tenant.
+- **`app_user` provisioning:** the migration creates `app_user` as `NOLOGIN` with no password (no secrets in the repo) plus DML grants and default privileges. Ops enables it out-of-band per §2.8 (value lives in the team password manager): `ALTER ROLE app_user LOGIN PASSWORD '<from-password-manager>';`
 - **Verifying isolation by hand:** in a transaction as `app_user`, `SELECT set_config('request.jwt.claims', '{"tenant_id": "<uuid>"}', true);` then query — only that tenant's rows are visible. A claim-less session sees zero rows. (Any SQL touching the claim must go through `app_tenant_id()`, which `NULLIF`-guards the empty-string GUC left behind after a transaction-local `set_config`.)
 
-**Rate limiting.** Write routes (items / OCR / AI chat) pass through a per-tenant seam (`app/shared/rate_limit.py`). The default `NullBackend` allows everything; denials surface as 429 in the standard error envelope. Upgrade path: swap the module-level backend for a Redis token bucket (redis already ships in compose) keyed on `(tenant_id, key)` — the same hook meters constitution §4 per-tenant AI spend caps. There is no per-tenant kill switch yet; deactivating a tenant (`tenant.is_active`) is not consulted by the seam.
+**Rate limiting.** Write routes (items / OCR / AI chat) pass through a per-tenant seam (`app/shared/rate_limit.py`). The default `NullBackend` allows everything; denials surface as 429 in the standard error envelope. Upgrade path: swap the module-level backend for a Redis token bucket (redis already ships in compose) keyed on `(tenant_id, key)` — the same hook meters constitution §3 per-tenant AI spend caps. There is no per-tenant kill switch yet; deactivating a tenant (`tenant.is_active`) is not consulted by the seam.
 
 ## Incidents & escalation
 

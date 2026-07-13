@@ -1,4 +1,4 @@
-"""AI catalog + copilotkit authz (security review of #38).
+"""AI catalog + copilotkit authz (security review).
 
 The agent/tool/mcpserver catalog is a GLOBAL platform surface (ADR-0006):
 mutations are superuser-only, and MCP server routes (whose free-form

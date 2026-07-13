@@ -1,4 +1,4 @@
-"""Write routes go through the per-tenant rate-limit seam (#40).
+"""Write routes go through the per-tenant rate-limit seam.
 
 With the default NullBackend nothing changes; with a denying backend the
 write routes return 429 while reads stay untouched.

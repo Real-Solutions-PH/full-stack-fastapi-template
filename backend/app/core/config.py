@@ -103,7 +103,7 @@ class Settings(BaseSettings):
     FIRST_SUPERUSER: EmailStr
     FIRST_SUPERUSER_PASSWORD: str
 
-    # Supabase Auth (#39). Defaults target the local CLI stack
+    # Supabase Auth. Defaults target the local CLI stack
     # (`make supabase-up`); hosted projects override all of these.
     SUPABASE_URL: str = "http://127.0.0.1:54321"
     SUPABASE_ANON_KEY: str = ""
@@ -123,7 +123,7 @@ class Settings(BaseSettings):
     def supabase_jwks_url(self) -> str:
         return f"{self.SUPABASE_URL}/auth/v1/.well-known/jwks.json"
 
-    # Tenancy: slug of the tenant new signups are assigned to (#38).
+    # Tenancy: slug of the tenant new signups are assigned to.
     DEFAULT_TENANT_SLUG: str = "default"
 
     MINIO_ENDPOINT: str = "http://minio:9000"

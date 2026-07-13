@@ -10,8 +10,8 @@ logger = logging.getLogger(__name__)
 def warn_if_rls_dormant() -> None:
     """Log when the app connection bypasses row-level security.
 
-    Superusers and table owners skip RLS entirely, so the #40 policies are a
-    dormant second wall until #44 flips the app engine to the non-owner
+    Superusers and table owners skip RLS entirely, so the RLS policies are a
+    dormant second wall until the app engine is flipped to the non-owner
     ``app_user`` role. Non-fatal by design: purely a startup breadcrumb.
     """
     try:
@@ -35,7 +35,7 @@ def warn_if_rls_dormant() -> None:
             logger.warning(
                 "RLS is DORMANT: app connection runs as %s which bypasses row"
                 " security via superuser/BYPASSRLS or table ownership"
-                " (expected until #44 flips to app_user)",
+                " (expected until the engine is flipped to app_user)",
                 current_role,
             )
     except Exception:  # pragma: no cover - visibility only, never fatal

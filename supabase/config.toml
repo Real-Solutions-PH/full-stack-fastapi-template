@@ -84,8 +84,8 @@ allowed_cidrs_v6 = ["::/0"]
 # [db.ssl_enforcement]
 # enabled = true
 
-# Disabled: this stack provides ONLY auth (GoTrue + JWKS) for the app — see
-# ticket #39. App tables stay in the compose Postgres; object storage stays
+# Disabled: this stack provides ONLY auth (GoTrue + JWKS) for the app.
+# App tables stay in the compose Postgres; object storage stays
 # on MinIO; realtime/studio/edge functions/analytics are unused.
 [realtime]
 enabled = false
@@ -164,7 +164,7 @@ site_url = "http://127.0.0.1:3000"
 # external_url = ""
 # A list of *exact* URLs that auth providers are permitted to redirect to post authentication.
 # The frontend dev server answers on both localhost and 127.0.0.1; the
-# password-recovery flow redirects to /reset-password (#39).
+# password-recovery flow redirects to /reset-password.
 additional_redirect_urls = [
   "https://127.0.0.1:3000",
   "http://127.0.0.1:3000",
@@ -216,7 +216,7 @@ anonymous_users = 30
 token_refresh = 150
 # Number of sign up and sign-in requests that can be made in a 5 minute interval per IP address (excludes anonymous users).
 # LOCAL-ONLY relaxation for the E2E suite: the Cypress run performs 50+
-# sign-ins / sign-ups from one IP in well under 5 minutes (#39). Supabase
+# sign-ins / sign-ups from one IP in well under 5 minutes. Supabase
 # Cloud ignores this file entirely (hosted projects keep their dashboard
 # limits). SELF-HOSTERS MUST restore the default 30 before exposing GoTrue
 # — see docs/runbook.md ("Supabase Auth" section).

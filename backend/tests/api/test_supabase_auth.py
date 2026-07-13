@@ -1,4 +1,4 @@
-"""Supabase Auth integration tests (#39).
+"""Supabase Auth integration tests.
 
 These run against the local Supabase stack (`make supabase-up`): tokens are
 real GoTrue-issued ES256 JWTs verified through the JWKS endpoint.

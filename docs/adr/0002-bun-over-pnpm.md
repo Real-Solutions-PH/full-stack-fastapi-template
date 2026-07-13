@@ -2,23 +2,19 @@
 
 - **Date:** 2026-07-12
 - **Status:** accepted
-- **Deciders:** Kairus (RSPH), per #30 approval
+- **Deciders:** maintainers
 
 ## Context
 
-Constitution §3.1 defaults JS tooling to pnpm workspaces. This template uses bun: a root `bun.lock` covering the `frontend` workspace, and a standalone bun project in `mobile/`. Every CI job, Dockerfile, and script already invokes bun; Dependabot runs the `bun` ecosystem for both directories.
+Constitution §2.1 defaults JS tooling to pnpm workspaces. This template uses bun: a root `bun.lock` covering the `frontend` workspace, and a standalone bun project in `mobile/`. Every CI job, Dockerfile, and script already invokes bun; Dependabot runs the `bun` ecosystem for both directories.
 
 ## Decision
 
-Keep **bun** as the JS package manager and lockfile of record everywhere. npm/yarn/pnpm lockfiles stay gitignored (a stale npm lockfile in `mobile/` already caused real dependency drift — see #32).
+Keep **bun** as the JS package manager and lockfile of record everywhere. npm/yarn/pnpm lockfiles stay gitignored (a stale npm lockfile in `mobile/` already caused real dependency drift).
 
 ## Constitution clause deviated from
 
-§3.1 — "Tooling: pnpm workspaces (TS)."
-
-## Client sign-off
-
-Internal template (RSPH-owned, §7.3) — founder approval on issue #30, 2026-07-12.
+§2.1 — "Tooling: pnpm workspaces (TS)."
 
 ## Consequences
 

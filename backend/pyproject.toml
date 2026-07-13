@@ -90,12 +90,12 @@ keep-runtime-typing = true
 source = ["app"]
 dynamic_context = "test_function"
 # ponytail: AI/OCR modules have no test coverage yet — omitted so the gate
-# stays meaningful for the core; remove once they gain tests (see issue #36)
+# stays meaningful for the core; remove once they gain tests
 omit = ["app/modules/ai/*", "app/modules/ocr/*"]
 
 [tool.coverage.report]
 # ponytail: same AI/OCR omission as [tool.coverage.run] — reporting on
-# pre-collected data only honors report-level omit (see issue #36)
+# pre-collected data only honors report-level omit
 omit = ["app/modules/ai/*", "app/modules/ocr/*"]
 show_missing = true
 sort = "-Cover"

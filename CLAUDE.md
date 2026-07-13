@@ -1,6 +1,6 @@
 # CLAUDE.md
 
-This repo is governed by the **Engineering Constitution v2.0**, pinned at [docs/constitution.md](docs/constitution.md) (master lives in Notion; the repo copy is never edited). Any deviation from a constitution default requires an ADR in [docs/adr/](docs/adr/) with client sign-off (§0.3).
+This repo follows the **Engineering Constitution** in [docs/constitution.md](docs/constitution.md) — the engineering defaults for the stack. Any deviation from a default is recorded as an ADR in [docs/adr/](docs/adr/) (§0.3).
 
 ## Repo map
 
@@ -15,6 +15,7 @@ This repo is governed by the **Engineering Constitution v2.0**, pinned at [docs/
 
 | Workspace | Task | Command |
 |---|---|---|
+| all | watch stack | `make watch` — `docker compose up --build --force-recreate --watch` (foreground, rebuilds + file-watch) |
 | backend | install deps | `uv sync` (from `backend/`) |
 | backend | lint | `make backend-lint` (mypy + ruff check + ruff format --check) |
 | backend | test | `make test-docker` (containerized) — `make backend-test` runs pytest directly against the configured DB |
@@ -31,10 +32,18 @@ This repo is governed by the **Engineering Constitution v2.0**, pinned at [docs/
 
 **Never hand-edit `frontend/src/client/`.** Regenerate it via `bash scripts/generate-client.sh` after any backend API change — a pre-commit hook enforces this. The mobile client is generated separately via `mobile/openapi-ts.config.ts`.
 
+## Migrations (Alembic)
+
+- **Every schema change goes through Alembic** — no dashboard edits, no manual DDL.
+- **Generate:** `make backend-revision MSG="short description"` (autogenerates against the models). Always **read the generated script** — autogenerate misses server defaults, type/enum changes, renames, and any data migration.
+- **Apply / roll back:** `make backend-migrate` (upgrade head) · `make backend-downgrade` (one step). Every revision must run cleanly **up and down**.
+- **One linear head:** rebase your revision onto the current head rather than branching; don't ship divergent heads.
+- **Backfills go in the same revision as the constraint they satisfy** — e.g. add column nullable → backfill → set `NOT NULL` — so the migration is self-contained.
+- Commit the revision together with the code that depends on it.
+
 ## Conventions
 
 - Conventional commits (`feat:`, `fix:`, `chore:`, …).
-- Every schema change goes through Alembic — no dashboard or manual DDL.
 - Biome is the linter/formatter for TS — not ESLint, not Prettier.
 - Backend type-checking is mypy **strict**.
 - Docs use `YYYY-MM-DD` dates; update `docs/README.md`'s index when adding a doc.

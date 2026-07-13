@@ -1,6 +1,6 @@
 # Runbook
 
-Operational reference for this project. Skeleton per ticket #28 — sections get filled in as the relevant ticket lands.
+Operational reference for this project. Skeleton — sections get filled in as the relevant features land.
 
 ## Overview & environments
 
@@ -66,8 +66,8 @@ When a client engagement ends: rotate (regenerate) all three GlitchTip DSNs — 
 
 ## Client-owned org setup
 
-Placeholder — TBD, ticket #25.
+Placeholder — TBD.
 
 ## Incidents & escalation
 
-Per constitution §4: SEV1 (prod down / data breach) ack < 4 PH business hours (best effort < 24h any calendar day); SEV2 (major feature degraded) ack < 8 working hours; SEV3 (minor) ack next business day. First move is rollback, not forward-fix. SEV1 gets a written postmortem within 5 business days.
+Per constitution §3: SEV1 (prod down / data breach) ack < 4 PH business hours (best effort < 24h any calendar day); SEV2 (major feature degraded) ack < 8 working hours; SEV3 (minor) ack next business day. First move is rollback, not forward-fix. SEV1 gets a written postmortem within 5 business days.

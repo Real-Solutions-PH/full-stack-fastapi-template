@@ -15,6 +15,7 @@ def init_db(session: Session) -> None:
     # re-import ``engine`` from here, which would deadlock at module load.
     from app.core import supabase_auth
     from app.modules.iam.permissions.seed import seed_permissions
+    from app.modules.iam.rbac.seed import seed_role_permissions
     from app.modules.iam.roles.seed import seed_roles
     from app.modules.iam.tenants import services as tenant_service
     from app.modules.iam.tenants.seed import seed_tenants
@@ -26,6 +27,7 @@ def init_db(session: Session) -> None:
     # Tenants are seeded first: users (including FIRST_SUPERUSER) need one.
     seed_roles(session)
     seed_permissions(session)
+    seed_role_permissions(session)
     seed_tenants(session)
 
     # FIRST_SUPERUSER bootstrap: the auth identity lives in Supabase.

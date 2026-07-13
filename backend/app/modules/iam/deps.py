@@ -1,4 +1,5 @@
 import uuid
+from collections.abc import Callable
 from typing import Annotated
 
 import jwt
@@ -74,3 +75,32 @@ def get_current_active_superuser(current_user: CurrentUser) -> User:
             status_code=403, detail="The user doesn't have enough privileges"
         )
     return current_user
+
+
+def require_permission(permission: str) -> Callable[..., User]:
+    """Dependency factory: require ``permission`` ("resource:action").
+
+    Superusers bypass the check (the ``is_superuser`` flag stays the
+    platform-admin escape hatch); everyone else must hold the permission
+    transitively via an assigned role. Use as::
+
+        @router.get("/", dependencies=[Depends(require_permission("items:read"))])
+    """
+
+    def _dep(current_user: CurrentUser, session: SessionDep) -> User:
+        if current_user.is_superuser:
+            return current_user
+        # Imported lazily: the rbac repo imports role/permission models whose
+        # package pulls deps back through here at import time.
+        from app.modules.iam.rbac import repo as rbac_repo
+
+        held = rbac_repo.get_user_permission_names(
+            session=session, user_id=current_user.id
+        )
+        if permission not in held:
+            raise HTTPException(
+                status_code=403, detail="The user doesn't have enough privileges"
+            )
+        return current_user
+
+    return _dep

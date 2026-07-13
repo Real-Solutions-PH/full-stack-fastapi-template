@@ -54,7 +54,7 @@ jobs:
     - name: Seed .env for CI
       run: cp .env.example .env
     - name: Set up Supabase CLI
-      uses: supabase/setup-cli@v1
+      uses: supabase/setup-cli@v3
       with:
         version: latest
     - name: Start Supabase auth stack

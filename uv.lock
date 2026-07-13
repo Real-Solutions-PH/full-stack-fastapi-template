@@ -351,7 +351,7 @@ requires-dist = [
     { name = "alembic", specifier = ">=1.12.1,<2.0.0" },
     { name = "boto3", specifier = ">=1.34.0,<2.0.0" },
     { name = "copilotkit", specifier = ">=0.1.87,<1.0.0" },
-    { name = "docling", extras = ["easyocr", "rapidocr", "vlm"], marker = "extra == 'ocr'", specifier = ">=2.0.0" },
+    { name = "docling", extras = ["easyocr", "rapidocr", "vlm"], marker = "extra == 'ocr'", specifier = ">=2.112.0" },
     { name = "email-validator", specifier = ">=2.1.0.post1,<3.0.0.0" },
     { name = "emails", specifier = ">=0.6,<1.0" },
     { name = "fastapi", extras = ["standard"], specifier = ">=0.114.2,<1.0.0" },

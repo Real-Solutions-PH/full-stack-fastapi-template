@@ -66,6 +66,7 @@ async def process_document(
         minio_key=minio_key,
         status=OcrStatus.PROCESSING.value,
         owner_id=current_user.id,
+        tenant_id=current_user.tenant_id,
     )
     doc = ocr_repo.create(session=session, doc=doc)
 
@@ -105,8 +106,14 @@ def list_documents(
     limit: int = 100,
 ) -> tuple[list[OcrDocument], int]:
     owner_id = None if current_user.is_superuser else current_user.id
+    tenant_id = None if current_user.is_superuser else current_user.tenant_id
     return ocr_repo.get_multi(
-        session=session, owner_id=owner_id, status=status, skip=skip, limit=limit
+        session=session,
+        tenant_id=tenant_id,
+        owner_id=owner_id,
+        status=status,
+        skip=skip,
+        limit=limit,
     )
 
 
@@ -116,7 +123,10 @@ def get_document(
     current_user: User,
     doc_id: uuid.UUID,
 ) -> OcrDocument:
-    doc = ocr_repo.get_by_id(session=session, doc_id=doc_id)
+    # Tenant filter in the lookup: cross-tenant rows are invisible -> 404
+    # (no existence leak). Same-tenant, wrong-owner rows keep their 403.
+    tenant_id = None if current_user.is_superuser else current_user.tenant_id
+    doc = ocr_repo.get_by_id(session=session, doc_id=doc_id, tenant_id=tenant_id)
     if not doc:
         raise HTTPException(status_code=404, detail="OCR document not found")
     if not current_user.is_superuser and doc.owner_id != current_user.id:

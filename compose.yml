@@ -46,40 +46,12 @@ services:
       retries: 5
     volumes:
       - app-minio-data:/data
-    networks:
-      - traefik-public
-      - default
-    labels:
-      - traefik.enable=true
-      - traefik.docker.network=traefik-public
-      - traefik.constraint-label=traefik-public
-
-      - traefik.http.routers.${STACK_NAME?Variable not set}-minio-http.rule=Host(`minio.${DOMAIN?Variable not set}`)
-      - traefik.http.routers.${STACK_NAME?Variable not set}-minio-http.entrypoints=http
-      - traefik.http.routers.${STACK_NAME?Variable not set}-minio-http.middlewares=https-redirect
-      - traefik.http.routers.${STACK_NAME?Variable not set}-minio-https.rule=Host(`minio.${DOMAIN?Variable not set}`)
-      - traefik.http.routers.${STACK_NAME?Variable not set}-minio-https.entrypoints=https
-      - traefik.http.routers.${STACK_NAME?Variable not set}-minio-https.tls=true
-      - traefik.http.routers.${STACK_NAME?Variable not set}-minio-https.tls.certresolver=le
-      - traefik.http.services.${STACK_NAME?Variable not set}-minio.loadbalancer.server.port=9000
-
-      - traefik.http.routers.${STACK_NAME?Variable not set}-minio-console-http.rule=Host(`minio-console.${DOMAIN?Variable not set}`)
-      - traefik.http.routers.${STACK_NAME?Variable not set}-minio-console-http.entrypoints=http
-      - traefik.http.routers.${STACK_NAME?Variable not set}-minio-console-http.middlewares=https-redirect
-      - traefik.http.routers.${STACK_NAME?Variable not set}-minio-console-https.rule=Host(`minio-console.${DOMAIN?Variable not set}`)
-      - traefik.http.routers.${STACK_NAME?Variable not set}-minio-console-https.entrypoints=https
-      - traefik.http.routers.${STACK_NAME?Variable not set}-minio-console-https.tls=true
-      - traefik.http.routers.${STACK_NAME?Variable not set}-minio-console-https.tls.certresolver=le
-      - traefik.http.services.${STACK_NAME?Variable not set}-minio-console.loadbalancer.server.port=9001
 
   prestart:
     image: '${DOCKER_IMAGE_BACKEND?Variable not set}:${TAG-latest}'
     build:
       context: .
       dockerfile: backend/Dockerfile
-    networks:
-      - traefik-public
-      - default
     depends_on:
       db:
         condition: service_healthy
@@ -87,14 +59,22 @@ services:
     command: bash scripts/prestart.sh
     env_file:
       - .env
+    # The Supabase local stack (supabase start) runs on the HOST, so the
+    # container reaches it via host.docker.internal; tokens are still issued
+    # with the host-local URL, hence the explicit SUPABASE_JWT_ISSUER.
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     environment:
       - DOMAIN=${DOMAIN}
       - FRONTEND_HOST=${FRONTEND_HOST?Variable not set}
       - ENVIRONMENT=${ENVIRONMENT}
       - BACKEND_CORS_ORIGINS=${BACKEND_CORS_ORIGINS}
-      - SECRET_KEY=${SECRET_KEY?Variable not set}
       - FIRST_SUPERUSER=${FIRST_SUPERUSER?Variable not set}
       - FIRST_SUPERUSER_PASSWORD=${FIRST_SUPERUSER_PASSWORD?Variable not set}
+      - SUPABASE_URL=http://host.docker.internal:54321
+      - SUPABASE_JWT_ISSUER=${SUPABASE_URL?Variable not set}/auth/v1
+      - SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY?Variable not set}
+      - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY?Variable not set}
       - SMTP_HOST=${SMTP_HOST}
       - SMTP_USER=${SMTP_USER}
       - SMTP_PASSWORD=${SMTP_PASSWORD}
@@ -109,25 +89,32 @@ services:
   backend:
     image: '${DOCKER_IMAGE_BACKEND?Variable not set}:${TAG-latest}'
     restart: always
-    networks:
-      - traefik-public
-      - default
     depends_on:
       db:
         condition: service_healthy
         restart: true
+      minio:
+        # the app lifespan ensures the default bucket exists at startup
+        condition: service_healthy
       prestart:
         condition: service_completed_successfully
     env_file:
       - .env
+    # See prestart: the host-run Supabase stack is reached via
+    # host.docker.internal while token issuers stay host-local.
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     environment:
       - DOMAIN=${DOMAIN}
       - FRONTEND_HOST=${FRONTEND_HOST?Variable not set}
       - ENVIRONMENT=${ENVIRONMENT}
       - BACKEND_CORS_ORIGINS=${BACKEND_CORS_ORIGINS}
-      - SECRET_KEY=${SECRET_KEY?Variable not set}
       - FIRST_SUPERUSER=${FIRST_SUPERUSER?Variable not set}
       - FIRST_SUPERUSER_PASSWORD=${FIRST_SUPERUSER_PASSWORD?Variable not set}
+      - SUPABASE_URL=http://host.docker.internal:54321
+      - SUPABASE_JWT_ISSUER=${SUPABASE_URL?Variable not set}/auth/v1
+      - SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY?Variable not set}
+      - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY?Variable not set}
       - SMTP_HOST=${SMTP_HOST}
       - SMTP_USER=${SMTP_USER}
       - SMTP_PASSWORD=${SMTP_PASSWORD}
@@ -148,59 +135,23 @@ services:
     build:
       context: .
       dockerfile: backend/Dockerfile
-    labels:
-      - traefik.enable=true
-      - traefik.docker.network=traefik-public
-      - traefik.constraint-label=traefik-public
-
-      - traefik.http.services.${STACK_NAME?Variable not set}-backend.loadbalancer.server.port=8000
-
-      - traefik.http.routers.${STACK_NAME?Variable not set}-backend-http.rule=Host(`api.${DOMAIN?Variable not set}`)
-      - traefik.http.routers.${STACK_NAME?Variable not set}-backend-http.entrypoints=http
-
-      - traefik.http.routers.${STACK_NAME?Variable not set}-backend-https.rule=Host(`api.${DOMAIN?Variable not set}`)
-      - traefik.http.routers.${STACK_NAME?Variable not set}-backend-https.entrypoints=https
-      - traefik.http.routers.${STACK_NAME?Variable not set}-backend-https.tls=true
-      - traefik.http.routers.${STACK_NAME?Variable not set}-backend-https.tls.certresolver=le
-
-      # Enable redirection for HTTP and HTTPS
-      - traefik.http.routers.${STACK_NAME?Variable not set}-backend-http.middlewares=https-redirect
 
   frontend:
     image: '${DOCKER_IMAGE_FRONTEND?Variable not set}:${TAG-latest}'
     restart: always
-    networks:
-      - traefik-public
-      - default
     build:
       context: .
       dockerfile: frontend/Dockerfile
       args:
         - NEXT_PUBLIC_API_URL=https://api.${DOMAIN?Variable not set}
+        - NEXT_PUBLIC_SENTRY_DSN=${FRONTEND_SENTRY_DSN:-}
+        # The browser client reuses the same Supabase project URL/anon key
+        # the backend validates against (see .env.example).
+        - NEXT_PUBLIC_SUPABASE_URL=${SUPABASE_URL?Variable not set}
+        - NEXT_PUBLIC_SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY?Variable not set}
         - NODE_ENV=production
-    labels:
-      - traefik.enable=true
-      - traefik.docker.network=traefik-public
-      - traefik.constraint-label=traefik-public
 
-      - traefik.http.services.${STACK_NAME?Variable not set}-frontend.loadbalancer.server.port=3000
-
-      - traefik.http.routers.${STACK_NAME?Variable not set}-frontend-http.rule=Host(`dashboard.${DOMAIN?Variable not set}`)
-      - traefik.http.routers.${STACK_NAME?Variable not set}-frontend-http.entrypoints=http
-
-      - traefik.http.routers.${STACK_NAME?Variable not set}-frontend-https.rule=Host(`dashboard.${DOMAIN?Variable not set}`)
-      - traefik.http.routers.${STACK_NAME?Variable not set}-frontend-https.entrypoints=https
-      - traefik.http.routers.${STACK_NAME?Variable not set}-frontend-https.tls=true
-      - traefik.http.routers.${STACK_NAME?Variable not set}-frontend-https.tls.certresolver=le
-
-      # Enable redirection for HTTP and HTTPS
-      - traefik.http.routers.${STACK_NAME?Variable not set}-frontend-http.middlewares=https-redirect
 volumes:
   app-db-data:
   app-redis-data:
   app-minio-data:
-
-networks:
-  traefik-public:
-    # Allow setting it to false for testing
-    external: true

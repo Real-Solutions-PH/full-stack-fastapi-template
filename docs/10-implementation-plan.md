@@ -42,7 +42,7 @@
 - [ ] Docs updated
 - [ ] Observability hooks added
 - [ ] Feature flag (if risky)
-- [ ] Deployed to staging, verified
+- [ ] Manually promoted to the deployed environment and verified (per [13-deployment.md](13-deployment.md))
 - [ ] Runbook updated
 
 ## Sequencing Rules

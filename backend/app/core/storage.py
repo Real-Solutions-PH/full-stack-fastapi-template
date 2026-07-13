@@ -1,6 +1,6 @@
-import boto3
-from botocore.client import BaseClient
-from botocore.exceptions import ClientError
+import boto3  # type: ignore[import-untyped]
+from botocore.client import BaseClient  # type: ignore[import-untyped]
+from botocore.exceptions import ClientError  # type: ignore[import-untyped]
 
 from app.core.config import settings
 from app.logger import app_logger
@@ -63,11 +63,12 @@ class MinioEngine:
     def generate_presigned_url(
         self, *, bucket: str, key: str, expires_in: int = 3600
     ) -> str:
-        return self._client.generate_presigned_url(
+        url: str = self._client.generate_presigned_url(
             "get_object",
             Params={"Bucket": bucket, "Key": key},
             ExpiresIn=expires_in,
         )
+        return url
 
 
 # Backward-compatible module-level helpers

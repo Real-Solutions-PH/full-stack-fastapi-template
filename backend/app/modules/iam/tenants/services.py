@@ -3,8 +3,20 @@ import uuid
 from fastapi import HTTPException
 from sqlmodel import Session
 
+from app.core.config import settings
 from app.modules.iam.tenants import repo as tenant_repo
 from app.modules.iam.tenants.models import Tenant
+
+
+def get_default_tenant(*, session: Session) -> Tenant:
+    """Tenant that new signups are assigned to. Seeded by init_db/migration."""
+    tenant = tenant_repo.get_by_slug(session=session, slug=settings.DEFAULT_TENANT_SLUG)
+    if tenant is None:
+        raise RuntimeError(
+            f"Default tenant (slug={settings.DEFAULT_TENANT_SLUG!r}) is missing; "
+            "run migrations / init_db first."
+        )
+    return tenant
 
 
 def list_tenants(

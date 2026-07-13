@@ -10,9 +10,7 @@ def get_by_id(*, session: Session, permission_id: uuid.UUID) -> Permission | Non
 
 
 def get_by_name(*, session: Session, name: str) -> Permission | None:
-    return session.exec(
-        select(Permission).where(Permission.name == name)
-    ).first()
+    return session.exec(select(Permission).where(Permission.name == name)).first()
 
 
 def get_multi(

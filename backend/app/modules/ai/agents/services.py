@@ -24,7 +24,9 @@ def get_agent(*, session: Session, agent_id: uuid.UUID) -> Agent:
 def create_agent(*, session: Session, agent_in: AgentCreate) -> Agent:
     existing = agent_repo.get_by_name(session=session, name=agent_in.name)
     if existing:
-        raise HTTPException(status_code=409, detail="Agent with this name already exists")
+        raise HTTPException(
+            status_code=409, detail="Agent with this name already exists"
+        )
     db_agent = Agent.model_validate(agent_in)
     return agent_repo.create(session=session, agent=db_agent)
 

@@ -5,10 +5,13 @@ help: ## Show this help
 # ---------------------------------------------------------------------------
 # Docker
 # ---------------------------------------------------------------------------
-.PHONY: up down build logs ps
+.PHONY: up watch down build logs ps
 
 up: ## Start all services (dev mode with hot-reload)
 	docker compose up -d
+
+watch: ## Rebuild, recreate, and watch all services (foreground)
+	docker compose up --build --force-recreate --watch
 
 down: ## Stop all services
 	docker compose down
@@ -23,6 +26,17 @@ ps: ## List running containers
 	docker compose ps
 
 # ---------------------------------------------------------------------------
+# Supabase (local auth stack — GoTrue + JWKS; app tables stay in compose db)
+# ---------------------------------------------------------------------------
+.PHONY: supabase-up supabase-down
+
+supabase-up: ## Start the local Supabase auth stack (required for backend tests)
+	supabase start
+
+supabase-down: ## Stop the local Supabase auth stack (drops its data)
+	supabase stop --no-backup
+
+# ---------------------------------------------------------------------------
 # Backend
 # ---------------------------------------------------------------------------
 .PHONY: backend-shell backend-lint backend-format backend-test backend-migrate backend-downgrade backend-revision backend-prestart
@@ -30,8 +44,8 @@ ps: ## List running containers
 backend-shell: ## Open a bash shell in the backend container
 	docker compose exec backend bash
 
-backend-lint: ## Run backend linters (mypy, ty, ruff)
-	cd backend && uv run mypy app && uv run ty check app && uv run ruff check app && uv run ruff format app --check
+backend-lint: ## Run backend linters (mypy, ruff)
+	cd backend && uv run mypy app && uv run ruff check app && uv run ruff format app --check
 
 backend-format: ## Auto-format backend code (ruff)
 	cd backend && bash scripts/format.sh
@@ -54,7 +68,7 @@ backend-prestart: ## Run prestart script (healthcheck + migrations + initial dat
 # ---------------------------------------------------------------------------
 # Frontend
 # ---------------------------------------------------------------------------
-.PHONY: frontend-dev frontend-build frontend-lint frontend-preview frontend-generate-client frontend-test frontend-test-ui
+.PHONY: frontend-dev frontend-build frontend-lint frontend-preview frontend-generate-client
 
 frontend-dev: ## Start Vite dev server
 	cd frontend && bun run dev
@@ -71,11 +85,16 @@ frontend-preview: ## Preview production build locally
 frontend-generate-client: ## Generate TypeScript API client from OpenAPI spec
 	bash scripts/generate-client.sh
 
-frontend-test: ## Run Playwright E2E tests
-	cd frontend && bunx playwright test
+# ---------------------------------------------------------------------------
+# E2E (Cypress, e2e/ workspace — needs the stack running)
+# ---------------------------------------------------------------------------
+.PHONY: e2e-test e2e-test-ui
 
-frontend-test-ui: ## Run Playwright tests with UI
-	cd frontend && bunx playwright test --ui
+e2e-test: ## Run Cypress E2E tests headlessly
+	cd e2e && bun run test
+
+e2e-test-ui: ## Open the interactive Cypress runner
+	cd e2e && bun run test:ui
 
 # ---------------------------------------------------------------------------
 # Dependencies

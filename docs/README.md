@@ -19,19 +19,22 @@ Context pack for human + AI programmers building this SaaS. Fill each template; 
 | [10-implementation-plan.md](10-implementation-plan.md) | Phases, tasks, dependencies | Tech lead |
 | [11-testing-strategy.md](11-testing-strategy.md) | Unit/integration/E2E, coverage targets | QA/Eng |
 | [12-security.md](12-security.md) | Threat model, controls, compliance | Security |
-| [13-deployment.md](13-deployment.md) | Envs, CI/CD, infra, rollback | DevOps |
+| [13-deployment.md](13-deployment.md) | Single-environment policy, manual promotion | DevOps |
 | [14-observability.md](14-observability.md) | Logs, metrics, traces, alerts | DevOps |
 | [15-pricing-monetization.md](15-pricing-monetization.md) | Plans, billing, gates | PM/Finance |
 | [16-go-to-market.md](16-go-to-market.md) | Launch, channels, growth loops | Marketing |
 | [17-roadmap.md](17-roadmap.md) | Quarterly themes, future bets | PM |
 | [18-risks.md](18-risks.md) | Risks, mitigations, owners | All |
 | [19-glossary.md](19-glossary.md) | Domain terms, acronyms | All |
-| [20-decision-log.md](20-decision-log.md) | ADRs, key choices, rationale | Tech lead |
+| [20-decision-log.md](20-decision-log.md) | Deprecated — pointer to `adr/` | Tech lead |
 | [21-onboarding.md](21-onboarding.md) | Dev setup, repo tour, runbook | Eng |
+| [constitution.md](constitution.md) | Engineering Constitution — stack defaults and conventions | All |
+| [adr/](adr/) | Architecture Decision Records — one file per decision | Tech lead |
+| [runbook.md](runbook.md) | Deploy, rollback, backup/restore, common ops, incidents | DevOps |
 
 ## Conventions
 
 - Update doc when reality changes. Stale doc worse than no doc.
-- Link decisions to ADRs in [20-decision-log.md](20-decision-log.md).
+- Decisions live in `docs/adr/` as ADRs (`docs/20-decision-log.md` is deprecated — see its banner).
 - Date entries `YYYY-MM-DD`.
 - Keep AI-context-friendly: short sections, headings, tables.

@@ -24,14 +24,14 @@ def get_tool(*, session: Session, tool_id: uuid.UUID) -> Tool:
 def create_tool(*, session: Session, tool_in: ToolCreate) -> Tool:
     existing = tool_repo.get_by_name(session=session, name=tool_in.name)
     if existing:
-        raise HTTPException(status_code=409, detail="Tool with this name already exists")
+        raise HTTPException(
+            status_code=409, detail="Tool with this name already exists"
+        )
     db_tool = Tool.model_validate(tool_in)
     return tool_repo.create(session=session, tool=db_tool)
 
 
-def update_tool(
-    *, session: Session, tool_id: uuid.UUID, tool_in: ToolUpdate
-) -> Tool:
+def update_tool(*, session: Session, tool_id: uuid.UUID, tool_in: ToolUpdate) -> Tool:
     tool = tool_repo.get_by_id(session=session, tool_id=tool_id)
     if not tool:
         raise HTTPException(status_code=404, detail="Tool not found")
@@ -54,9 +54,7 @@ def assign_tool_to_agent(
     )
     if existing:
         raise HTTPException(status_code=409, detail="Tool already assigned to agent")
-    tool_repo.assign_tool_to_agent(
-        session=session, agent_id=agent_id, tool_id=tool_id
-    )
+    tool_repo.assign_tool_to_agent(session=session, agent_id=agent_id, tool_id=tool_id)
 
 
 def remove_tool_from_agent(
@@ -67,7 +65,5 @@ def remove_tool_from_agent(
     )
 
 
-def get_tools_for_agent(
-    *, session: Session, agent_id: uuid.UUID
-) -> list[Tool]:
+def get_tools_for_agent(*, session: Session, agent_id: uuid.UUID) -> list[Tool]:
     return tool_repo.get_tools_for_agent(session=session, agent_id=agent_id)

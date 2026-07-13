@@ -1,7 +1,7 @@
 import uuid
 from typing import Any
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 
 from app.modules.ai.mcp import services as mcp_service
 from app.modules.ai.mcp.schema import (
@@ -10,16 +10,22 @@ from app.modules.ai.mcp.schema import (
     MCPServersPublic,
     MCPServerUpdate,
 )
-from app.modules.iam.deps import CurrentUser
+from app.modules.iam.deps import CurrentUser, get_current_active_superuser
 from app.shared.deps import SessionDep
 from app.shared.schema import Message
 
-router = APIRouter(prefix="/mcp", tags=["ai-mcp"])
+# Superuser-only: MCPServer.config is a free-form dict that can hold
+# URLs/credentials; the catalog is a platform surface, not tenant data.
+router = APIRouter(
+    prefix="/mcp",
+    tags=["ai-mcp"],
+    dependencies=[Depends(get_current_active_superuser)],
+)
 
 
 @router.get("/", response_model=MCPServersPublic)
 def read_mcp_servers(
-    session: SessionDep, current_user: CurrentUser, skip: int = 0, limit: int = 100
+    session: SessionDep, _current_user: CurrentUser, skip: int = 0, limit: int = 100
 ) -> Any:
     servers, count = mcp_service.list_mcp_servers(
         session=session, skip=skip, limit=limit
@@ -31,14 +37,14 @@ def read_mcp_servers(
 
 @router.get("/{id}", response_model=MCPServerPublic)
 def read_mcp_server(
-    session: SessionDep, current_user: CurrentUser, id: uuid.UUID
+    session: SessionDep, _current_user: CurrentUser, id: uuid.UUID
 ) -> Any:
     return mcp_service.get_mcp_server(session=session, mcp_id=id)
 
 
 @router.post("/", response_model=MCPServerPublic)
 def create_mcp_server(
-    *, session: SessionDep, current_user: CurrentUser, mcp_in: MCPServerCreate
+    *, session: SessionDep, _current_user: CurrentUser, mcp_in: MCPServerCreate
 ) -> Any:
     return mcp_service.create_mcp_server(session=session, mcp_in=mcp_in)
 
@@ -47,7 +53,7 @@ def create_mcp_server(
 def update_mcp_server(
     *,
     session: SessionDep,
-    current_user: CurrentUser,
+    _current_user: CurrentUser,
     id: uuid.UUID,
     mcp_in: MCPServerUpdate,
 ) -> Any:
@@ -56,7 +62,7 @@ def update_mcp_server(
 
 @router.delete("/{id}")
 def delete_mcp_server(
-    session: SessionDep, current_user: CurrentUser, id: uuid.UUID
+    session: SessionDep, _current_user: CurrentUser, id: uuid.UUID
 ) -> Message:
     mcp_service.delete_mcp_server(session=session, mcp_id=id)
     return Message(message="MCP server deleted successfully")

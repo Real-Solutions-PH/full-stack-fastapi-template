@@ -1,24 +1,34 @@
 # FastAPI Project - Development
 
-## Docker Compose
+## Supabase (auth)
 
-* Start the local stack with Docker Compose:
+Authentication is Supabase (GoTrue) — the backend validates Supabase JWTs and has no password endpoints of its own (ADR-0005). Local development and tests need the Supabase CLI local stack running:
 
 ```bash
+make supabase-up     # GoTrue + JWKS on http://127.0.0.1:54321, Mailpit on :54324
+make supabase-down   # stop it (drops its data)
+```
+
+The CLI is installed via `brew install supabase/tap/supabase`. `supabase/config.toml` disables the services this template doesn't use (Studio, Realtime, Storage — object storage stays MinIO). The `SUPABASE_*` values in `.env.example` are the CLI's public local demo keys. App tables stay in the compose `db` service; only auth lives in the Supabase stack.
+
+Recovery/confirmation emails from local Supabase land in Mailpit: <http://127.0.0.1:54324>.
+
+## Docker Compose
+
+* Start the local stack with Docker Compose (the backend reaches the host-run Supabase stack via `host.docker.internal`):
+
+```bash
+make supabase-up
 docker compose watch
 ```
 
 * Now you can open your browser and interact with these URLs:
 
-Frontend, built with Docker, with routes handled based on the path: <http://localhost:3000>
+Frontend, built with Docker: <http://localhost:3000>
 
 Backend, JSON based web API based on OpenAPI: <http://localhost:8000>
 
 Automatic interactive documentation with Swagger UI (from the OpenAPI backend): <http://localhost:8000/docs>
-
-Adminer, database web administration: <http://localhost:8080>
-
-Traefik UI, to see how the routes are being handled by the proxy: <http://localhost:8090>
 
 **Note**: The first time you start your stack, it might take a minute for it to be ready. While the backend waits for the database to be ready and configures everything. You can check the logs to monitor it.
 
@@ -66,6 +76,8 @@ And then start the local frontend development server:
 bun run dev
 ```
 
+`bun` is the JS lockfile of record for both `frontend/` and `mobile/`; npm/yarn/pnpm lockfiles are gitignored deliberately.
+
 Or you could stop the `backend` Docker Compose service:
 
 ```bash
@@ -78,34 +90,6 @@ And then you can run the local development server for the backend:
 cd backend
 fastapi dev app/main.py
 ```
-
-## Docker Compose in `localhost.tiangolo.com`
-
-When you start the Docker Compose stack, it uses `localhost` by default, with different ports for each service (backend, frontend, adminer, etc).
-
-When you deploy it to production (or staging), it will deploy each service in a different subdomain, like `api.example.com` for the backend and `dashboard.example.com` for the frontend.
-
-In the guide about [deployment](deployment.md) you can read about Traefik, the configured proxy. That's the component in charge of transmitting traffic to each service based on the subdomain.
-
-If you want to test that it's all working locally, you can edit the local `.env` file, and change:
-
-```dotenv
-DOMAIN=localhost.tiangolo.com
-```
-
-That will be used by the Docker Compose files to configure the base domain for the services.
-
-Traefik will use this to transmit traffic at `api.localhost.tiangolo.com` to the backend, and traffic at `dashboard.localhost.tiangolo.com` to the frontend.
-
-The domain `localhost.tiangolo.com` is a special domain that is configured (with all its subdomains) to point to `127.0.0.1`. This way you can use that for your local development.
-
-After you update it, run again:
-
-```bash
-docker compose watch
-```
-
-When deploying, for example in production, the main Traefik is configured outside of the Docker Compose files. For local development, there's an included Traefik in `compose.override.yml`, just to let you test that the domains work as expected, for example with `api.localhost.tiangolo.com` and `dashboard.localhost.tiangolo.com`.
 
 ## Docker Compose files and env vars
 
@@ -182,7 +166,7 @@ biome check..............................................................Passed
 
 ## URLs
 
-The production or staging URLs would use these same paths, but with your own domain.
+A deployed environment would use these same paths, but with its own domain (see [docs/13-deployment.md](docs/13-deployment.md)).
 
 ### Development URLs
 
@@ -196,26 +180,4 @@ Automatic Interactive Docs (Swagger UI): <http://localhost:8000/docs>
 
 Automatic Alternative Docs (ReDoc): <http://localhost:8000/redoc>
 
-Adminer: <http://localhost:8080>
-
-Traefik UI: <http://localhost:8090>
-
 MailCatcher: <http://localhost:1080>
-
-### Development URLs with `localhost.tiangolo.com` Configured
-
-Development URLs, for local development.
-
-Frontend: <http://dashboard.localhost.tiangolo.com>
-
-Backend: <http://api.localhost.tiangolo.com>
-
-Automatic Interactive Docs (Swagger UI): <http://api.localhost.tiangolo.com/docs>
-
-Automatic Alternative Docs (ReDoc): <http://api.localhost.tiangolo.com/redoc>
-
-Adminer: <http://localhost.tiangolo.com:8080>
-
-Traefik UI: <http://localhost.tiangolo.com:8090>
-
-MailCatcher: <http://localhost.tiangolo.com:1080>

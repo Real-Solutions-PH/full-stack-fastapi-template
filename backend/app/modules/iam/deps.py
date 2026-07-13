@@ -1,38 +1,65 @@
+import uuid
 from typing import Annotated
 
 import jwt
-from fastapi import Depends, HTTPException, status
-from fastapi.security import OAuth2PasswordBearer
-from jwt.exceptions import InvalidTokenError
-from pydantic import ValidationError
+from fastapi import Depends, HTTPException, Request, status
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
-from app.core import security
-from app.core.config import settings
-from app.modules.iam.auth.schema import TokenPayload
+from app.core import supabase_auth
 from app.modules.iam.users.models import User
 from app.shared.deps import SessionDep
 
-reusable_oauth2 = OAuth2PasswordBearer(
-    tokenUrl=f"{settings.API_V1_STR}/login/access-token"
-)
-
-TokenDep = Annotated[str, Depends(reusable_oauth2)]
+# auto_error=False so a missing header raises OUR 401 (with WWW-Authenticate,
+# preserving the prior envelope semantics) instead of HTTPBearer's 403.
+bearer_scheme = HTTPBearer(auto_error=False)
 
 
-def get_current_user(session: SessionDep, token: TokenDep) -> User:
-    try:
-        payload = jwt.decode(
-            token, settings.SECRET_KEY, algorithms=[security.ALGORITHM]
+def get_bearer_token(
+    credentials: Annotated[HTTPAuthorizationCredentials | None, Depends(bearer_scheme)],
+) -> str:
+    if credentials is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Not authenticated",
+            headers={"WWW-Authenticate": "Bearer"},
         )
-        token_data = TokenPayload(**payload)
-    except (InvalidTokenError, ValidationError):
+    return credentials.credentials
+
+
+TokenDep = Annotated[str, Depends(get_bearer_token)]
+
+
+def get_current_user(request: Request, session: SessionDep, token: TokenDep) -> User:
+    try:
+        claims = supabase_auth.verify_token(token)
+        user_id = uuid.UUID(str(claims["sub"]))
+    except jwt.exceptions.PyJWKClientConnectionError:
+        # JWKS endpoint unreachable — an upstream outage, not a bad token.
+        # Caught before PyJWTError (it's a subclass) so callers can retry.
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Authentication service unavailable",
+        )
+    except (jwt.PyJWTError, KeyError, ValueError):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Could not validate credentials",
         )
-    user = session.get(User, token_data.sub)
+    # Claims seam: stash the verified claims for downstream request handling
+    # (e.g. future request.jwt.claims GUC wiring for RLS — see the runbook).
+    request.state.jwt_claims = claims
+    user = session.get(User, user_id)
     if not user:
-        raise HTTPException(status_code=404, detail="User not found")
+        # JIT provisioning: the Supabase auth UID is the local PK; first
+        # sight of a valid token creates the mirror row.
+        from app.modules.iam.users import services as user_service
+
+        email = claims.get("email")
+        if not email:
+            raise HTTPException(status_code=403, detail="Token has no email claim")
+        user = user_service.provision_user_from_claims(
+            session=session, user_id=user_id, email=str(email)
+        )
     if not user.is_active:
         raise HTTPException(status_code=400, detail="Inactive user")
     return user

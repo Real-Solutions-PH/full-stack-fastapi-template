@@ -7,7 +7,8 @@
 | Logs | Loki / Datadog | 30d |
 | Metrics | Prometheus | 90d |
 | Traces | OpenTelemetry / Tempo | 7d |
-| Errors | Sentry | 90d |
+| Errors | GlitchTip (Sentry-SDK compatible) | 90d |
+| Uptime | Better Stack (free tier: 10 monitors, 3-min checks, status page; one account per client) | — |
 
 ## Logging
 

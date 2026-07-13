@@ -4,10 +4,13 @@ updates:
   - package-ecosystem: github-actions
     directory: /
     schedule:
-      interval: daily
+      interval: weekly
     commit-message:
       prefix: ⬆
     labels: [dependencies, internal]
+    groups:
+      github-actions:
+        patterns: ["*"]
   # Python uv
   - package-ecosystem: uv
     directory: /
@@ -16,9 +19,14 @@ updates:
     commit-message:
       prefix: ⬆
     labels: [dependencies, internal]
+    groups:
+      python:
+        patterns: ["*"]
   # bun
   - package-ecosystem: bun
-    directory: /
+    directories:
+      - /
+      - /mobile
     schedule:
       interval: weekly
     commit-message:
@@ -26,6 +34,9 @@ updates:
     labels: [dependencies, internal]
     ignore:
       - dependency-name: "@hey-api/openapi-ts"
+    groups:
+      javascript:
+        patterns: ["*"]
   # Docker
   - package-ecosystem: docker
     directories:
@@ -36,6 +47,9 @@ updates:
     commit-message:
       prefix: ⬆
     labels: [dependencies, internal]
+    groups:
+      docker:
+        patterns: ["*"]
   # Docker Compose
   - package-ecosystem: docker-compose
     directory: /
@@ -44,3 +58,6 @@ updates:
     commit-message:
       prefix: ⬆
     labels: [dependencies, internal]
+    groups:
+      docker-compose:
+        patterns: ["*"]

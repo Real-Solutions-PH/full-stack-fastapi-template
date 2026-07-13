@@ -17,15 +17,14 @@ dependencies = [
     "sqlmodel<1.0.0,>=0.0.21",
     "pydantic-settings<3.0.0,>=2.2.1",
     "sentry-sdk[fastapi]>=2.0.0,<3.0.0",
-    "pyjwt<3.0.0,>=2.8.0",
-    "pwdlib[argon2,bcrypt]>=0.3.0",
+    "pyjwt[crypto]<3.0.0,>=2.8.0",
     "ruff>=0.14.13",
     "boto3<2.0.0,>=1.34.0",
     # AI Module
-    "langchain-core>=0.3.0,<1.0.0",
-    "langchain-openai>=0.3.0,<1.0.0",
-    "langgraph>=0.4.0,<1.0.0",
-    "langgraph-checkpoint-postgres>=2.0.0,<3.0.0",
+    "langchain-core>=0.3.0,<2.0.0",
+    "langchain-openai>=0.3.0,<2.0.0",
+    "langgraph>=1.0.2,<2.0.0",
+    "langgraph-checkpoint-postgres>=2.0.0,<4.0.0",
     "langchain-community>=0.3.0,<1.0.0",
     "copilotkit>=0.1.87,<1.0.0",
     "psycopg[binary,pool]<4.0.0,>=3.1.13",
@@ -53,6 +52,11 @@ build-backend = "hatchling.build"
 [tool.mypy]
 strict = true
 exclude = ["venv", ".venv", "alembic"]
+
+[[tool.mypy.overrides]]
+# docling ships in the optional "ocr" extra; CI type-checks without it installed.
+module = ["app.modules.ocr.providers.*"]
+disable_error_code = ["import-not-found"]
 
 [tool.ruff]
 target-version = "py310"

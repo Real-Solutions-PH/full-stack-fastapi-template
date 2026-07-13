@@ -27,7 +27,7 @@ If you are developing an API-only app and want to remove the frontend, you can d
 
 * In the `compose.yml` file, remove the whole service / section `frontend`.
 
-* In the `compose.override.yml` file, remove the whole service / section `frontend` and `playwright`.
+* In the `compose.override.yml` file, remove the whole service / section `frontend` and `cypress`.
 
 Done, you have a frontend-less (api-only) app. 🤓
 
@@ -90,24 +90,19 @@ The frontend code is structured as follows:
 * `frontend/src/hooks` - Custom hooks.
 * `frontend/src/routes` - The different routes of the frontend which include the pages.
 
-## End-to-End Testing with Playwright
+## End-to-End Testing with Cypress
 
-The frontend includes initial end-to-end tests using Playwright. To run the tests, you need to have the Docker Compose stack running. Start the stack with the following command:
+End-to-end tests live in the `e2e/` workspace at the repo root (Cypress, per ADR-0004). To run them, you need the stack running:
 
 ```bash
-docker compose up -d --wait backend
+docker compose up -d --wait backend frontend
 ```
 
-Then, you can run the tests with the following command:
+Then, from the repo root:
 
 ```bash
-bunx playwright test
-```
-
-You can also run your tests in UI mode to see the browser and interact with it running:
-
-```bash
-bunx playwright test --ui
+make e2e-test        # headless run
+make e2e-test-ui     # interactive Cypress runner
 ```
 
 To stop and remove the Docker Compose stack and clean the data created in tests, use the following command:
@@ -116,6 +111,6 @@ To stop and remove the Docker Compose stack and clean the data created in tests,
 docker compose down -v
 ```
 
-To update the tests, navigate to the tests directory and modify the existing test files or add new ones as needed.
+To update the tests, navigate to the `e2e/cypress/e2e/` directory and modify the existing spec files or add new ones as needed.
 
-For more information on writing and running Playwright tests, refer to the official [Playwright documentation](https://playwright.dev/docs/intro).
+For more information on writing and running Cypress tests, refer to the official [Cypress documentation](https://docs.cypress.io).

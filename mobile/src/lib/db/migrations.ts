@@ -1,8 +1,8 @@
-import type * as SQLite from "expo-sqlite";
+import type * as SQLite from "expo-sqlite"
 
 const MIGRATIONS: string[] = [
-	// Version 1: Initial schema
-	`CREATE TABLE IF NOT EXISTS users (
+  // Version 1: Initial schema
+  `CREATE TABLE IF NOT EXISTS users (
     id TEXT PRIMARY KEY,
     email TEXT NOT NULL,
     full_name TEXT,
@@ -32,19 +32,19 @@ const MIGRATIONS: string[] = [
     created_at TEXT NOT NULL DEFAULT (datetime('now')),
     retry_count INTEGER NOT NULL DEFAULT 0
   );`,
-];
+]
 
 export function runMigrations(db: SQLite.SQLiteDatabase): void {
-	const result = db.getFirstSync<{ user_version: number }>(
-		"PRAGMA user_version",
-	);
-	const currentVersion = result?.user_version ?? 0;
+  const result = db.getFirstSync<{ user_version: number }>(
+    "PRAGMA user_version",
+  )
+  const currentVersion = result?.user_version ?? 0
 
-	for (let i = currentVersion; i < MIGRATIONS.length; i++) {
-		db.execSync(MIGRATIONS[i]);
-	}
+  for (let i = currentVersion; i < MIGRATIONS.length; i++) {
+    db.execSync(MIGRATIONS[i])
+  }
 
-	if (currentVersion < MIGRATIONS.length) {
-		db.execSync(`PRAGMA user_version = ${MIGRATIONS.length}`);
-	}
+  if (currentVersion < MIGRATIONS.length) {
+    db.execSync(`PRAGMA user_version = ${MIGRATIONS.length}`)
+  }
 }

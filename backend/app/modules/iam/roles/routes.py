@@ -18,9 +18,7 @@ router = APIRouter(
 @router.get("/", response_model=RolesPublic)
 def read_roles(session: SessionDep, skip: int = 0, limit: int = 100) -> Any:
     roles, count = role_service.list_roles(session=session, skip=skip, limit=limit)
-    return RolesPublic(
-        data=[RolePublic.model_validate(r) for r in roles], count=count
-    )
+    return RolesPublic(data=[RolePublic.model_validate(r) for r in roles], count=count)
 
 
 @router.get("/{role_id}", response_model=RolePublic)

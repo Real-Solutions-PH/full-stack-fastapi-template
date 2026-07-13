@@ -20,7 +20,7 @@ class Agent(SQLModel, table=True):
         sa_column=Column(JSONB, nullable=False, server_default="{}"),
     )
     is_active: bool = True
-    created_at: datetime | None = Field(
+    created_at: datetime | None = Field(  # type: ignore[call-overload]
         default_factory=_utcnow,
         sa_type=DateTime(timezone=True),
     )

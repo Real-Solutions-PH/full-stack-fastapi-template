@@ -14,7 +14,12 @@ class GraniteProvider(OcrProvider):
     async def extract(self, file_bytes: bytes, mime_type: str) -> OcrResult:
         return await asyncio.to_thread(self._extract_sync, file_bytes, mime_type)
 
-    def _extract_sync(self, file_bytes: bytes, mime_type: str) -> OcrResult:
+    # pragma-justification: body imports docling, which ships only in the
+    # optional "ocr" extra and is not installed in CI (pyproject mypy
+    # override documents the same gap) — genuinely unexercisable there.
+    def _extract_sync(
+        self, file_bytes: bytes, mime_type: str
+    ) -> OcrResult:  # pragma: no cover
         from docling.datamodel.base_models import InputFormat
         from docling.document_converter import DocumentConverter, PdfFormatOption
         from docling.pipeline.vlm_pipeline import VlmPipeline, VlmPipelineOptions
@@ -43,7 +48,11 @@ class GraniteProvider(OcrProvider):
             result = converter.convert(str(tmp_path))
             markdown = result.document.export_to_markdown()
             raw_text = markdown
-            page_count = max(len(result.document.pages), 1) if hasattr(result.document, "pages") else 1
+            page_count = (
+                max(len(result.document.pages), 1)
+                if hasattr(result.document, "pages")
+                else 1
+            )
         finally:
             tmp_path.unlink(missing_ok=True)
 

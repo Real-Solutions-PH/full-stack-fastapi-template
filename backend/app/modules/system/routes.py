@@ -4,8 +4,9 @@ from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 from pydantic.networks import EmailStr
 
-from app.core.security import get_password_hash
+from app.core import supabase_auth
 from app.modules.iam.deps import get_current_active_superuser
+from app.modules.iam.tenants import services as tenant_service
 from app.modules.iam.users import repo as user_repo
 from app.modules.iam.users.models import User
 from app.modules.iam.users.schema import UserPublic
@@ -48,9 +49,18 @@ class PrivateUserCreate(BaseModel):
 
 @private_router.post("/users/", response_model=UserPublic)
 def create_user(user_in: PrivateUserCreate, session: SessionDep) -> Any:
+    # Local-env helper: create the GoTrue auth user (idempotently, password
+    # reset to the given one) and mirror it locally under the auth UID.
+    auth_uid = supabase_auth.admin_get_or_create_user(
+        email=user_in.email, password=user_in.password
+    )
+    existing = user_repo.get_by_id(session=session, user_id=auth_uid)
+    if existing:
+        return existing
     user = User(
+        id=auth_uid,
         email=user_in.email,
         full_name=user_in.full_name,
-        hashed_password=get_password_hash(user_in.password),
+        tenant_id=tenant_service.get_default_tenant(session=session).id,
     )
     return user_repo.create(session=session, user=user)

@@ -38,6 +38,8 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: 0
       - uses: oven-sh/setup-bun@v2
+      - name: Seed .env for CI (client-generation hook imports app settings)
+        run: cp .env.example .env
       - name: Set up Python
         uses: actions/setup-python@v6
         with:

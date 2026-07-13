@@ -32,7 +32,7 @@ dependencies = [
 
 [project.optional-dependencies]
 ocr = [
-    "docling[easyocr,rapidocr,vlm]>=2.0.0",
+    "docling[easyocr,rapidocr,vlm]>=2.112.0",
 ]
 
 [dependency-groups]

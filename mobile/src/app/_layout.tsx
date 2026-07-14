@@ -1,5 +1,6 @@
 import "../../global.css"
 import { Providers } from "@/components/providers"
+import { scrubSentryEvent } from "@/lib/sentry-scrub"
 import * as Sentry from "@sentry/react-native"
 import { Stack } from "expo-router"
 import { StatusBar } from "expo-status-bar"
@@ -8,7 +9,11 @@ import { StatusBar } from "expo-status-bar"
 // No-ops entirely when EXPO_PUBLIC_SENTRY_DSN is not set at build time.
 const sentryDsn = process.env.EXPO_PUBLIC_SENTRY_DSN
 if (sentryDsn) {
-  Sentry.init({ dsn: sentryDsn, tracesSampleRate: 0 })
+  Sentry.init({
+    dsn: sentryDsn,
+    tracesSampleRate: 0,
+    beforeSend: scrubSentryEvent,
+  })
 }
 
 function RootLayout() {

@@ -15,10 +15,12 @@ from fastapi.testclient import TestClient
 from sqlmodel import Session
 
 from app.core.config import settings
+from app.modules.ai.agents.models import Agent
 from app.modules.ai.conversations import repo as conv_repo
 from app.modules.ai.conversations.main import router as conversations_router
 from app.modules.ai.conversations.models import Conversation, Message
 from app.shared.errors import register_exception_handlers
+from tests.utils.utils import random_lower_string
 
 CHAT = f"{settings.API_V1_STR}/chat/conversations"
 
@@ -104,6 +106,97 @@ def test_conversation_detail_includes_messages_in_order(
     assert len(payload["messages"]) == 2
     roles = {m["role"] for m in payload["messages"]}
     assert roles == {"user", "assistant"}
+
+
+# --- agent_id validation on create (#74) ---
+#
+# create_conversation must reject a client-supplied agent_id that doesn't
+# reference a real, active agent with a 404 instead of letting the bad FK
+# (or an inactive row) reach the DB / persist silently. Agents are a global
+# catalog (no tenant_id), so there is no cross-tenant case here.
+
+
+def _seed_agent(db: Session, *, is_active: bool) -> Agent:
+    agent = Agent(name=f"agent-{random_lower_string()[:12]}", is_active=is_active)
+    db.add(agent)
+    db.commit()
+    db.refresh(agent)
+    return agent
+
+
+def test_conversation_create_unknown_agent_is_404(
+    aux_client: TestClient, normal_user_token_headers: dict[str, str]
+) -> None:
+    r = aux_client.post(
+        CHAT,
+        headers=normal_user_token_headers,
+        json={"title": "t", "agent_id": str(uuid.uuid4())},
+    )
+    assert r.status_code == status.HTTP_404_NOT_FOUND
+    assert r.json()["code"] == "not_found"
+
+
+def test_conversation_create_inactive_agent_is_404(
+    aux_client: TestClient, normal_user_token_headers: dict[str, str], db: Session
+) -> None:
+    agent = _seed_agent(db, is_active=False)
+    r = aux_client.post(
+        CHAT,
+        headers=normal_user_token_headers,
+        json={"title": "t", "agent_id": str(agent.id)},
+    )
+    assert r.status_code == status.HTTP_404_NOT_FOUND
+    assert r.json()["code"] == "not_found"
+
+
+def test_conversation_create_active_agent_persists_agent_id(
+    aux_client: TestClient, normal_user_token_headers: dict[str, str], db: Session
+) -> None:
+    agent = _seed_agent(db, is_active=True)
+    r = aux_client.post(
+        CHAT,
+        headers=normal_user_token_headers,
+        json={"title": "t", "agent_id": str(agent.id)},
+    )
+    assert r.status_code == status.HTTP_200_OK
+    assert r.json()["agent_id"] == str(agent.id)
+
+
+def test_conversation_title_enforces_max_length(
+    aux_client: TestClient, normal_user_token_headers: dict[str, str]
+) -> None:
+    # title is the one unprivileged-reachable max_length field (a normal user
+    # can POST it), so cover its boundary here. ConversationUpdate.title is
+    # dead code (no wired update route), so only the create path is exercised.
+    r = aux_client.post(
+        CHAT, headers=normal_user_token_headers, json={"title": "a" * 255}
+    )
+    assert r.status_code == status.HTTP_200_OK
+    assert len(str(r.json()["title"])) == 255
+
+    r = aux_client.post(
+        CHAT, headers=normal_user_token_headers, json={"title": "a" * 256}
+    )
+    assert r.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+    assert r.json()["code"] == "validation_error"
+
+
+def test_conversation_create_without_agent_is_ok(
+    aux_client: TestClient, normal_user_token_headers: dict[str, str]
+) -> None:
+    # omitted agent_id -> nullable FK, still creates
+    r = aux_client.post(CHAT, headers=normal_user_token_headers, json={"title": "t"})
+    assert r.status_code == status.HTTP_200_OK
+    assert r.json()["agent_id"] is None
+
+    # explicit null is treated the same as omitting
+    r = aux_client.post(
+        CHAT,
+        headers=normal_user_token_headers,
+        json={"title": "t", "agent_id": None},
+    )
+    assert r.status_code == status.HTTP_200_OK
+    assert r.json()["agent_id"] is None
 
 
 def test_update_timestamp_bumps_updated_at(

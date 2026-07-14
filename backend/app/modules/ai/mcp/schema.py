@@ -1,24 +1,89 @@
+import ipaddress
+import socket
 import uuid
 from datetime import datetime
-from typing import Any
+from typing import Annotated, Any
+from urllib.parse import urlsplit
 
-from sqlmodel import SQLModel
+from pydantic import AfterValidator, StringConstraints
+from sqlmodel import Field, SQLModel
+
+_BLOCKED_HOSTNAMES = {"localhost"}
+
+
+def _is_blocked_ip(ip: ipaddress.IPv4Address | ipaddress.IPv6Address) -> bool:
+    if isinstance(ip, ipaddress.IPv6Address) and ip.ipv4_mapped is not None:
+        ip = ip.ipv4_mapped
+    return (
+        ip.is_private
+        or ip.is_loopback
+        or ip.is_link_local
+        or ip.is_reserved
+        or ip.is_multicast
+        or ip.is_unspecified
+    )
+
+
+def _as_ipv4ish(host: str) -> ipaddress.IPv4Address | None:
+    """Parse a host the way libc's inet_aton does (decimal/octal/hex/short-form),
+    with NO DNS/network call. Catches alt-encoded literals like ``0177.0.0.1``,
+    ``127.1`` and ``0x7f000001`` that ``ipaddress.ip_address`` treats as invalid
+    but the resolver on the deploy target would happily route to a private IP."""
+    try:
+        return ipaddress.IPv4Address(socket.inet_aton(host))
+    except OSError:
+        return None
+
+
+def _validate_mcp_url(value: str) -> str:
+    parts = urlsplit(value)
+    if parts.scheme != "https":
+        raise ValueError("url scheme must be https")
+    if parts.username or parts.password:
+        raise ValueError("url must not embed credentials")
+    host = parts.hostname
+    if not host:
+        raise ValueError("url must have a host")
+    host = host.rstrip(".")  # strip FQDN trailing dot before matching
+    if not host:
+        raise ValueError("url must have a host")
+    ip: ipaddress.IPv4Address | ipaddress.IPv6Address | None
+    try:
+        ip = ipaddress.ip_address(host)  # canonical v4/v6
+    except ValueError:
+        ip = _as_ipv4ish(host)  # decimal/octal/hex/short-form v4
+    if ip is not None:
+        if _is_blocked_ip(ip):
+            raise ValueError("url host is a private/reserved address")
+        return value
+    # genuine DNS name
+    lowered = host.lower()
+    if lowered in _BLOCKED_HOSTNAMES or lowered.endswith(".localhost"):
+        raise ValueError("url host is a loopback name")
+    return value
+
+
+# Length-first alias: StringConstraints runs before AfterValidator, so an
+# over-long url fails as ``string_too_long`` (422) before the SSRF check.
+MCPServerUrl = Annotated[
+    str, StringConstraints(max_length=512), AfterValidator(_validate_mcp_url)
+]
 
 
 class MCPServerBase(SQLModel):
-    name: str
+    name: str = Field(max_length=128)
     url: str
-    config: dict[str, Any] = {}
     is_active: bool = True
 
 
 class MCPServerCreate(MCPServerBase):
-    pass
+    url: MCPServerUrl
+    config: dict[str, Any] = {}  # write-only: accepted on create, never echoed
 
 
 class MCPServerUpdate(SQLModel):
-    name: str | None = None
-    url: str | None = None
+    name: str | None = Field(default=None, max_length=128)
+    url: MCPServerUrl | None = None
     config: dict[str, Any] | None = None
     is_active: bool | None = None
 

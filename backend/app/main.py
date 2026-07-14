@@ -9,6 +9,7 @@ from starlette.middleware.cors import CORSMiddleware
 
 from app.api import v1_router
 from app.core.config import settings
+from app.core.observability import scrub_event
 from app.core.rls import warn_if_rls_dormant
 from app.core.storage import ensure_bucket
 from app.shared.errors import ErrorResponse, register_exception_handlers
@@ -19,7 +20,16 @@ def custom_generate_unique_id(route: APIRoute) -> str:
 
 
 if settings.SENTRY_DSN and settings.ENVIRONMENT != "local":
-    sentry_sdk.init(dsn=str(settings.SENTRY_DSN), enable_tracing=True)
+    sentry_sdk.init(
+        dsn=str(settings.SENTRY_DSN),
+        enable_tracing=True,
+        before_send=scrub_event,
+        before_send_transaction=scrub_event,
+        # Don't ship exception frame locals: verify_token/get_bearer_token hold
+        # the raw JWT in a local, which would otherwise leak on any uncaught
+        # error (frame locals are captured independently of send_default_pii).
+        include_local_variables=False,
+    )
 
 
 @asynccontextmanager

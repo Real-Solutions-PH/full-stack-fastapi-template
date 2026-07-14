@@ -1,5 +1,5 @@
-import { cn, emailPattern, handleError, passwordRules } from "@/lib/utils"
 import { AxiosError, AxiosHeaders } from "axios"
+import { cn, emailPattern, handleError, passwordRules } from "@/lib/utils"
 
 function axiosErrorWithBody(data: unknown, message = "Request failed") {
   const headers = new AxiosHeaders()

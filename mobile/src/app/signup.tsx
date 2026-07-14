@@ -1,13 +1,13 @@
+import { Link } from "expo-router"
+import { Controller, useForm } from "react-hook-form"
+import { KeyboardAvoidingView, Platform, View } from "react-native"
+import { SafeAreaView } from "react-native-safe-area-context"
 import { Button } from "@/components/ui/button"
 import { FormField } from "@/components/ui/form-field"
 import { Input } from "@/components/ui/input"
 import { Text } from "@/components/ui/text"
 import { useAuth } from "@/hooks/useAuth"
 import { emailPattern, namePattern } from "@/lib/utils"
-import { Link } from "expo-router"
-import { Controller, useForm } from "react-hook-form"
-import { KeyboardAvoidingView, Platform, View } from "react-native"
-import { SafeAreaView } from "react-native-safe-area-context"
 
 interface SignupForm {
   full_name: string

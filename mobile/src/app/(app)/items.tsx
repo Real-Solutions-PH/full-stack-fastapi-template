@@ -1,13 +1,13 @@
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import { useState } from "react"
+import { FlatList, Pressable, TextInput, View } from "react-native"
+import { SafeAreaView } from "react-native-safe-area-context"
 import { Button } from "@/components/ui/button"
 import { Text } from "@/components/ui/text"
 import * as itemsDb from "@/lib/db/items"
 import * as syncQueueDb from "@/lib/db/sync-queue"
 import { runSync } from "@/lib/sync"
 import { useAuthStore } from "@/stores/auth-store"
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { useState } from "react"
-import { FlatList, Pressable, TextInput, View } from "react-native"
-import { SafeAreaView } from "react-native-safe-area-context"
 
 export default function ItemsScreen() {
   const queryClient = useQueryClient()

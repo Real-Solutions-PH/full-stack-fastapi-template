@@ -1,5 +1,5 @@
-import { mmkv } from "@/lib/storage"
 import { create } from "zustand"
+import { mmkv } from "@/lib/storage"
 
 type SyncStatus = "idle" | "syncing" | "error"
 type ConnectivityType = "wifi" | "cellular" | "none" | "unknown"

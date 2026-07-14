@@ -230,7 +230,7 @@ def test_mcp_crud_lifecycle(
     r = aux_client.post(
         f"{MCP}/",
         headers=superuser_token_headers,
-        json={"name": name, "url": "http://localhost:1", "config": {}},
+        json={"name": name, "url": "https://mcp.example.com/sse", "config": {}},
     )
     assert r.status_code == status.HTTP_200_OK
     mcp_id = r.json()["id"]
@@ -239,7 +239,7 @@ def test_mcp_crud_lifecycle(
     r = aux_client.post(
         f"{MCP}/",
         headers=superuser_token_headers,
-        json={"name": name, "url": "http://localhost:2"},
+        json={"name": name, "url": "https://mcp.example.com/other"},
     )
     assert r.status_code == status.HTTP_409_CONFLICT
 
@@ -254,16 +254,140 @@ def test_mcp_crud_lifecycle(
     r = aux_client.put(
         f"{MCP}/{mcp_id}",
         headers=superuser_token_headers,
-        json={"url": "http://localhost:3", "is_active": False},
+        json={"url": "https://mcp2.example.com/sse", "is_active": False},
     )
     assert r.status_code == status.HTTP_200_OK
-    assert r.json()["url"] == "http://localhost:3"
+    assert r.json()["url"] == "https://mcp2.example.com/sse"
     assert r.json()["is_active"] is False
 
     r = aux_client.delete(f"{MCP}/{mcp_id}", headers=superuser_token_headers)
     assert r.status_code == status.HTTP_200_OK
     r = aux_client.get(f"{MCP}/{mcp_id}", headers=superuser_token_headers)
     assert r.status_code == status.HTTP_404_NOT_FOUND
+
+
+# SSRF-hostile URLs: non-https schemes, no scheme, embedded credentials,
+# and hosts that resolve to loopback/private/link-local/unspecified ranges
+# (including decimal/hex-encoded and IPv6-literal encodings).
+_HOSTILE_MCP_URLS = [
+    "http://mcp.example.com/",  # non-https scheme
+    "ftp://mcp.example.com/",  # non-https scheme
+    "example.com/foo",  # no scheme
+    "https://user:pass@mcp.example.com/",  # embedded credentials
+    "https://127.0.0.1/",  # IPv4 loopback
+    "https://localhost:1",  # loopback name
+    "https://10.0.0.5",  # private RFC1918
+    "https://169.254.169.254/latest/meta-data/",  # cloud metadata (link-local)
+    "https://0.0.0.0/",  # unspecified
+    "https://[::1]/",  # IPv6 loopback literal
+    "https://[fc00::1]/",  # IPv6 unique-local
+    "https://[fe80::1]/",  # IPv6 link-local
+    "https://2130706433/",  # decimal-encoded 127.0.0.1
+    "https://0x7f000001/",  # hex-encoded 127.0.0.1
+    "https:///nohost",  # missing host
+    # alternative IPv4 literal encodings libc (inet_aton) resolves to
+    # private/loopback/metadata — must not slip through as DNS names:
+    "https://0177.0.0.1/",  # octal -> 127.0.0.1
+    "https://127.1/",  # short-form -> 127.0.0.1
+    "https://0300.0250.0.1/",  # octal octets -> 192.168.0.1
+    "https://192.168.001.001/",  # leading-zero octets -> 192.168.1.1
+    "https://169.254.169.254./",  # FQDN trailing dot -> metadata
+    "https://0X7f000001/",  # uppercase hex -> 127.0.0.1
+    "https://192.168.0.0x1/",  # dotted-hex -> 192.168.0.1
+    "https://[::ffff:127.0.0.1]/",  # IPv4-mapped IPv6 -> loopback
+    "https://foo.localhost/",  # loopback subdomain
+]
+
+
+@pytest.mark.parametrize("url", _HOSTILE_MCP_URLS)
+def test_mcp_rejects_hostile_url(
+    aux_client: TestClient, superuser_token_headers: dict[str, str], url: str
+) -> None:
+    r = aux_client.post(
+        f"{MCP}/",
+        headers=superuser_token_headers,
+        json={"name": f"mcp-{random_lower_string()[:12]}", "url": url},
+    )
+    assert r.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+    assert r.json()["code"] == "validation_error"
+
+
+@pytest.mark.parametrize(
+    "url",
+    [
+        "https://mcp.example.com/sse",
+        "https://8.8.8.8/",
+        "https://[2606:4700:4700::1111]/",  # public IPv6 literal
+    ],
+)
+def test_mcp_accepts_public_https_url(
+    aux_client: TestClient, superuser_token_headers: dict[str, str], url: str
+) -> None:
+    r = aux_client.post(
+        f"{MCP}/",
+        headers=superuser_token_headers,
+        json={"name": f"mcp-{random_lower_string()[:12]}", "url": url},
+    )
+    assert r.status_code == status.HTTP_200_OK
+    assert r.json()["url"] == url
+
+
+def test_mcp_update_revalidates_url(
+    aux_client: TestClient, superuser_token_headers: dict[str, str]
+) -> None:
+    r = aux_client.post(
+        f"{MCP}/",
+        headers=superuser_token_headers,
+        json={
+            "name": f"mcp-{random_lower_string()[:12]}",
+            "url": "https://mcp.example.com/sse",
+        },
+    )
+    assert r.status_code == status.HTTP_200_OK
+    mcp_id = r.json()["id"]
+
+    # a hostile url on update is rejected the same way as on create
+    r = aux_client.put(
+        f"{MCP}/{mcp_id}",
+        headers=superuser_token_headers,
+        json={"url": "https://169.254.169.254/latest/meta-data/"},
+    )
+    assert r.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+    assert r.json()["code"] == "validation_error"
+
+    # omitting url (None / unset) leaves the field untouched — still OK
+    r = aux_client.put(
+        f"{MCP}/{mcp_id}",
+        headers=superuser_token_headers,
+        json={"is_active": False},
+    )
+    assert r.status_code == status.HTTP_200_OK
+    assert r.json()["url"] == "https://mcp.example.com/sse"
+    assert r.json()["is_active"] is False
+
+
+def test_mcp_config_not_echoed(
+    aux_client: TestClient, superuser_token_headers: dict[str, str]
+) -> None:
+    r = aux_client.post(
+        f"{MCP}/",
+        headers=superuser_token_headers,
+        json={
+            "name": f"mcp-{random_lower_string()[:12]}",
+            "url": "https://mcp.example.com/sse",
+            "config": {"secret_token": "S3CR3T"},
+        },
+    )
+    assert r.status_code == status.HTTP_200_OK
+    assert "config" not in r.json()
+    assert "S3CR3T" not in r.text
+    mcp_id = r.json()["id"]
+
+    # the write-only config must not leak through reads either
+    r = aux_client.get(f"{MCP}/{mcp_id}", headers=superuser_token_headers)
+    assert r.status_code == status.HTTP_200_OK
+    assert "config" not in r.json()
+    assert "S3CR3T" not in r.text
 
 
 def test_mcp_update_and_delete_missing_is_404(

@@ -1,8 +1,8 @@
 import "../../global.css"
-import { Providers } from "@/components/providers"
 import * as Sentry from "@sentry/react-native"
 import { Stack } from "expo-router"
 import { StatusBar } from "expo-status-bar"
+import { Providers } from "@/components/providers"
 
 // Error monitoring (GlitchTip, Sentry-SDK compatible).
 // No-ops entirely when EXPO_PUBLIC_SENTRY_DSN is not set at build time.

@@ -1,10 +1,10 @@
+import { View } from "react-native"
+import { SafeAreaView } from "react-native-safe-area-context"
 import { Button } from "@/components/ui/button"
 import { Text } from "@/components/ui/text"
 import { useAuth } from "@/hooks/useAuth"
 import { runSync } from "@/lib/sync"
 import { useNetworkStore } from "@/stores/network-store"
-import { View } from "react-native"
-import { SafeAreaView } from "react-native-safe-area-context"
 
 export default function SettingsScreen() {
   const { logout, user } = useAuth()

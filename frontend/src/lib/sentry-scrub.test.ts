@@ -1,5 +1,5 @@
+import { describe, expect, it } from "bun:test"
 import type { ErrorEvent } from "@sentry/nextjs"
-import { describe, expect, it } from "vitest"
 import { AUTH_COOKIE_NAME, scrubSentryEvent } from "./sentry-scrub"
 
 function makeEvent(request: NonNullable<ErrorEvent["request"]>): ErrorEvent {

@@ -5,8 +5,8 @@ from datetime import datetime
 from typing import Annotated, Any
 from urllib.parse import urlsplit
 
-from pydantic import AfterValidator
-from sqlmodel import SQLModel
+from pydantic import AfterValidator, StringConstraints
+from sqlmodel import Field, SQLModel
 
 _BLOCKED_HOSTNAMES = {"localhost"}
 
@@ -63,12 +63,15 @@ def _validate_mcp_url(value: str) -> str:
     return value
 
 
-# Length-first alias: #74 will prepend StringConstraints(max_length=512) here.
-MCPServerUrl = Annotated[str, AfterValidator(_validate_mcp_url)]
+# Length-first alias: StringConstraints runs before AfterValidator, so an
+# over-long url fails as ``string_too_long`` (422) before the SSRF check.
+MCPServerUrl = Annotated[
+    str, StringConstraints(max_length=512), AfterValidator(_validate_mcp_url)
+]
 
 
 class MCPServerBase(SQLModel):
-    name: str
+    name: str = Field(max_length=128)
     url: str
     is_active: bool = True
 
@@ -79,7 +82,7 @@ class MCPServerCreate(MCPServerBase):
 
 
 class MCPServerUpdate(SQLModel):
-    name: str | None = None
+    name: str | None = Field(default=None, max_length=128)
     url: MCPServerUrl | None = None
     config: dict[str, Any] | None = None
     is_active: bool | None = None

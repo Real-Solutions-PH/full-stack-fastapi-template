@@ -57,6 +57,11 @@ export type PrivateUserCreate = {
     is_verified?: boolean;
 };
 
+export type RolePermissionsPublic = {
+    data: Array<PermissionPublic>;
+    count: number;
+};
+
 export type RolePublic = {
     id: string;
     name: string;
@@ -87,6 +92,14 @@ export type UserCreate = {
     is_active?: boolean;
     is_superuser?: boolean;
     full_name?: (string | null);
+};
+
+/**
+ * A user's effective roles and the permissions they grant.
+ */
+export type UserPermissions = {
+    roles: Array<RolePublic>;
+    permissions: Array<PermissionPublic>;
 };
 
 export type UserPublic = {
@@ -166,6 +179,46 @@ export type PrivateCreateUserData = {
 };
 
 export type PrivateCreateUserResponse = (UserPublic);
+
+export type RbacReadUserPermissionsData = {
+    userId: string;
+};
+
+export type RbacReadUserPermissionsResponse = (UserPermissions);
+
+export type RbacAssignRoleData = {
+    roleId: string;
+    userId: string;
+};
+
+export type RbacAssignRoleResponse = (Message);
+
+export type RbacRemoveRoleData = {
+    roleId: string;
+    userId: string;
+};
+
+export type RbacRemoveRoleResponse = (Message);
+
+export type RbacReadRolePermissionsData = {
+    roleId: string;
+};
+
+export type RbacReadRolePermissionsResponse = (RolePermissionsPublic);
+
+export type RbacAddPermissionData = {
+    permissionId: string;
+    roleId: string;
+};
+
+export type RbacAddPermissionResponse = (Message);
+
+export type RbacRemovePermissionData = {
+    permissionId: string;
+    roleId: string;
+};
+
+export type RbacRemovePermissionResponse = (Message);
 
 export type RolesReadRolesData = {
     limit?: number;

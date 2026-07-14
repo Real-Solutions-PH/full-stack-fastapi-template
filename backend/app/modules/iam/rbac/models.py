@@ -12,7 +12,7 @@ class UserRole(SQLModel, table=True):
         foreign_key="user.id", primary_key=True, ondelete="CASCADE"
     )
     role_id: uuid.UUID = Field(
-        foreign_key="role.id", primary_key=True, ondelete="CASCADE"
+        foreign_key="role.id", primary_key=True, ondelete="CASCADE", index=True
     )
 
 
@@ -25,5 +25,5 @@ class RolePermission(SQLModel, table=True):
         foreign_key="role.id", primary_key=True, ondelete="CASCADE"
     )
     permission_id: uuid.UUID = Field(
-        foreign_key="permission.id", primary_key=True, ondelete="CASCADE"
+        foreign_key="permission.id", primary_key=True, ondelete="CASCADE", index=True
     )

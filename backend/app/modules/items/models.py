@@ -19,7 +19,7 @@ class Item(ItemBase, table=True):
         sa_type=DateTime(timezone=True),  # type: ignore
     )
     owner_id: uuid.UUID = Field(
-        foreign_key="user.id", nullable=False, ondelete="CASCADE"
+        foreign_key="user.id", nullable=False, ondelete="CASCADE", index=True
     )
     tenant_id: uuid.UUID = Field(
         foreign_key="tenant.id", nullable=False, ondelete="CASCADE", index=True

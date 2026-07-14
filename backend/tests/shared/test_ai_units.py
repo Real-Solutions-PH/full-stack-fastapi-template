@@ -162,7 +162,16 @@ def test_plan_and_execute_uses_react_executor_when_tools_present(
 
 
 def test_ai_router_mounts_all_submodules() -> None:
-    from app.modules.ai.main import router
+    # ponytail: reload for a pristine router — this module-level router is
+    # assembled once and lives the whole test session, so asserting off its
+    # shared, mutable route list couples the check to anything else in the
+    # suite that rebuilds/mutates routers. Reload re-runs main.py's real
+    # include_router wiring against the (unchanged) submodule routers.
+    import importlib
+
+    import app.modules.ai.main as ai_main
+
+    router = importlib.reload(ai_main).router
 
     assert router.prefix == "/ai"
     paths = {getattr(r, "path", "") for r in router.routes}

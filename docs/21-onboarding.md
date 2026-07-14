@@ -47,7 +47,7 @@ URLs:
 ## Workflow
 
 1. Branch from `master`.
-2. TDD — see [11-testing-strategy.md](11-testing-strategy.md).
+2. TDD — see the testing conventions in [constitution.md](constitution.md).
 3. PR with description, screenshots, test plan.
 4. Reviewer + CI green -> squash merge.
 5. No auto-deploy — promotion is manual, per [13-deployment.md](13-deployment.md).
@@ -55,12 +55,11 @@ URLs:
 ## AI Agent Context
 
 When starting session, agents should read in order:
-1. [README.md](README.md)
-2. [00-vision.md](00-vision.md)
-3. [06-architecture.md](06-architecture.md)
-4. [07-tech-stack.md](07-tech-stack.md)
+1. [../CLAUDE.md](../CLAUDE.md) — repo map, commands, conventions
+2. [constitution.md](constitution.md) — engineering defaults
+3. [adr/](adr/) — decisions that override the defaults
+4. [runbook.md](runbook.md) — operational reality (auth, RLS, tenancy)
 5. [10-implementation-plan.md](10-implementation-plan.md)
-6. Task-specific doc (e.g. [09-api-spec.md](09-api-spec.md) for API work)
 
 ## Common Commands
 

@@ -11,6 +11,7 @@ from app.modules.ai.conversations.models import Conversation, Message  # noqa: F
 from app.modules.ai.mcp.models import MCPServer  # noqa: F401
 from app.modules.ai.tools.models import AgentTool, Tool  # noqa: F401
 from app.modules.iam.permissions.models import Permission  # noqa: F401
+from app.modules.iam.rbac.models import RolePermission, UserRole  # noqa: F401
 from app.modules.iam.roles.models import Role  # noqa: F401
 from app.modules.iam.tenants.models import Tenant  # noqa: F401
 from app.modules.iam.users.models import User  # noqa: F401
@@ -26,6 +27,8 @@ __all__ = [
     "AgentTool",
     "Tool",
     "Permission",
+    "RolePermission",
+    "UserRole",
     "Role",
     "Tenant",
     "User",

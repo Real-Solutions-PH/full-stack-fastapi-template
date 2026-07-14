@@ -7,6 +7,10 @@ DEFAULT_ROLES: list[dict[str, str]] = [
     {"name": "superadmin", "description": "Full system access"},
     {"name": "admin", "description": "Administrative access within a tenant"},
     {"name": "user", "description": "Standard authenticated user"},
+    {
+        "name": "dpo",
+        "description": "Data Protection Officer: audit + data export/erase, no admin",
+    },
 ]
 
 

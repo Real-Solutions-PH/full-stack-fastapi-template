@@ -14,6 +14,9 @@ DEFAULT_PERMISSIONS: list[tuple[str, str, str]] = [
     ("roles", "read", "Read role definitions"),
     ("permissions", "read", "Read permission definitions"),
     ("tenants", "read", "Read tenant records"),
+    ("audit", "read", "Read the audit log"),
+    ("data", "export", "Export personal data (GDPR portability)"),
+    ("data", "erase", "Erase personal data (GDPR right to erasure)"),
 ]
 
 

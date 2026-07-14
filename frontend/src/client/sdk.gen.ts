@@ -3,7 +3,7 @@
 import type { CancelablePromise } from './core/CancelablePromise';
 import { OpenAPI } from './core/OpenAPI';
 import { request as __request } from './core/request';
-import type { ItemsReadItemsData, ItemsReadItemsResponse, ItemsCreateItemData, ItemsCreateItemResponse, ItemsReadItemData, ItemsReadItemResponse, ItemsUpdateItemData, ItemsUpdateItemResponse, ItemsDeleteItemData, ItemsDeleteItemResponse, PermissionsReadPermissionsData, PermissionsReadPermissionsResponse, PermissionsReadPermissionData, PermissionsReadPermissionResponse, PrivateCreateUserData, PrivateCreateUserResponse, RolesReadRolesData, RolesReadRolesResponse, RolesReadRoleData, RolesReadRoleResponse, TenantsReadTenantsData, TenantsReadTenantsResponse, TenantsReadTenantData, TenantsReadTenantResponse, UsersReadUsersData, UsersReadUsersResponse, UsersCreateUserData, UsersCreateUserResponse, UsersReadUserMeResponse, UsersDeleteUserMeResponse, UsersUpdateUserMeData, UsersUpdateUserMeResponse, UsersReadUserByIdData, UsersReadUserByIdResponse, UsersUpdateUserData, UsersUpdateUserResponse, UsersDeleteUserData, UsersDeleteUserResponse, UtilsTestEmailData, UtilsTestEmailResponse, UtilsHealthCheckResponse } from './types.gen';
+import type { ItemsReadItemsData, ItemsReadItemsResponse, ItemsCreateItemData, ItemsCreateItemResponse, ItemsReadItemData, ItemsReadItemResponse, ItemsUpdateItemData, ItemsUpdateItemResponse, ItemsDeleteItemData, ItemsDeleteItemResponse, PermissionsReadPermissionsData, PermissionsReadPermissionsResponse, PermissionsReadPermissionData, PermissionsReadPermissionResponse, PrivateCreateUserData, PrivateCreateUserResponse, RbacReadUserPermissionsData, RbacReadUserPermissionsResponse, RbacAssignRoleData, RbacAssignRoleResponse, RbacRemoveRoleData, RbacRemoveRoleResponse, RbacReadRolePermissionsData, RbacReadRolePermissionsResponse, RbacAddPermissionData, RbacAddPermissionResponse, RbacRemovePermissionData, RbacRemovePermissionResponse, RolesReadRolesData, RolesReadRolesResponse, RolesReadRoleData, RolesReadRoleResponse, TenantsReadTenantsData, TenantsReadTenantsResponse, TenantsReadTenantData, TenantsReadTenantResponse, UsersReadUsersData, UsersReadUsersResponse, UsersCreateUserData, UsersCreateUserResponse, UsersReadUserMeResponse, UsersDeleteUserMeResponse, UsersUpdateUserMeData, UsersUpdateUserMeResponse, UsersReadUserByIdData, UsersReadUserByIdResponse, UsersUpdateUserData, UsersUpdateUserResponse, UsersDeleteUserData, UsersDeleteUserResponse, UtilsTestEmailData, UtilsTestEmailResponse, UtilsHealthCheckResponse } from './types.gen';
 
 export class ItemsService {
     /**
@@ -169,6 +169,136 @@ export class PrivateService {
             url: '/api/v1/private/users/',
             body: data.requestBody,
             mediaType: 'application/json',
+            errors: {
+                '4XX': 'Client Error'
+            }
+        });
+    }
+}
+
+export class RbacService {
+    /**
+     * Read User Permissions
+     * @param data The data for the request.
+     * @param data.userId
+     * @returns UserPermissions Successful Response
+     * @throws ApiError
+     */
+    public static readUserPermissions(data: RbacReadUserPermissionsData): CancelablePromise<RbacReadUserPermissionsResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/rbac/users/{user_id}/permissions',
+            path: {
+                user_id: data.userId
+            },
+            errors: {
+                '4XX': 'Client Error'
+            }
+        });
+    }
+    
+    /**
+     * Assign Role
+     * @param data The data for the request.
+     * @param data.userId
+     * @param data.roleId
+     * @returns Message Successful Response
+     * @throws ApiError
+     */
+    public static assignRole(data: RbacAssignRoleData): CancelablePromise<RbacAssignRoleResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/rbac/users/{user_id}/roles/{role_id}',
+            path: {
+                user_id: data.userId,
+                role_id: data.roleId
+            },
+            errors: {
+                '4XX': 'Client Error'
+            }
+        });
+    }
+    
+    /**
+     * Remove Role
+     * @param data The data for the request.
+     * @param data.userId
+     * @param data.roleId
+     * @returns Message Successful Response
+     * @throws ApiError
+     */
+    public static removeRole(data: RbacRemoveRoleData): CancelablePromise<RbacRemoveRoleResponse> {
+        return __request(OpenAPI, {
+            method: 'DELETE',
+            url: '/api/v1/rbac/users/{user_id}/roles/{role_id}',
+            path: {
+                user_id: data.userId,
+                role_id: data.roleId
+            },
+            errors: {
+                '4XX': 'Client Error'
+            }
+        });
+    }
+    
+    /**
+     * Read Role Permissions
+     * @param data The data for the request.
+     * @param data.roleId
+     * @returns RolePermissionsPublic Successful Response
+     * @throws ApiError
+     */
+    public static readRolePermissions(data: RbacReadRolePermissionsData): CancelablePromise<RbacReadRolePermissionsResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/rbac/roles/{role_id}/permissions',
+            path: {
+                role_id: data.roleId
+            },
+            errors: {
+                '4XX': 'Client Error'
+            }
+        });
+    }
+    
+    /**
+     * Add Permission
+     * @param data The data for the request.
+     * @param data.roleId
+     * @param data.permissionId
+     * @returns Message Successful Response
+     * @throws ApiError
+     */
+    public static addPermission(data: RbacAddPermissionData): CancelablePromise<RbacAddPermissionResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/rbac/roles/{role_id}/permissions/{permission_id}',
+            path: {
+                role_id: data.roleId,
+                permission_id: data.permissionId
+            },
+            errors: {
+                '4XX': 'Client Error'
+            }
+        });
+    }
+    
+    /**
+     * Remove Permission
+     * @param data The data for the request.
+     * @param data.roleId
+     * @param data.permissionId
+     * @returns Message Successful Response
+     * @throws ApiError
+     */
+    public static removePermission(data: RbacRemovePermissionData): CancelablePromise<RbacRemovePermissionResponse> {
+        return __request(OpenAPI, {
+            method: 'DELETE',
+            url: '/api/v1/rbac/roles/{role_id}/permissions/{permission_id}',
+            path: {
+                role_id: data.roleId,
+                permission_id: data.permissionId
+            },
             errors: {
                 '4XX': 'Client Error'
             }

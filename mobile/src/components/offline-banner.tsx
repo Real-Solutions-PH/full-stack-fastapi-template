@@ -1,6 +1,6 @@
+import { View } from "react-native"
 import { Text } from "@/components/ui/text"
 import { useNetworkStore } from "@/stores/network-store"
-import { View } from "react-native"
 
 export function OfflineBanner() {
   const isConnected = useNetworkStore((s) => s.isConnected)

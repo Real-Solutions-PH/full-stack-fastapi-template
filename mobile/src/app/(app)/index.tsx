@@ -1,9 +1,9 @@
+import { useQuery } from "@tanstack/react-query"
+import { ScrollView, View } from "react-native"
 import { Text } from "@/components/ui/text"
 import * as itemsDb from "@/lib/db/items"
 import * as usersDb from "@/lib/db/users"
 import { useNetworkStore } from "@/stores/network-store"
-import { useQuery } from "@tanstack/react-query"
-import { ScrollView, View } from "react-native"
 
 export default function HomeScreen() {
   const { data: user } = useQuery({

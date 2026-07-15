@@ -1,6 +1,6 @@
-import { runMigrations } from "@/lib/db/migrations"
 import type * as SQLite from "expo-sqlite"
 import { Platform } from "react-native"
+import { runMigrations } from "@/lib/db/migrations"
 
 const DB_NAME = "app.db"
 

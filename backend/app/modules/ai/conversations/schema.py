@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime
 from typing import Any
 
-from sqlmodel import SQLModel
+from sqlmodel import Field, SQLModel
 
 
 class MessagePublic(SQLModel):
@@ -15,7 +15,7 @@ class MessagePublic(SQLModel):
 
 
 class ConversationBase(SQLModel):
-    title: str = "New conversation"
+    title: str = Field(default="New conversation", max_length=255)
     agent_id: uuid.UUID | None = None
 
 
@@ -24,7 +24,7 @@ class ConversationCreate(ConversationBase):
 
 
 class ConversationUpdate(SQLModel):
-    title: str | None = None
+    title: str | None = Field(default=None, max_length=255)
     agent_id: uuid.UUID | None = None
 
 

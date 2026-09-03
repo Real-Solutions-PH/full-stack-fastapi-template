@@ -141,17 +141,33 @@ def update_user_me(
     return user_repo.update(session=session, user=current_user, update_data=update_data)
 
 
+def _revoke_gotrue_identity(user_id: uuid.UUID) -> None:
+    """Revoke the GoTrue identity BEFORE the local row is deleted/committed.
+
+    Mirrors ``_sync_email_to_gotrue``: call GoTrue first so a provider
+    failure aborts the request (502 envelope) with the local row and its
+    data untouched, instead of leaving a half-deleted account whose live
+    auth identity would JIT-resurrect an empty row on the next request.
+    ``admin_delete_user`` already tolerates an already-gone identity
+    (GoTrue 404), so re-revoking is a safe no-op.
+    """
+    try:
+        supabase_auth.admin_delete_user(user_id)
+    except httpx.HTTPError:
+        raise HTTPException(
+            status_code=502,
+            detail="Failed to delete the user with the auth provider",
+        )
+
+
 def delete_user_me(*, session: Session, current_user: User) -> None:
     if current_user.is_superuser:
         raise HTTPException(
             status_code=403,
             detail="Super users are not allowed to delete themselves",
         )
-    user_id = current_user.id
+    _revoke_gotrue_identity(current_user.id)
     user_repo.delete_user(session=session, user=current_user)
-    # Revoke the auth identity too — otherwise the person can keep signing
-    # in and JIT-provisioning would recreate the local row.
-    supabase_auth.admin_delete_user(user_id)
 
 
 def delete_user(*, session: Session, current_user: User, user_id: uuid.UUID) -> None:
@@ -163,9 +179,8 @@ def delete_user(*, session: Session, current_user: User, user_id: uuid.UUID) -> 
             status_code=403,
             detail="Super users are not allowed to delete themselves",
         )
+    _revoke_gotrue_identity(user_id)
     user_repo.delete_user_cascade(session=session, user=user)
-    # Revoke the auth identity too (tolerates already-gone in GoTrue).
-    supabase_auth.admin_delete_user(user_id)
 
 
 def read_user_by_id(

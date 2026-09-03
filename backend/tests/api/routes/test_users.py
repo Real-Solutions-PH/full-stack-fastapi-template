@@ -1,13 +1,23 @@
 import uuid
 
+import httpx
+import pytest
 from fastapi.testclient import TestClient
 from sqlmodel import Session, select
 
+from app.core import supabase_auth
 from app.core.config import settings
-from app.db.models import User
+from app.db.models import Item, User
 from app.modules.iam.users import repo as user_repo
+from app.modules.items import repo as item_repo
 from tests.utils.user import create_auth_user, create_random_user
 from tests.utils.utils import auth_headers, random_email
+
+
+def _raise_connect_error(_user_id: uuid.UUID) -> None:
+    """Stand-in for ``admin_delete_user`` that simulates GoTrue being
+    unreachable — a subclass of ``httpx.HTTPError``."""
+    raise httpx.ConnectError("gotrue unreachable")
 
 
 def test_get_users_superuser_me(
@@ -282,6 +292,31 @@ def test_delete_user_me(client: TestClient, db: Session) -> None:
     assert result is None
 
 
+def test_delete_user_me_gotrue_failure_is_noop(
+    client: TestClient, db: Session, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """If revoking the GoTrue identity fails, the local user row and its
+    items must survive: deletion is atomic-or-nothing across both stores."""
+    user, password = create_auth_user(db)
+    user_id = user.id
+    headers = auth_headers(user.email, password)
+    item = item_repo.create(
+        session=db,
+        item=Item(title="keep me", owner_id=user.id, tenant_id=user.tenant_id),
+    )
+    item_id = item.id
+
+    monkeypatch.setattr(supabase_auth, "admin_delete_user", _raise_connect_error)
+
+    r = client.delete(f"{settings.API_V1_STR}/users/me", headers=headers)
+    assert r.status_code == 502
+    assert r.json()["code"] == "bad_gateway"
+
+    db.expire_all()
+    assert db.exec(select(User).where(User.id == user_id)).first() is not None
+    assert db.exec(select(Item).where(Item.id == item_id)).first() is not None
+
+
 def test_delete_user_me_as_superuser(
     client: TestClient, superuser_token_headers: dict[str, str]
 ) -> None:
@@ -308,6 +343,36 @@ def test_delete_user_super_user(
     assert deleted_user["message"] == "User deleted successfully"
     result = db.exec(select(User).where(User.id == user_id)).first()
     assert result is None
+
+
+def test_delete_user_gotrue_failure_is_noop(
+    client: TestClient,
+    superuser_token_headers: dict[str, str],
+    db: Session,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Admin delete of another user is also atomic-or-nothing: a GoTrue
+    failure leaves the target row and its items intact."""
+    user = create_random_user(db)
+    user_id = user.id
+    item = item_repo.create(
+        session=db,
+        item=Item(title="keep me", owner_id=user.id, tenant_id=user.tenant_id),
+    )
+    item_id = item.id
+
+    monkeypatch.setattr(supabase_auth, "admin_delete_user", _raise_connect_error)
+
+    r = client.delete(
+        f"{settings.API_V1_STR}/users/{user_id}",
+        headers=superuser_token_headers,
+    )
+    assert r.status_code == 502
+    assert r.json()["code"] == "bad_gateway"
+
+    db.expire_all()
+    assert db.exec(select(User).where(User.id == user_id)).first() is not None
+    assert db.exec(select(Item).where(Item.id == item_id)).first() is not None
 
 
 def test_delete_user_not_found(

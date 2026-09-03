@@ -3,6 +3,7 @@ import uuid
 from fastapi import HTTPException
 from sqlmodel import Session
 
+from app.modules.ai.agents import repo as agent_repo
 from app.modules.ai.conversations import repo as conv_repo
 from app.modules.ai.conversations.models import Conversation
 from app.modules.ai.conversations.schema import ConversationCreate
@@ -37,6 +38,10 @@ def get_conversation_with_messages(
 def create_conversation(
     *, session: Session, current_user: User, conv_in: ConversationCreate
 ) -> Conversation:
+    if conv_in.agent_id is not None:
+        agent = agent_repo.get_by_id(session=session, agent_id=conv_in.agent_id)
+        if agent is None or not agent.is_active:
+            raise HTTPException(status_code=404, detail="Agent not found")
     db_conv = Conversation(
         user_id=current_user.id,
         tenant_id=current_user.tenant_id,

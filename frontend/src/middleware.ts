@@ -1,6 +1,7 @@
 import { createServerClient } from "@supabase/ssr"
 import { type NextRequest, NextResponse } from "next/server"
 
+import { getSupabaseAnonKey, getSupabaseServerUrl } from "@/lib/env"
 import { AUTH_COOKIE_OPTIONS } from "@/lib/supabase/cookie"
 
 const publicRoutes = [
@@ -22,8 +23,8 @@ export async function middleware(request: NextRequest) {
   // (e.g. a containerized frontend reaching a host-local stack through
   // host.docker.internal) — SUPABASE_URL overrides when set.
   const supabase = createServerClient(
-    process.env.SUPABASE_URL ?? process.env.NEXT_PUBLIC_SUPABASE_URL ?? "",
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "",
+    getSupabaseServerUrl(),
+    getSupabaseAnonKey(),
     {
       cookieOptions: AUTH_COOKIE_OPTIONS,
       cookies: {

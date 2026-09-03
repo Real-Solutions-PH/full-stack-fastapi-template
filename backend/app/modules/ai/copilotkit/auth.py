@@ -1,8 +1,12 @@
 """Bearer-token guard for the AG-UI chat mount.
 
-The run routes are registered without per-route ``CurrentUser`` deps, so
-without this middleware the chat transport is anonymous LLM/tool invocation
-(cost abuse). Signature-only check — no DB lookup.
+Mount-wide signature gate: a cheap, DB-free reject of anonymous or
+bad-signature requests across every route under the chat mount (including
+the info route), sitting outside CORSMiddleware so its own error responses
+can echo CORS. It does NOT load the user — the run routes carry per-route
+deps (``TenantDep`` + ``rate_limited``, see ``routes``) that re-check
+``is_active``, provision the caller, and meter per-tenant AI spend. Keep
+that deeper enforcement on the routes; this layer stays signature-only.
 """
 
 from collections.abc import Awaitable, Callable

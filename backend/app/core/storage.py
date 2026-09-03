@@ -60,16 +60,6 @@ class MinioEngine:
     def delete_file(self, *, bucket: str, key: str) -> None:
         self._client.delete_object(Bucket=bucket, Key=key)
 
-    def generate_presigned_url(
-        self, *, bucket: str, key: str, expires_in: int = 3600
-    ) -> str:
-        url: str = self._client.generate_presigned_url(
-            "get_object",
-            Params={"Bucket": bucket, "Key": key},
-            ExpiresIn=expires_in,
-        )
-        return url
-
 
 # Backward-compatible module-level helpers
 def ensure_bucket(bucket: str) -> None:

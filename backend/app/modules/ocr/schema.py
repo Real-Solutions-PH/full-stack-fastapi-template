@@ -6,19 +6,9 @@ from sqlmodel import Field, SQLModel
 
 
 class OcrStatus(str, Enum):
-    PENDING = "pending"
     PROCESSING = "processing"
     COMPLETED = "completed"
     FAILED = "failed"
-
-
-class DocumentType(str, Enum):
-    RECEIPT = "receipt"
-    INVOICE = "invoice"
-    FORM = "form"
-    RECIPE = "recipe"
-    GENERAL = "general"
-    UNKNOWN = "unknown"
 
 
 class OcrDocumentBase(SQLModel):

@@ -107,3 +107,25 @@ def test_docs_enabled_only_in_local() -> None:
             **_BASE,
         )
         assert s.docs_enabled is False
+
+
+def test_app_engine_uses_app_user_when_configured() -> None:
+    s = Settings(
+        _env_file=None,  # type: ignore[call-arg]
+        ENVIRONMENT="local",
+        POSTGRES_APP_USER="app_user",
+        POSTGRES_APP_PASSWORD="app-secret",
+        **_BASE,
+    )
+    assert s.app_user_configured is True
+    uri = s.SQLALCHEMY_APP_DATABASE_URI
+    assert "app_user" in uri
+    assert "app-secret" in uri
+    # Owner URI is unchanged and distinct from the app URI.
+    assert "app_user" not in s.SQLALCHEMY_DATABASE_URI
+
+
+def test_app_engine_falls_back_to_owner_when_unset() -> None:
+    s = Settings(_env_file=None, ENVIRONMENT="local", **_BASE)  # type: ignore[call-arg]
+    assert s.app_user_configured is False
+    assert s.SQLALCHEMY_APP_DATABASE_URI == s.SQLALCHEMY_DATABASE_URI

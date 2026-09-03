@@ -71,19 +71,46 @@ class Settings(BaseSettings):
     POSTGRES_USER: str
     POSTGRES_PASSWORD: str = ""
     POSTGRES_DB: str = ""
+    # Non-owner role the app engine connects as so RLS policies are enforced.
+    # Provisioned out-of-band (LOGIN + password from the password manager, see
+    # the runbook). Empty = fall back to the owner role (RLS stays dormant).
+    POSTGRES_APP_USER: str = ""
+    POSTGRES_APP_PASSWORD: str = ""
 
     @computed_field  # type: ignore[prop-decorator]
     @property
-    def SQLALCHEMY_DATABASE_URI(self) -> str:
+    def app_user_configured(self) -> bool:
+        return bool(self.POSTGRES_APP_USER)
+
+    def _database_uri(self, username: str, password: str) -> str:
         return str(
             PostgresDsn.build(
                 scheme="postgresql+psycopg",
-                username=self.POSTGRES_USER,
-                password=self.POSTGRES_PASSWORD,
+                username=username,
+                password=password,
                 host=self.POSTGRES_SERVER,
                 port=self.POSTGRES_PORT,
                 path=self.POSTGRES_DB,
             )
+        )
+
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def SQLALCHEMY_DATABASE_URI(self) -> str:
+        """Owner connection: migrations, seeds, platform-operator paths."""
+        return self._database_uri(self.POSTGRES_USER, self.POSTGRES_PASSWORD)
+
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def SQLALCHEMY_APP_DATABASE_URI(self) -> str:
+        """App connection: the non-owner role RLS is enforced against.
+
+        Falls back to the owner credentials when ``POSTGRES_APP_USER`` is
+        unset, leaving RLS dormant (local/dev default).
+        """
+        return self._database_uri(
+            self.POSTGRES_APP_USER or self.POSTGRES_USER,
+            self.POSTGRES_APP_PASSWORD or self.POSTGRES_PASSWORD,
         )
 
     SMTP_TLS: bool = True

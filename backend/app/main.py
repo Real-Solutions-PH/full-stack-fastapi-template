@@ -12,7 +12,7 @@ from starlette.types import ASGIApp, Message, Receive, Scope, Send
 from app.api import v1_router
 from app.core.config import settings
 from app.core.observability import scrub_event
-from app.core.rls import warn_if_rls_dormant
+from app.core.rls import check_rls_posture
 from app.core.storage import ensure_bucket
 from app.logger import app_logger
 from app.shared.errors import ErrorResponse, register_exception_handlers
@@ -162,7 +162,7 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
                 "fail until it recovers",
                 exc_info=True,
             )
-    warn_if_rls_dormant()
+    check_rls_posture()
     yield
 
 

@@ -2,7 +2,17 @@ from sqlmodel import Session, create_engine
 
 from app.core.config import settings
 
+# Owner engine: table owner, bypasses RLS. Migrations, prestart seeding, and
+# platform-operator (superuser) paths run here.
 engine = create_engine(str(settings.SQLALCHEMY_DATABASE_URI))
+
+# App engine: connects as the non-owner ``app_user`` role so RLS policies are
+# enforced for tenant-scoped requests. Falls back to the owner engine when
+# ``POSTGRES_APP_USER`` is unset (local/dev), leaving RLS dormant.
+if settings.app_user_configured:
+    app_engine = create_engine(str(settings.SQLALCHEMY_APP_DATABASE_URI))
+else:
+    app_engine = engine
 
 
 # Ensure every module-level SQLModel is imported (via app.db.models) before

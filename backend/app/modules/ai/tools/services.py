@@ -119,9 +119,16 @@ def remove_tool_from_agent(
     tool_id: uuid.UUID,
     actor_id: uuid.UUID | None = None,
 ) -> None:
+    # Only audit an assignment that actually existed — recording a removal
+    # that never happened would corrupt the trail's accuracy.
+    existing = tool_repo.get_agent_tool(
+        session=session, agent_id=agent_id, tool_id=tool_id
+    )
     tool_repo.remove_tool_from_agent(
         session=session, agent_id=agent_id, tool_id=tool_id
     )
+    if existing is None:
+        return
     audit.record(
         session=session,
         actor_id=actor_id,

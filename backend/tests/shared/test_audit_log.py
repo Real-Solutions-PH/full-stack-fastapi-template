@@ -123,6 +123,16 @@ def test_tool_create_is_audited(db: Session) -> None:
     assert "api_key" not in dumped
 
 
+def test_removing_unassigned_tool_is_not_audited(db: Session) -> None:
+    """A no-op removal (the link never existed) must not write a row claiming
+    a removal happened."""
+    agent_id = uuid.uuid4()
+    tool_id = uuid.uuid4()
+    before = _count(db, "tool.remove_from_agent")
+    tool_service.remove_tool_from_agent(session=db, agent_id=agent_id, tool_id=tool_id)
+    assert _count(db, "tool.remove_from_agent") == before
+
+
 def test_actor_id_recorded_when_available(db: Session) -> None:
     """delete flows already have the acting user, so 'who' is captured."""
     actor = create_random_user(db)

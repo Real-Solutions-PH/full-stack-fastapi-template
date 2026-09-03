@@ -3,7 +3,7 @@ from typing import Any
 
 from fastapi import APIRouter, Depends
 
-from app.modules.iam.deps import CurrentUser, get_current_active_superuser
+from app.modules.iam.deps import CurrentUser, require_permission
 from app.modules.iam.users import services as user_service
 from app.modules.iam.users.schema import (
     UserCreate,
@@ -13,6 +13,7 @@ from app.modules.iam.users.schema import (
     UserUpdateMe,
 )
 from app.shared.deps import SessionDep
+from app.shared.pagination import PaginationDep
 from app.shared.schema import Message
 
 router = APIRouter(prefix="/users", tags=["users"])
@@ -20,17 +21,21 @@ router = APIRouter(prefix="/users", tags=["users"])
 
 @router.get(
     "/",
-    dependencies=[Depends(get_current_active_superuser)],
+    dependencies=[Depends(require_permission("users:read"))],
     response_model=UsersPublic,
 )
-def read_users(session: SessionDep, skip: int = 0, limit: int = 100) -> Any:
-    users, count = user_service.list_users(session=session, skip=skip, limit=limit)
+def read_users(session: SessionDep, pagination: PaginationDep) -> Any:
+    users, count = user_service.list_users(
+        session=session, skip=pagination.skip, limit=pagination.limit
+    )
     users_public = [UserPublic.model_validate(user) for user in users]
     return UsersPublic(data=users_public, count=count)
 
 
 @router.post(
-    "/", dependencies=[Depends(get_current_active_superuser)], response_model=UserPublic
+    "/",
+    dependencies=[Depends(require_permission("users:write"))],
+    response_model=UserPublic,
 )
 def create_user(*, session: SessionDep, user_in: UserCreate) -> Any:
     return user_service.create_user(session=session, user_in=user_in)
@@ -67,7 +72,7 @@ def read_user_by_id(
 
 @router.patch(
     "/{user_id}",
-    dependencies=[Depends(get_current_active_superuser)],
+    dependencies=[Depends(require_permission("users:write"))],
     response_model=UserPublic,
 )
 def update_user(
@@ -79,7 +84,7 @@ def update_user(
     return user_service.update_user(session=session, user_id=user_id, user_in=user_in)
 
 
-@router.delete("/{user_id}", dependencies=[Depends(get_current_active_superuser)])
+@router.delete("/{user_id}", dependencies=[Depends(require_permission("users:delete"))])
 def delete_user(
     session: SessionDep, current_user: CurrentUser, user_id: uuid.UUID
 ) -> Message:

@@ -13,6 +13,7 @@ from app.modules.ai.tools.schema import (
 )
 from app.modules.iam.deps import CurrentUser, get_current_active_superuser
 from app.shared.deps import SessionDep
+from app.shared.pagination import PaginationDep
 from app.shared.schema import Message
 
 router = APIRouter(prefix="/tools", tags=["ai-tools"])
@@ -20,9 +21,11 @@ router = APIRouter(prefix="/tools", tags=["ai-tools"])
 
 @router.get("/", response_model=ToolsPublic)
 def read_tools(
-    session: SessionDep, _current_user: CurrentUser, skip: int = 0, limit: int = 100
+    session: SessionDep, _current_user: CurrentUser, pagination: PaginationDep
 ) -> Any:
-    tools, count = tool_service.list_tools(session=session, skip=skip, limit=limit)
+    tools, count = tool_service.list_tools(
+        session=session, skip=pagination.skip, limit=pagination.limit
+    )
     return ToolsPublic(data=[ToolPublic.model_validate(t) for t in tools], count=count)
 
 

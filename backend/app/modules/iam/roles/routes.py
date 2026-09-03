@@ -3,21 +3,24 @@ from typing import Any
 
 from fastapi import APIRouter, Depends
 
-from app.modules.iam.deps import get_current_active_superuser
+from app.modules.iam.deps import require_permission
 from app.modules.iam.roles import services as role_service
 from app.modules.iam.roles.schema import RolePublic, RolesPublic
 from app.shared.deps import SessionDep
+from app.shared.pagination import PaginationDep
 
 router = APIRouter(
     prefix="/roles",
     tags=["roles"],
-    dependencies=[Depends(get_current_active_superuser)],
+    dependencies=[Depends(require_permission("roles:read"))],
 )
 
 
 @router.get("/", response_model=RolesPublic)
-def read_roles(session: SessionDep, skip: int = 0, limit: int = 100) -> Any:
-    roles, count = role_service.list_roles(session=session, skip=skip, limit=limit)
+def read_roles(session: SessionDep, pagination: PaginationDep) -> Any:
+    roles, count = role_service.list_roles(
+        session=session, skip=pagination.skip, limit=pagination.limit
+    )
     return RolesPublic(data=[RolePublic.model_validate(r) for r in roles], count=count)
 
 

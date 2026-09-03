@@ -8,6 +8,7 @@ from app.modules.ocr import services as ocr_service
 from app.modules.ocr.providers.factory import list_available_providers
 from app.modules.ocr.schema import OcrDocumentPublic, OcrDocumentsPublic
 from app.shared.deps import SessionDep
+from app.shared.pagination import PaginationDep
 from app.shared.rate_limit import rate_limited
 from app.shared.schema import Message
 
@@ -40,8 +41,7 @@ async def upload_document(
 def list_documents(
     session: SessionDep,
     current_user: CurrentUser,
-    skip: int = 0,
-    limit: int = 100,
+    pagination: PaginationDep,
     status: str | None = Query(default=None, description="Filter by status"),
 ) -> Any:
     """List OCR documents for the current user."""
@@ -49,8 +49,8 @@ def list_documents(
         session=session,
         current_user=current_user,
         status=status,
-        skip=skip,
-        limit=limit,
+        skip=pagination.skip,
+        limit=pagination.limit,
     )
     items = [OcrDocumentPublic.model_validate(d) for d in docs]
     return OcrDocumentsPublic(data=items, count=count)

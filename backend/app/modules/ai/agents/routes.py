@@ -12,6 +12,7 @@ from app.modules.ai.agents.schema import (
 )
 from app.modules.iam.deps import CurrentUser, get_current_active_superuser
 from app.shared.deps import SessionDep
+from app.shared.pagination import PaginationDep
 from app.shared.schema import Message
 
 router = APIRouter(prefix="/agents", tags=["ai-agents"])
@@ -19,9 +20,11 @@ router = APIRouter(prefix="/agents", tags=["ai-agents"])
 
 @router.get("/", response_model=AgentsPublic)
 def read_agents(
-    session: SessionDep, _current_user: CurrentUser, skip: int = 0, limit: int = 100
+    session: SessionDep, _current_user: CurrentUser, pagination: PaginationDep
 ) -> Any:
-    agents, count = agent_service.list_agents(session=session, skip=skip, limit=limit)
+    agents, count = agent_service.list_agents(
+        session=session, skip=pagination.skip, limit=pagination.limit
+    )
     return AgentsPublic(
         data=[AgentPublic.model_validate(a) for a in agents], count=count
     )

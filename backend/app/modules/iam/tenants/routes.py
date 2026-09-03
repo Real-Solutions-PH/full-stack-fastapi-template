@@ -3,22 +3,23 @@ from typing import Any
 
 from fastapi import APIRouter, Depends
 
-from app.modules.iam.deps import get_current_active_superuser
+from app.modules.iam.deps import require_permission
 from app.modules.iam.tenants import services as tenant_service
 from app.modules.iam.tenants.schema import TenantPublic, TenantsPublic
 from app.shared.deps import SessionDep
+from app.shared.pagination import PaginationDep
 
 router = APIRouter(
     prefix="/tenants",
     tags=["tenants"],
-    dependencies=[Depends(get_current_active_superuser)],
+    dependencies=[Depends(require_permission("tenants:read"))],
 )
 
 
 @router.get("/", response_model=TenantsPublic)
-def read_tenants(session: SessionDep, skip: int = 0, limit: int = 100) -> Any:
+def read_tenants(session: SessionDep, pagination: PaginationDep) -> Any:
     tenants, count = tenant_service.list_tenants(
-        session=session, skip=skip, limit=limit
+        session=session, skip=pagination.skip, limit=pagination.limit
     )
     return TenantsPublic(
         data=[TenantPublic.model_validate(t) for t in tenants], count=count

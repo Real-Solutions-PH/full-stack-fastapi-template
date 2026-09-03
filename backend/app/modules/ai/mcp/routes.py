@@ -12,6 +12,7 @@ from app.modules.ai.mcp.schema import (
 )
 from app.modules.iam.deps import CurrentUser, get_current_active_superuser
 from app.shared.deps import SessionDep
+from app.shared.pagination import PaginationDep
 from app.shared.schema import Message
 
 # Superuser-only: MCPServer.config is a free-form dict that can hold
@@ -25,10 +26,10 @@ router = APIRouter(
 
 @router.get("/", response_model=MCPServersPublic)
 def read_mcp_servers(
-    session: SessionDep, _current_user: CurrentUser, skip: int = 0, limit: int = 100
+    session: SessionDep, _current_user: CurrentUser, pagination: PaginationDep
 ) -> Any:
     servers, count = mcp_service.list_mcp_servers(
-        session=session, skip=skip, limit=limit
+        session=session, skip=pagination.skip, limit=pagination.limit
     )
     return MCPServersPublic(
         data=[MCPServerPublic.model_validate(s) for s in servers], count=count

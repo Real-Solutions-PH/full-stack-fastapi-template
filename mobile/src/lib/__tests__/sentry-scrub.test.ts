@@ -1,5 +1,5 @@
-import { AUTH_COOKIE_NAME, scrubSentryEvent } from "@/lib/sentry-scrub"
 import type { ErrorEvent } from "@sentry/react-native"
+import { AUTH_COOKIE_NAME, scrubSentryEvent } from "@/lib/sentry-scrub"
 
 function makeEvent(request: NonNullable<ErrorEvent["request"]>): ErrorEvent {
   return { type: undefined, message: "boom", level: "error", request }

@@ -136,6 +136,15 @@ class Settings(BaseSettings):
     # Tenancy: slug of the tenant new signups are assigned to.
     DEFAULT_TENANT_SLUG: str = "default"
 
+    # Coarse outer guard on request body size (a per-worker memory-DoS
+    # backstop). Must exceed the largest legitimate upload, e.g. OCR files.
+    MAX_REQUEST_BODY_SIZE_MB: int = 25
+
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def max_request_body_size_bytes(self) -> int:
+        return self.MAX_REQUEST_BODY_SIZE_MB * 1024 * 1024
+
     MINIO_ENDPOINT: str = "http://minio:9000"
     MINIO_ROOT_USER: str = "minioadmin"
     MINIO_ROOT_PASSWORD: str = "minioadmin"

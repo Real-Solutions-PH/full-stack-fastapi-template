@@ -5,7 +5,7 @@ from typing import Any
 import sentry_sdk
 from fastapi import FastAPI
 from fastapi.routing import APIRoute
-from starlette.datastructures import MutableHeaders
+from starlette.datastructures import Headers, MutableHeaders
 from starlette.middleware.cors import CORSMiddleware
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
@@ -77,6 +77,65 @@ class SecurityHeadersMiddleware:
         await self.app(scope, receive, send_with_headers)
 
 
+class _PayloadTooLarge(Exception):
+    """Raised when the streamed request body exceeds the configured cap."""
+
+
+class BodySizeLimitMiddleware:
+    """Reject requests whose body exceeds ``max_request_body_size_bytes``.
+
+    Fast-rejects on a declared Content-Length, and also counts streamed bytes
+    so a chunked or mis-declared body cannot exhaust worker memory. The limit
+    is read from settings per request so it stays overridable in tests.
+    """
+
+    def __init__(self, app: ASGIApp) -> None:
+        self.app = app
+
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        if scope["type"] != "http":
+            await self.app(scope, receive, send)
+            return
+
+        max_bytes = settings.max_request_body_size_bytes
+        content_length = Headers(scope=scope).get("content-length")
+        if content_length is not None and content_length.isdigit():
+            if int(content_length) > max_bytes:
+                await self._reject(send)
+                return
+
+        received = 0
+
+        async def limited_receive() -> Message:
+            nonlocal received
+            message = await receive()
+            if message["type"] == "http.request":
+                received += len(message.get("body", b""))
+                if received > max_bytes:
+                    raise _PayloadTooLarge
+            return message
+
+        try:
+            await self.app(scope, limited_receive, send)
+        except _PayloadTooLarge:
+            await self._reject(send)
+
+    @staticmethod
+    async def _reject(send: Send) -> None:
+        body = b'{"code":"payload_too_large","message":"Request body too large","details":null}'
+        await send(
+            {
+                "type": "http.response.start",
+                "status": 413,
+                "headers": [
+                    (b"content-type", b"application/json"),
+                    (b"content-length", str(len(body)).encode()),
+                ],
+            }
+        )
+        await send({"type": "http.response.body", "body": body})
+
+
 if settings.SENTRY_DSN and settings.ENVIRONMENT != "local":
     sentry_sdk.init(
         dsn=str(settings.SENTRY_DSN),
@@ -119,6 +178,9 @@ app = FastAPI(
 )
 
 register_exception_handlers(app)
+# Added inner-first: SecurityHeaders wraps BodySizeLimit so even a 413 carries
+# the security headers.
+app.add_middleware(BodySizeLimitMiddleware)
 app.add_middleware(SecurityHeadersMiddleware)
 
 # Set all CORS enabled origins

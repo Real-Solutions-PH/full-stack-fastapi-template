@@ -34,9 +34,11 @@ class OcrDocumentPublic(OcrDocumentBase):
     provider_used: str | None = None
     page_count: int | None = None
     processing_time_ms: int | None = None
+    # Generic, client-safe failure text only; the underlying exception is
+    # logged server-side and never surfaced here. minio_key is deliberately
+    # omitted — it embeds internal storage layout and the owner's UUID.
     error_message: str | None = None
     file_size_bytes: int = 0
-    minio_key: str
     owner_id: uuid.UUID
     created_at: datetime | None = None
     completed_at: datetime | None = None

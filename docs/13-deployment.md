@@ -64,19 +64,93 @@ Copy the content and use that as password / secret key. And run that again to ge
 
 ### Environment variable reference
 
-* `PROJECT_NAME`: The name of the project, used in the API for the docs and emails.
-* `STACK_NAME`: The name of the stack used for Docker Compose labels and project name.
+This reference is generated from [`.env.example`](../.env.example) — that file
+is the source of truth, so when you add or rename a variable there, update this
+list to match. Every value that ships as `changethis` **must** be rotated to a
+generated secret (above) before any non-local deployment.
+
+> Redis runs in the Compose stack (rate-limit / cache seam) but has no
+> environment variable — the backend reaches it at the fixed `redis` service
+> host, so there is nothing to configure here.
+
+**Domain and environment**
+
+* `DOMAIN`: The deployed environment's domain (`localhost` locally). Set per environment.
+* `FRONTEND_HOST`: Frontend base URL the backend uses to build links in emails. Set to the deployed frontend host in a deployed environment.
+* `ENVIRONMENT`: One of `local`, `staging`, `production` (accepted values in `backend/app/core/config.py`).
+* `PROJECT_NAME`: The name of the project, used in the API docs and emails.
+* `STACK_NAME`: The name used for Docker Compose labels and the compose project name.
+
+**Backend and first superuser**
+
 * `BACKEND_CORS_ORIGINS`: A list of allowed CORS origins separated by commas.
-* `FIRST_SUPERUSER`: The email of the first superuser, this superuser will be the one that can create new users.
-* `SMTP_HOST`: The SMTP server host to send emails, this would come from your email provider (E.g. Mailgun, Sparkpost, Sendgrid, etc).
-* `SMTP_USER`: The SMTP server user to send emails.
-* `SMTP_PASSWORD`: The SMTP server password to send emails.
-* `EMAILS_FROM_EMAIL`: The email account to send emails from.
-* `POSTGRES_SERVER`: The hostname of the PostgreSQL server. You can leave the default of `db`, provided by the same Docker Compose. You normally wouldn't need to change this unless you are using a third-party provider.
-* `POSTGRES_PORT`: The port of the PostgreSQL server. You can leave the default. You normally wouldn't need to change this unless you are using a third-party provider.
-* `POSTGRES_USER`: The Postgres user, you can leave the default.
-* `POSTGRES_DB`: The database name to use for this application. You can leave the default of `app`.
-* `SENTRY_DSN`: The DSN for Sentry, if you are using it.
+* `FIRST_SUPERUSER`: The email of the first superuser — the account that can create other users.
+* `FIRST_SUPERUSER_PASSWORD`: Password for that first superuser. Ships as `changethis` — **rotate it** for any non-local environment.
+
+**Supabase auth** (the backend verifies Supabase-issued JWTs via JWKS — ADR-0005)
+
+* `SUPABASE_URL`: Supabase auth URL — the local CLI stack locally, the hosted project URL in a deployed environment.
+* `SUPABASE_ANON_KEY`: Public anon key. The committed value is Supabase's well-known **local demo** key (safe to commit); use the hosted project's real key when deployed.
+* `SUPABASE_SERVICE_ROLE_KEY`: Service-role key. The committed value is the local demo key; the hosted project's real value is a **secret**.
+* `SUPABASE_JWT_ISSUER`: Override the token issuer only when it differs from `SUPABASE_URL` (e.g. a containerized backend reaching the stack via `host.docker.internal` while tokens say `127.0.0.1`). Leave empty otherwise.
+* `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`: The same URL and anon key exposed to the browser. Compose derives them from the two `SUPABASE_*` values above as Docker **build args** inlined into the Next.js bundle.
+
+**Emails (SMTP)**
+
+* `SMTP_HOST`: The SMTP server host, from your email provider (e.g. Mailgun, Sparkpost, Sendgrid).
+* `SMTP_USER`: The SMTP server user.
+* `SMTP_PASSWORD`: The SMTP server password.
+* `EMAILS_FROM_EMAIL`: The email address to send from.
+* `SMTP_TLS`, `SMTP_SSL`, `SMTP_PORT`: Transport settings (defaults: TLS on, SSL off, port 587).
+
+**Postgres**
+
+* `POSTGRES_SERVER`: The hostname of the PostgreSQL server. Leave the default (`db` in Compose) unless using a third-party provider.
+* `POSTGRES_PORT`: The port of the PostgreSQL server. Leave the default unless using a third-party provider.
+* `POSTGRES_USER`: The Postgres user. Leave the default.
+* `POSTGRES_DB`: The database name for this application. Leave the default of `app`.
+* `POSTGRES_PASSWORD`: The Postgres password. Ships as `changethis` — **rotate it** for any non-local environment.
+
+**Tenancy**
+
+* `DEFAULT_TENANT_SLUG`: Slug of the tenant new signups are assigned to. The tenant's UUID is fixed by the seed/migration and is not configurable here.
+
+**MinIO (S3-compatible object storage)**
+
+* `MINIO_ENDPOINT`: Object-storage endpoint URL.
+* `MINIO_ROOT_USER`: Object-storage access key.
+* `MINIO_ROOT_PASSWORD`: Object-storage secret key. Ships as `changethis` — **rotate it** for any non-local environment.
+* `MINIO_DEFAULT_BUCKET`: Default bucket for uploads.
+
+**OCR module** (optional — gated by `OCR_ENABLED`)
+
+* `OCR_ENABLED`: Enables the OCR module and its routes when `true`.
+* `OCR_DEFAULT_PROVIDER`: OCR engine — `rapidocr`, `easyocr`, or `granite`.
+* `OCR_MAX_FILE_SIZE_MB`: Maximum upload size accepted for OCR.
+* `OCR_ALLOWED_MIME_TYPES`: Comma-separated allowed MIME types.
+* `OCR_BUCKET`: Object-storage bucket for OCR documents.
+
+**Error monitoring** (GlitchTip — Sentry-SDK compatible; see [runbook](runbook.md))
+
+* `SENTRY_DSN`: Backend DSN, read at runtime by the FastAPI app. Leave empty to disable.
+* `FRONTEND_SENTRY_DSN`: Frontend DSN, passed as a Docker **build arg** (`NEXT_PUBLIC_SENTRY_DSN`) and inlined into the Next.js bundle — a runtime-only value no-ops.
+* Mobile uses `EXPO_PUBLIC_SENTRY_DSN`, set in `mobile/.env` (or EAS env), not here.
+
+**AI module** (optional — gated by `AI_ENABLED`; see [AI module](22-ai-module.md))
+
+* `AI_ENABLED`: Mounts the AI routes and agent seed on the backend when `true`.
+* `NEXT_PUBLIC_AI_ENABLED`: Exposes the chat UI on the frontend when `true` (build arg, inlined at build).
+* `NEBIUS_API_KEY`, `NEBIUS_BASE_URL`, `NEBIUS_MODEL`: Nebius provider credentials and model.
+* `OPENROUTER_API_KEY`, `OPENROUTER_BASE_URL`, `OPENROUTER_MODEL`: OpenRouter provider credentials and model.
+* `DEFAULT_LLM_PROVIDER`: Which provider to use by default — `nebius` or `openrouter`. At least one provider's key is required when `AI_ENABLED=true`.
+
+**Tools**
+
+* `BRAVE_API_KEY`: Enables the Brave web-search agent tool when set.
+
+**Docker images**
+
+* `DOCKER_IMAGE_BACKEND`, `DOCKER_IMAGE_FRONTEND`: Registry image names, used when building/pushing deploy images.
 
 ## Runbook
 

@@ -140,6 +140,12 @@ class Settings(BaseSettings):
     # backstop). Must exceed the largest legitimate upload, e.g. OCR files.
     MAX_REQUEST_BODY_SIZE_MB: int = 25
 
+    # Rate limiting: per-tenant token bucket backed by Redis (already in
+    # compose). Disabled by default; set a positive per-minute budget to turn
+    # it on. The bucket capacity (burst) equals one minute's budget.
+    REDIS_URL: str = "redis://redis:6379/0"
+    RATE_LIMIT_PER_MINUTE: int = 0
+
     @computed_field  # type: ignore[prop-decorator]
     @property
     def max_request_body_size_bytes(self) -> int:

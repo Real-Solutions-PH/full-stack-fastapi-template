@@ -167,9 +167,15 @@ class Settings(BaseSettings):
         return [m.strip() for m in self.OCR_ALLOWED_MIME_TYPES.split(",") if m.strip()]
 
     def _check_default_secret(
-        self, var_name: str, value: str | None, insecure_value: str = "changethis"
+        self,
+        var_name: str,
+        value: str | None,
+        insecure_value: str | tuple[str, ...] = "changethis",
     ) -> None:
-        if value == insecure_value:
+        insecure_values = (
+            (insecure_value,) if isinstance(insecure_value, str) else insecure_value
+        )
+        if value in insecure_values:
             message = (
                 f"The value of {var_name} is a well-known insecure default, "
                 "for security, please change it, at least for deployments."
@@ -185,6 +191,16 @@ class Settings(BaseSettings):
         self._check_default_secret(
             "FIRST_SUPERUSER_PASSWORD", self.FIRST_SUPERUSER_PASSWORD
         )
+        # Object-store root creds: minioadmin is MinIO's shipped default and
+        # changethis is this template's placeholder — both are public knowledge.
+        self._check_default_secret(
+            "MINIO_ROOT_USER", self.MINIO_ROOT_USER, insecure_value="minioadmin"
+        )
+        self._check_default_secret(
+            "MINIO_ROOT_PASSWORD",
+            self.MINIO_ROOT_PASSWORD,
+            insecure_value=("minioadmin", "changethis"),
+        )
         # The CLI stack's demo service-role key is public knowledge; outside
         # a local environment it must never be the configured key.
         self._check_default_secret(
@@ -192,6 +208,13 @@ class Settings(BaseSettings):
             self.SUPABASE_SERVICE_ROLE_KEY,
             insecure_value=_DEMO_SUPABASE_SERVICE_ROLE_KEY,
         )
+        # An empty service-role key silently breaks JIT provisioning (every
+        # GoTrue admin call 500s); outside local it must be set explicitly.
+        if self.ENVIRONMENT != "local" and not self.SUPABASE_SERVICE_ROLE_KEY:
+            raise ValueError(
+                "SUPABASE_SERVICE_ROLE_KEY must be set outside a local environment; "
+                "an empty key breaks user provisioning against GoTrue."
+            )
 
         return self
 

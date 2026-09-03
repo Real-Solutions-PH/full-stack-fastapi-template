@@ -41,8 +41,10 @@ export const columns: ColumnDef<UserTableData>[] = [
     ),
   },
   {
+    // Named "Access", not "Role": this is the legacy is_superuser flag, distinct
+    // from RBAC roles (managed per user via the row's "Manage Roles" action).
     accessorKey: "is_superuser",
-    header: "Role",
+    header: "Access",
     cell: ({ row }) => (
       <Badge variant={row.original.is_superuser ? "default" : "secondary"}>
         {row.original.is_superuser ? "Superuser" : "User"}

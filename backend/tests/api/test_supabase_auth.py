@@ -176,7 +176,10 @@ def test_update_user_email_propagates_to_gotrue(
     assert supabase_auth.admin_get_user_id_by_email(email) is None
 
 
-def test_update_me_email_propagates_to_gotrue(client: TestClient) -> None:
+def test_update_me_email_change_does_not_touch_gotrue(client: TestClient) -> None:
+    """Self-service email change is refused (400) and must NOT mutate the
+    GoTrue identity — the old admin-confirm path let a user mark an address
+    they don't own as confirmed."""
     email = random_email()
     password = random_lower_string()
     auth_uid = supabase_auth.admin_get_or_create_user(email=email, password=password)
@@ -186,9 +189,11 @@ def test_update_me_email_propagates_to_gotrue(client: TestClient) -> None:
     r = client.patch(
         f"{settings.API_V1_STR}/users/me", headers=headers, json={"email": new_email}
     )
-    assert r.status_code == 200
-    assert r.json()["email"] == new_email
-    assert supabase_auth.admin_get_user_id_by_email(new_email) == auth_uid
+    assert r.status_code == 400
+    # GoTrue identity is untouched: the current email still resolves, the
+    # attempted new one was never registered against this user.
+    assert supabase_auth.admin_get_user_id_by_email(email) == auth_uid
+    assert supabase_auth.admin_get_user_id_by_email(new_email) is None
 
 
 def test_inactive_user_is_rejected_with_400(client: TestClient, db: Session) -> None:

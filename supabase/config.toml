@@ -165,12 +165,18 @@ site_url = "http://127.0.0.1:3000"
 # A list of *exact* URLs that auth providers are permitted to redirect to post authentication.
 # The frontend dev server answers on both localhost and 127.0.0.1; the
 # password-recovery flow redirects to /reset-password.
+# The mobile app deep-links recovery back into its reset screen; the
+# app-scheme URL below is what expo-linking's createURL("reset-password")
+# resolves to in standalone / dev-client builds. (Expo Go instead produces
+# an exp://<host>:<port>/--/reset-password URL — add it locally when testing
+# recovery inside Expo Go.)
 additional_redirect_urls = [
   "https://127.0.0.1:3000",
   "http://127.0.0.1:3000",
   "http://127.0.0.1:3000/reset-password",
   "http://localhost:3000",
   "http://localhost:3000/reset-password",
+  "fastapimobile://reset-password",
 ]
 # How long tokens are valid for, in seconds. Defaults to 3600 (1 hour), maximum 604,800 (1 week).
 jwt_expiry = 3600
@@ -239,7 +245,20 @@ enable_signup = true
 # addresses. If disabled, only the new email is required to confirm.
 double_confirm_changes = true
 # If enabled, users need to confirm their email address before signing in.
-enable_confirmations = false
+#
+# TRADE-OFF (enabled by default here): signups must verify email ownership
+# before their first login. signUp then returns no session, so both the web
+# and mobile clients route the user to "check your email to confirm" instead
+# of logging straight in. This blocks signups with typo'd or throwaway
+# addresses and is the safer production default.
+#
+# Cost: every new account needs a round-trip through email. Locally that mail
+# is caught by the [local_smtp] test server (web UI at http://127.0.0.1:54324),
+# NOT actually delivered. Automated flows that sign up and immediately sign in
+# (e.g. the Cypress E2E suite) must either read the confirmation link from that
+# mailbox or set enable_confirmations = false in a local-only override — Supabase
+# Cloud ignores this file, so hosted projects follow their dashboard setting.
+enable_confirmations = true
 # If enabled, users will need to reauthenticate or have logged in recently to change their password.
 secure_password_change = false
 # Controls the minimum amount of time that must pass before sending another signup confirmation or password reset email.

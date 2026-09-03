@@ -1,7 +1,7 @@
-import { runSync } from "@/lib/sync"
-import { useNetworkStore } from "@/stores/network-store"
 import NetInfo from "@react-native-community/netinfo"
 import { useEffect } from "react"
+import { runSync } from "@/lib/sync"
+import { useNetworkStore } from "@/stores/network-store"
 
 export function useNetworkStatus() {
   const setNetworkState = useNetworkStore((s) => s.setNetworkState)

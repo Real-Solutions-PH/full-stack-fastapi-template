@@ -1,3 +1,7 @@
+import { useRouter } from "expo-router"
+import { Controller, useForm } from "react-hook-form"
+import { View } from "react-native"
+import { SafeAreaView } from "react-native-safe-area-context"
 import { Button } from "@/components/ui/button"
 import { FormField } from "@/components/ui/form-field"
 import { Input } from "@/components/ui/input"
@@ -5,10 +9,6 @@ import { Text } from "@/components/ui/text"
 import { useCustomToast } from "@/hooks/useCustomToast"
 import { getSupabase } from "@/lib/supabase"
 import { emailPattern, handleError } from "@/lib/utils"
-import { useRouter } from "expo-router"
-import { Controller, useForm } from "react-hook-form"
-import { View } from "react-native"
-import { SafeAreaView } from "react-native-safe-area-context"
 
 interface RecoverForm {
   email: string

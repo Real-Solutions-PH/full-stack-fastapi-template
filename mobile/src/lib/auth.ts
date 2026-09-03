@@ -1,6 +1,6 @@
-import { getSupabase } from "@/lib/supabase"
 import axios, { type AxiosInstance } from "axios"
 import Constants from "expo-constants"
+import { getSupabase } from "@/lib/supabase"
 
 export const API_URL =
   process.env.EXPO_PUBLIC_API_URL ??

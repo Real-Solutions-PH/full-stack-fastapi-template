@@ -1,10 +1,10 @@
-import { mmkv } from "@/lib/storage"
 import {
+  createClient,
   type SupabaseClient,
   type SupportedStorage,
-  createClient,
 } from "@supabase/supabase-js"
 import { AppState, Platform } from "react-native"
+import { mmkv } from "@/lib/storage"
 
 // GoTrue session storage backed by the app's existing MMKV util (which
 // already falls back to localStorage / in-memory on web with SSR guards).

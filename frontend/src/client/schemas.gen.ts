@@ -255,6 +255,25 @@ export const PrivateUserCreateSchema = {
     title: 'PrivateUserCreate'
 } as const;
 
+export const RolePermissionsPublicSchema = {
+    properties: {
+        data: {
+            items: {
+                '$ref': '#/components/schemas/PermissionPublic'
+            },
+            type: 'array',
+            title: 'Data'
+        },
+        count: {
+            type: 'integer',
+            title: 'Count'
+        }
+    },
+    type: 'object',
+    required: ['data', 'count'],
+    title: 'RolePermissionsPublic'
+} as const;
+
 export const RolePublicSchema = {
     properties: {
         id: {
@@ -404,6 +423,29 @@ export const UserCreateSchema = {
     type: 'object',
     required: ['email'],
     title: 'UserCreate'
+} as const;
+
+export const UserPermissionsSchema = {
+    properties: {
+        roles: {
+            items: {
+                '$ref': '#/components/schemas/RolePublic'
+            },
+            type: 'array',
+            title: 'Roles'
+        },
+        permissions: {
+            items: {
+                '$ref': '#/components/schemas/PermissionPublic'
+            },
+            type: 'array',
+            title: 'Permissions'
+        }
+    },
+    type: 'object',
+    required: ['roles', 'permissions'],
+    title: 'UserPermissions',
+    description: "A user's effective roles and the permissions they grant."
 } as const;
 
 export const UserPublicSchema = {

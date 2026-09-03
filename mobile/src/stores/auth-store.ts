@@ -1,6 +1,6 @@
-import { mmkvStorage } from "@/lib/storage"
 import { create } from "zustand"
 import { createJSONStorage, persist } from "zustand/middleware"
+import { mmkvStorage } from "@/lib/storage"
 
 interface AuthState {
   isAuthenticated: boolean

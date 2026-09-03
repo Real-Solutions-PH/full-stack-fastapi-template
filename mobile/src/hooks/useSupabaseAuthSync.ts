@@ -1,6 +1,6 @@
+import { useEffect } from "react"
 import { getSupabase } from "@/lib/supabase"
 import { useAuthStore } from "@/stores/auth-store"
-import { useEffect } from "react"
 
 /**
  * Mirrors the Supabase auth session into the zustand auth store, which the

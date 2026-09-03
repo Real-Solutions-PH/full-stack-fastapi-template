@@ -1,6 +1,6 @@
-import { runSync } from "@/lib/sync"
 import { useEffect, useRef } from "react"
 import { AppState } from "react-native"
+import { runSync } from "@/lib/sync"
 
 export function useSyncOnForeground() {
   const appState = useRef(AppState.currentState)

@@ -106,9 +106,7 @@ describe("web with localStorage", () => {
   })
 
   afterEach(() => {
-    // biome-ignore lint/performance/noDelete: restoring the SSR-like global state
     delete (globalThis as Record<string, unknown>).window
-    // biome-ignore lint/performance/noDelete: restoring the SSR-like global state
     delete (globalThis as Record<string, unknown>).localStorage
   })
 

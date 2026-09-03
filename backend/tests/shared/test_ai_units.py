@@ -162,10 +162,19 @@ def test_plan_and_execute_uses_react_executor_when_tools_present(
 
 
 def test_ai_router_mounts_all_submodules() -> None:
+    # Resolve the mounted paths through OpenAPI rather than walking
+    # router.routes: newer Starlette records include_router() results as lazy
+    # `_IncludedRouter` wrappers that carry no `.path`, so a substring check
+    # over route.path silently matches nothing. app.openapi() flattens the
+    # tree into real URL paths regardless of Starlette version.
+    from fastapi import FastAPI
+
     from app.modules.ai.main import router
 
     assert router.prefix == "/ai"
-    paths = {getattr(r, "path", "") for r in router.routes}
+    app = FastAPI()
+    app.include_router(router)
+    paths = list(app.openapi()["paths"])
     for fragment in ("/agents", "/tools", "/mcp", "/chat"):
         assert any(fragment in p for p in paths), fragment
 

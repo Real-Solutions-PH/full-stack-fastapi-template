@@ -1,7 +1,7 @@
-import { OfflineBanner } from "@/components/offline-banner"
-import { useAuthStore } from "@/stores/auth-store"
 import { Redirect, Tabs } from "expo-router"
 import { View } from "react-native"
+import { OfflineBanner } from "@/components/offline-banner"
+import { useAuthStore } from "@/stores/auth-store"
 
 export default function AppLayout() {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated)

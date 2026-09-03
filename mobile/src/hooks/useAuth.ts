@@ -1,3 +1,6 @@
+import type { User } from "@supabase/supabase-js"
+import { useMutation, useQueryClient } from "@tanstack/react-query"
+import { useRouter } from "expo-router"
 import { useCustomToast } from "@/hooks/useCustomToast"
 import { api } from "@/lib/auth"
 import * as itemsDb from "@/lib/db/items"
@@ -7,9 +10,6 @@ import { getSupabase } from "@/lib/supabase"
 import { runSync } from "@/lib/sync"
 import { handleError } from "@/lib/utils"
 import { useAuthStore } from "@/stores/auth-store"
-import type { User } from "@supabase/supabase-js"
-import { useMutation, useQueryClient } from "@tanstack/react-query"
-import { useRouter } from "expo-router"
 
 export interface CurrentUser {
   id: string

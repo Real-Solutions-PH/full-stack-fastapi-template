@@ -1,23 +1,23 @@
 {
-  "$schema": "https://biomejs.dev/schemas/1.9.4/schema.json",
-  "organizeImports": {
-    "enabled": true
-  },
+  "$schema": "https://biomejs.dev/schemas/2.5.3/schema.json",
+  "assist": { "actions": { "source": { "organizeImports": "on" } } },
   "files": {
-    "ignore": [
-      ".expo/**",
-      "node_modules/**",
-      "src/client/**",
-      "src/components/ui/**"
+    "includes": [
+      "**",
+      "!**/.expo",
+      "!**/node_modules",
+      "!**/src/client",
+      "!**/src/components/ui"
     ]
   },
   "linter": {
     "enabled": true,
     "rules": {
-      "recommended": true,
+      "preset": "recommended",
       "suspicious": {
         "noExplicitAny": "off",
-        "noArrayIndexKey": "off"
+        "noArrayIndexKey": "off",
+        "noUnknownAtRules": "off"
       },
       "style": {
         "noNonNullAssertion": "off",

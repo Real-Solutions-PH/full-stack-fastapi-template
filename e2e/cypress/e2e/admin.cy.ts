@@ -159,17 +159,30 @@ describe("Admin user management", () => {
 })
 
 describe("Admin page access control", () => {
-  it("Non-superuser cannot access admin page", () => {
+  it("Non-superuser is redirected home, stays signed in, never calls readUsers", () => {
     const email = randomEmail()
     const password = randomPassword()
 
     cy.createUserViaApi(email, password)
     cy.logInUser(email, password)
 
+    // The admin table's readUsers is superuser-only; it must not fire before
+    // the superuser guard resolves (a stray 403 previously signed the user out).
+    let readUsersCalled = false
+    cy.intercept("GET", "**/api/v1/users/*", (req) => {
+      // /users/me is the current-user probe and is expected; the list is not.
+      if (!req.url.includes("/users/me")) readUsersCalled = true
+    }).as("usersList")
+
     cy.visit("/admin")
 
-    cy.location("pathname").should("not.match", /\/admin/)
+    // Redirected to "/" (home) — NOT signed out to "/login".
+    cy.location("pathname").should("eq", "/")
     cy.contains("h1, h2, h3", "Users").should("not.exist")
+    cy.then(() => {
+      expect(readUsersCalled, "readUsers must not be called for a normal user")
+        .to.be.false
+    })
   })
 
   it("Superuser can access admin page", () => {

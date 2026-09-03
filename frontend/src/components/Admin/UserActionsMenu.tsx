@@ -13,6 +13,7 @@ import {
 import useAuth from "@/hooks/useAuth"
 import DeleteUser from "./DeleteUser"
 import EditUser from "./EditUser"
+import ManageRoles from "./ManageRoles"
 
 interface UserActionsMenuProps {
   user: UserPublic
@@ -22,9 +23,11 @@ export const UserActionsMenu = ({ user }: UserActionsMenuProps) => {
   const [open, setOpen] = useState(false)
   const { user: currentUser } = useAuth()
 
-  if (user.id === currentUser?.id) {
-    return null
-  }
+  // Editing or deleting your own account from the admin table is disallowed
+  // (self-edit lives in Settings; self-delete is a foot-gun). Viewing/managing
+  // your own roles stays available — it cannot lock you out, since the
+  // is_superuser flag that grants admin access is independent of RBAC roles.
+  const isCurrentUser = user.id === currentUser?.id
 
   return (
     <DropdownMenu open={open} onOpenChange={setOpen}>
@@ -34,8 +37,13 @@ export const UserActionsMenu = ({ user }: UserActionsMenuProps) => {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
-        <EditUser user={user} onSuccess={() => setOpen(false)} />
-        <DeleteUser id={user.id} onSuccess={() => setOpen(false)} />
+        {!isCurrentUser && (
+          <EditUser user={user} onSuccess={() => setOpen(false)} />
+        )}
+        <ManageRoles user={user} />
+        {!isCurrentUser && (
+          <DeleteUser id={user.id} onSuccess={() => setOpen(false)} />
+        )}
       </DropdownMenuContent>
     </DropdownMenu>
   )

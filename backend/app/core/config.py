@@ -54,6 +54,16 @@ class Settings(BaseSettings):
             self.FRONTEND_HOST
         ]
 
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def docs_enabled(self) -> bool:
+        """Serve /docs, /redoc and openapi.json in local only.
+
+        Outside a local environment the interactive docs and the schema
+        expose the full API surface, so they are disabled entirely.
+        """
+        return self.ENVIRONMENT == "local"
+
     PROJECT_NAME: str
     SENTRY_DSN: HttpUrl | None = None
     POSTGRES_SERVER: str

@@ -94,3 +94,16 @@ def test_empty_service_role_key_allowed_in_local() -> None:
         **{**_BASE, "SUPABASE_SERVICE_ROLE_KEY": ""},
     )
     assert s.SUPABASE_SERVICE_ROLE_KEY == ""
+
+
+def test_docs_enabled_only_in_local() -> None:
+    local = Settings(_env_file=None, ENVIRONMENT="local", **_BASE)  # type: ignore[call-arg]
+    assert local.docs_enabled is True
+    for env in ("staging", "production"):
+        s = Settings(
+            _env_file=None,  # type: ignore[call-arg]
+            ENVIRONMENT=env,
+            SUPABASE_SERVICE_ROLE_KEY="a-real-project-key",
+            **_BASE,
+        )
+        assert s.docs_enabled is False

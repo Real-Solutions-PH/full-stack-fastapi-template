@@ -5,18 +5,76 @@ from typing import Any
 import sentry_sdk
 from fastapi import FastAPI
 from fastapi.routing import APIRoute
+from starlette.datastructures import MutableHeaders
 from starlette.middleware.cors import CORSMiddleware
+from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
 from app.api import v1_router
 from app.core.config import settings
 from app.core.observability import scrub_event
 from app.core.rls import warn_if_rls_dormant
 from app.core.storage import ensure_bucket
+from app.logger import app_logger
 from app.shared.errors import ErrorResponse, register_exception_handlers
 
 
 def custom_generate_unique_id(route: APIRoute) -> str:
     return f"{route.tags[0]}-{route.name}"
+
+
+# Baseline security headers set on every response (§3 AppSec). Values are
+# static; only CSP varies (docs pages need their asset CDN) and HSTS is added
+# outside local, where the app is served over HTTPS.
+_STATIC_SECURITY_HEADERS = {
+    "x-content-type-options": "nosniff",
+    "x-frame-options": "DENY",
+    "referrer-policy": "no-referrer",
+    "permissions-policy": "geolocation=(), microphone=(), camera=(), browsing-topics=()",
+}
+# JSON API responses reference nothing, so lock the CSP right down.
+_API_CSP = "default-src 'none'; frame-ancestors 'none'; base-uri 'none'"
+# Swagger UI / ReDoc (local only) pull their bundle from jsDelivr.
+_DOCS_CSP = (
+    "default-src 'self'; frame-ancestors 'none'; base-uri 'none'; "
+    "script-src 'self' https://cdn.jsdelivr.net 'unsafe-inline'; "
+    "style-src 'self' https://cdn.jsdelivr.net 'unsafe-inline'; "
+    "img-src 'self' https://fastapi.tiangolo.com data:; "
+    "font-src 'self' https://cdn.jsdelivr.net; worker-src 'self' blob:"
+)
+_DOCS_PATHS = {"/docs", "/redoc"}
+_HSTS = "max-age=63072000; includeSubDomains"
+
+
+class SecurityHeadersMiddleware:
+    """Pure-ASGI middleware that stamps security headers on every response.
+
+    ASGI (not BaseHTTPMiddleware) so it only touches the response-start
+    message and never buffers the body — safe for the streaming SSE routes.
+    """
+
+    def __init__(self, app: ASGIApp) -> None:
+        self.app = app
+
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        if scope["type"] != "http":
+            await self.app(scope, receive, send)
+            return
+        path: str = scope.get("path", "")
+
+        async def send_with_headers(message: Message) -> None:
+            if message["type"] == "http.response.start":
+                headers = MutableHeaders(raw=message["headers"])
+                for name, value in _STATIC_SECURITY_HEADERS.items():
+                    headers.setdefault(name, value)
+                headers.setdefault(
+                    "content-security-policy",
+                    _DOCS_CSP if path in _DOCS_PATHS else _API_CSP,
+                )
+                if settings.ENVIRONMENT != "local":
+                    headers.setdefault("strict-transport-security", _HSTS)
+            await send(message)
+
+        await self.app(scope, receive, send_with_headers)
 
 
 if settings.SENTRY_DSN and settings.ENVIRONMENT != "local":
@@ -34,21 +92,34 @@ if settings.SENTRY_DSN and settings.ENVIRONMENT != "local":
 
 @asynccontextmanager
 async def lifespan(_: FastAPI) -> AsyncIterator[None]:
-    ensure_bucket(settings.MINIO_DEFAULT_BUCKET)
+    # Object storage is only used by OCR. When it is enabled, ensure its
+    # bucket — but an unreachable store must degrade OCR, not kill startup.
     if settings.OCR_ENABLED:
-        ensure_bucket(settings.OCR_BUCKET)
+        try:
+            ensure_bucket(settings.OCR_BUCKET)
+        except Exception:
+            app_logger.warning(
+                "OCR object storage unreachable at startup; OCR uploads will "
+                "fail until it recovers",
+                exc_info=True,
+            )
     warn_if_rls_dormant()
     yield
 
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
-    openapi_url=f"{settings.API_V1_STR}/openapi.json",
+    openapi_url=(
+        f"{settings.API_V1_STR}/openapi.json" if settings.docs_enabled else None
+    ),
+    docs_url="/docs" if settings.docs_enabled else None,
+    redoc_url="/redoc" if settings.docs_enabled else None,
     generate_unique_id_function=custom_generate_unique_id,
     lifespan=lifespan,
 )
 
 register_exception_handlers(app)
+app.add_middleware(SecurityHeadersMiddleware)
 
 # Set all CORS enabled origins
 if settings.all_cors_origins:

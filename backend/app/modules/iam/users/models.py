@@ -27,4 +27,12 @@ class User(UserBase, table=True):
         default_factory=_utcnow,
         sa_type=DateTime(timezone=True),  # type: ignore
     )
+    # Soft-delete marker (retention convention): non-null == logically
+    # deleted. Erasure (GDPR right-to-erasure) is a separate hard delete —
+    # see app.modules.iam.users.services and docs/data-protection.md.
+    deleted_at: datetime | None = Field(
+        default=None,
+        sa_type=DateTime(timezone=True),  # type: ignore
+        index=True,
+    )
     items: list["Item"] = Relationship(back_populates="owner", cascade_delete=True)

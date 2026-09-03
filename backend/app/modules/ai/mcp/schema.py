@@ -2,10 +2,10 @@ import ipaddress
 import socket
 import uuid
 from datetime import datetime
-from typing import Annotated, Any
+from typing import Annotated
 from urllib.parse import urlsplit
 
-from pydantic import AfterValidator, StringConstraints
+from pydantic import AfterValidator, ConfigDict, StringConstraints
 from sqlmodel import Field, SQLModel
 
 _BLOCKED_HOSTNAMES = {"localhost"}
@@ -70,6 +70,22 @@ MCPServerUrl = Annotated[
 ]
 
 
+class MCPServerConfig(SQLModel):
+    """Connection config for an MCP server — WRITE-ONLY end to end.
+
+    Accepted on create/update but absent from every ``*Public`` response, so
+    anything it holds (bearer token, auth headers, server-specific secrets)
+    can never be echoed back to a client. Known secret-bearing fields are
+    typed; ``extra="allow"`` keeps arbitrary server-specific keys accepted and
+    equally write-only, so typing does not lock out valid configs.
+    """
+
+    model_config = ConfigDict(extra="allow")  # type: ignore[assignment]
+
+    headers: dict[str, str] = {}
+    auth_token: str | None = None
+
+
 class MCPServerBase(SQLModel):
     name: str = Field(max_length=128)
     url: str
@@ -78,13 +94,13 @@ class MCPServerBase(SQLModel):
 
 class MCPServerCreate(MCPServerBase):
     url: MCPServerUrl
-    config: dict[str, Any] = {}  # write-only: accepted on create, never echoed
+    config: MCPServerConfig = MCPServerConfig()
 
 
 class MCPServerUpdate(SQLModel):
     name: str | None = Field(default=None, max_length=128)
     url: MCPServerUrl | None = None
-    config: dict[str, Any] | None = None
+    config: MCPServerConfig | None = None
     is_active: bool | None = None
 
 

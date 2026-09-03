@@ -1,3 +1,4 @@
+import * as Linking from "expo-linking"
 import { useRouter } from "expo-router"
 import { Controller, useForm } from "react-hook-form"
 import { View } from "react-native"
@@ -25,7 +26,13 @@ export default function RecoverPasswordScreen() {
 
   const onSubmit = async ({ email }: RecoverForm) => {
     try {
-      const { error } = await getSupabase().auth.resetPasswordForEmail(email)
+      // Deep-links back into the app's reset screen with a `?code=`.
+      // Standalone/dev-client resolves to `fastapimobile://reset-password`,
+      // which must be in supabase/config.toml's additional_redirect_urls.
+      const redirectTo = Linking.createURL("reset-password")
+      const { error } = await getSupabase().auth.resetPasswordForEmail(email, {
+        redirectTo,
+      })
       if (error) throw error
       toast.success("Recovery email sent")
       router.replace("/login")

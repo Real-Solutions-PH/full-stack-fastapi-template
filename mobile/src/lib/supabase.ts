@@ -4,17 +4,20 @@ import {
   type SupportedStorage,
 } from "@supabase/supabase-js"
 import { AppState, Platform } from "react-native"
-import { mmkv } from "@/lib/storage"
+import { getEncryptedSessionStore } from "@/lib/storage"
 
-// GoTrue session storage backed by the app's existing MMKV util (which
-// already falls back to localStorage / in-memory on web with SSR guards).
+// GoTrue session storage. On native the tokens are held in an AES-256
+// encrypted MMKV (key in the OS keystore); on web it stays on
+// localStorage / in-memory. The backing store opens lazily and
+// asynchronously, so these methods are async — GoTrue awaits them.
 const sessionStorage: SupportedStorage = {
-  getItem: (key) => mmkv.getString(key) ?? null,
-  setItem: (key, value) => {
-    mmkv.set(key, value)
+  getItem: async (key) =>
+    (await getEncryptedSessionStore()).getString(key) ?? null,
+  setItem: async (key, value) => {
+    ;(await getEncryptedSessionStore()).set(key, value)
   },
-  removeItem: (key) => {
-    mmkv.remove(key)
+  removeItem: async (key) => {
+    ;(await getEncryptedSessionStore()).remove(key)
   },
 }
 
@@ -39,6 +42,11 @@ function createSupabaseClient(): SupabaseClient {
       autoRefreshToken: true,
       persistSession: true,
       detectSessionInUrl: false,
+      // PKCE: password-recovery (and any code-flow) links carry a `?code=`
+      // that the reset screen exchanges via exchangeCodeForSession. The code
+      // verifier is written to `storage` (the encrypted session store) so it
+      // survives the email round-trip and app restart.
+      flowType: "pkce",
     },
   })
 

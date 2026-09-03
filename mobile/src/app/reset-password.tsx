@@ -1,4 +1,5 @@
-import { useRouter } from "expo-router"
+import { useLocalSearchParams, useRouter } from "expo-router"
+import { useEffect, useRef } from "react"
 import { Controller, useForm } from "react-hook-form"
 import { View } from "react-native"
 import { SafeAreaView } from "react-native-safe-area-context"
@@ -18,6 +19,25 @@ interface ResetForm {
 export default function ResetPasswordScreen() {
   const toast = useCustomToast()
   const router = useRouter()
+  // The recovery deep-link arrives as fastapimobile://reset-password?code=...
+  // (expo-router surfaces the query param here). Exchange it for a session so
+  // updateUser() below has an authenticated context.
+  const { code } = useLocalSearchParams<{ code?: string }>()
+  // Exchange each code once; useCustomToast() returns a fresh object per
+  // render, so guard against the effect re-firing on unrelated re-renders.
+  const exchangedCode = useRef<string | null>(null)
+
+  useEffect(() => {
+    if (!code || exchangedCode.current === code) return
+    exchangedCode.current = code
+    getSupabase()
+      .auth.exchangeCodeForSession(code)
+      .then(({ error }) => {
+        if (error) toast.error(handleError(error))
+      })
+      .catch((err) => toast.error(handleError(err)))
+  }, [code, toast])
+
   const {
     control,
     handleSubmit,

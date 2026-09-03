@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import * as Crypto from "expo-crypto"
 import { useState } from "react"
 import { FlatList, Pressable, TextInput, View } from "react-native"
 import { SafeAreaView } from "react-native-safe-area-context"
@@ -24,7 +25,9 @@ export default function ItemsScreen() {
 
   const createItem = useMutation({
     mutationFn: async (input: { title: string; description?: string }) => {
-      const id = crypto.randomUUID()
+      // expo-crypto's randomUUID works on Hermes, where the global
+      // crypto.randomUUID() is undefined and throws.
+      const id = Crypto.randomUUID()
       const now = new Date().toISOString()
       const userId = useAuthStore.getState().userId ?? ""
 

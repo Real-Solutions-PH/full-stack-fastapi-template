@@ -246,19 +246,17 @@ enable_signup = true
 double_confirm_changes = true
 # If enabled, users need to confirm their email address before signing in.
 #
-# TRADE-OFF (enabled by default here): signups must verify email ownership
-# before their first login. signUp then returns no session, so both the web
-# and mobile clients route the user to "check your email to confirm" instead
-# of logging straight in. This blocks signups with typo'd or throwaway
-# addresses and is the safer production default.
+# Disabled for the LOCAL stack so signUp auto-confirms and returns a session
+# immediately — the web/mobile clients and the Cypress E2E suite sign up and
+# sign in without an email round-trip, and a duplicate signup returns the
+# "User already registered" error (with confirmations on, GoTrue instead
+# obfuscates duplicates as a success to prevent email enumeration, so no error
+# surfaces). Recovery emails are unaffected and still flow through the
+# [local_smtp] test server (web UI at http://127.0.0.1:54324).
 #
-# Cost: every new account needs a round-trip through email. Locally that mail
-# is caught by the [local_smtp] test server (web UI at http://127.0.0.1:54324),
-# NOT actually delivered. Automated flows that sign up and immediately sign in
-# (e.g. the Cypress E2E suite) must either read the confirmation link from that
-# mailbox or set enable_confirmations = false in a local-only override — Supabase
-# Cloud ignores this file, so hosted projects follow their dashboard setting.
-enable_confirmations = true
+# Supabase Cloud ignores this file — enable email confirmation on hosted
+# projects from the dashboard, where it is the safer production default.
+enable_confirmations = false
 # If enabled, users will need to reauthenticate or have logged in recently to change their password.
 secure_password_change = false
 # Controls the minimum amount of time that must pass before sending another signup confirmation or password reset email.

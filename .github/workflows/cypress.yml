@@ -29,6 +29,7 @@ jobs:
             - e2e/**
             - .env
             - compose*.yml
+            - supabase/config.toml
             - .github/workflows/cypress.yml
 
   # Serial run by design: Cypress parallelization is gated behind Cypress

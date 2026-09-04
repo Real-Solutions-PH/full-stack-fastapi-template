@@ -54,6 +54,36 @@ def test_provisioning_assigns_default_role(db: Session) -> None:
     assert {"items:read", "items:write", "items:delete"} <= perms
 
 
+def test_admin_created_user_holds_default_role(db: Session) -> None:
+    # Superuser-driven creation must grant the baseline role too, so the
+    # created account can reach its own owner-scoped resources.
+    from app.modules.iam.users.schema import UserCreate
+
+    user = user_service.create_user(
+        session=db, user_in=UserCreate(email=random_email())
+    )
+    perms = rbac_repo.get_user_permission_names(session=db, user_id=user.id)
+    assert {"items:read", "items:write", "items:delete"} <= perms
+
+
+def test_private_endpoint_user_can_use_items(client: TestClient) -> None:
+    # The local-only /private/users/ endpoint (the E2E suite's user factory)
+    # mirrors JIT provisioning; the user it creates must hold the baseline
+    # role, or ordinary users are refused at the items gate — both listing
+    # (items:read) and creating (items:write).
+    email = random_email()
+    password = random_lower_string()
+    r = client.post(
+        _url("/private/users/"),
+        json={"email": email, "password": password, "full_name": "T"},
+    )
+    assert r.status_code == 200
+    headers = user_authentication_headers(email=email, password=password)
+    assert client.get(_url("/items/"), headers=headers).status_code == 200
+    created = client.post(_url("/items/"), headers=headers, json={"title": "x"})
+    assert created.status_code == 200
+
+
 def test_user_role_can_list_items(client: TestClient, db: Session) -> None:
     user, password = create_auth_user(db)  # granted the default role
     headers = user_authentication_headers(email=user.email, password=password)

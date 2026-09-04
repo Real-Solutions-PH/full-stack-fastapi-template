@@ -96,6 +96,9 @@ def create_user(
         user_in, update={"id": auth_uid, "tenant_id": tenant.id}
     )
     db_user = user_repo.create(session=session, user=db_user)
+    # Mirror JIT provisioning: a created human account holds the baseline role,
+    # or it is refused at the owner-resource permission gates.
+    assign_default_role(session=session, user_id=db_user.id)
     audit.record(
         session=session,
         actor_id=actor_id,

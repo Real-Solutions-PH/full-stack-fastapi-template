@@ -65,7 +65,8 @@ def test_dpo_role_seeded_with_data_erase(
 def test_assign_and_revoke_role(
     client: TestClient, superuser_token_headers: dict[str, str], db: Session
 ) -> None:
-    user, _ = create_auth_user(db)
+    # Bare user so the assertions below see exactly the role assigned here.
+    user, _ = create_auth_user(db, assign_default_role=False)
     dpo_id = _role_id(db, "dpo")
     base = f"{settings.API_V1_STR}/rbac/users/{user.id}"
 
@@ -141,7 +142,7 @@ def test_require_permission_denies_then_allows(
     superuser_token_headers: dict[str, str],
     db: Session,
 ) -> None:
-    user, password = create_auth_user(db)
+    user, password = create_auth_user(db, assign_default_role=False)
     headers = user_authentication_headers(email=user.email, password=password)
     url = f"{settings.API_V1_STR}/guarded"
 

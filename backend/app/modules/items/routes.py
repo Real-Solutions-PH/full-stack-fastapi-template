@@ -1,9 +1,9 @@
 import uuid
 from typing import Any
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 
-from app.modules.iam.deps import CurrentUser
+from app.modules.iam.deps import CurrentUser, require_permission
 from app.modules.items import services as item_service
 from app.modules.items.schema import ItemCreate, ItemPublic, ItemsPublic, ItemUpdate
 from app.shared.deps import SessionDep
@@ -11,10 +11,17 @@ from app.shared.pagination import PaginationDep
 from app.shared.rate_limit import rate_limited
 from app.shared.schema import Message
 
+# Owner-scoped resource: the service enforces per-user/tenant ownership; the
+# permission gate is the coarse, revocable feature-access layer on top. Every
+# provisioned user holds items:* via the baseline "user" role.
 router = APIRouter(prefix="/items", tags=["items"])
 
 
-@router.get("/", response_model=ItemsPublic)
+@router.get(
+    "/",
+    response_model=ItemsPublic,
+    dependencies=[Depends(require_permission("items:read"))],
+)
 def read_items(
     session: SessionDep, current_user: CurrentUser, pagination: PaginationDep
 ) -> Any:
@@ -28,12 +35,20 @@ def read_items(
     return ItemsPublic(data=items_public, count=count)
 
 
-@router.get("/{id}", response_model=ItemPublic)
+@router.get(
+    "/{id}",
+    response_model=ItemPublic,
+    dependencies=[Depends(require_permission("items:read"))],
+)
 def read_item(session: SessionDep, current_user: CurrentUser, id: uuid.UUID) -> Any:
     return item_service.get_item(session=session, current_user=current_user, item_id=id)
 
 
-@router.post("/", response_model=ItemPublic, dependencies=[rate_limited("items")])
+@router.post(
+    "/",
+    response_model=ItemPublic,
+    dependencies=[rate_limited("items"), Depends(require_permission("items:write"))],
+)
 def create_item(
     *, session: SessionDep, current_user: CurrentUser, item_in: ItemCreate
 ) -> Any:
@@ -42,7 +57,11 @@ def create_item(
     )
 
 
-@router.put("/{id}", response_model=ItemPublic, dependencies=[rate_limited("items")])
+@router.put(
+    "/{id}",
+    response_model=ItemPublic,
+    dependencies=[rate_limited("items"), Depends(require_permission("items:write"))],
+)
 def update_item(
     *,
     session: SessionDep,
@@ -55,7 +74,10 @@ def update_item(
     )
 
 
-@router.delete("/{id}", dependencies=[rate_limited("items")])
+@router.delete(
+    "/{id}",
+    dependencies=[rate_limited("items"), Depends(require_permission("items:delete"))],
+)
 def delete_item(
     session: SessionDep, current_user: CurrentUser, id: uuid.UUID
 ) -> Message:

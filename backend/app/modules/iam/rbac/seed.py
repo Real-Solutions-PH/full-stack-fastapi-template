@@ -23,7 +23,15 @@ ROLE_PERMISSIONS: dict[str, list[str]] = {
         "permissions:read",
         "tenants:read",
     ],
-    "user": ["items:read", "items:write", "items:delete"],
+    "user": [
+        "items:read",
+        "items:write",
+        "items:delete",
+        "ocr:read",
+        "ocr:write",
+        "conversations:read",
+        "conversations:write",
+    ],
     "dpo": ["users:read", "audit:read", "data:export", "data:erase"],
 }
 

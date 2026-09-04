@@ -8,6 +8,7 @@ from app.core import supabase_auth
 from app.modules.iam.deps import get_current_active_superuser
 from app.modules.iam.tenants import services as tenant_service
 from app.modules.iam.users import repo as user_repo
+from app.modules.iam.users import services as user_service
 from app.modules.iam.users.models import User
 from app.modules.iam.users.schema import UserPublic
 from app.shared.deps import SessionDep
@@ -63,4 +64,8 @@ def create_user(user_in: PrivateUserCreate, session: SessionDep) -> Any:
         full_name=user_in.full_name,
         tenant_id=tenant_service.get_default_tenant(session=session).id,
     )
-    return user_repo.create(session=session, user=user)
+    user = user_repo.create(session=session, user=user)
+    # Mirror JIT provisioning: a created human account holds the baseline role,
+    # or it is refused at the owner-resource permission gates.
+    user_service.assign_default_role(session=session, user_id=user.id)
+    return user

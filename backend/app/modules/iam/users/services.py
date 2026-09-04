@@ -30,6 +30,26 @@ _USER_AUDIT_FIELDS = (
     "deleted_at",
 )
 
+# The baseline role every human account holds. Provisioning grants it so a
+# freshly seen user can reach their own tenant-scoped resources (items, OCR,
+# conversations), which are permission-gated; elevated roles are additive.
+DEFAULT_ROLE_NAME = "user"
+
+
+def assign_default_role(*, session: Session, user_id: uuid.UUID) -> None:
+    """Grant ``DEFAULT_ROLE_NAME`` to a user. Idempotent; a missing role (an
+    unseeded database) is a silent no-op so provisioning never fails on it.
+
+    Imported lazily: the rbac/roles repos pull role/permission models whose
+    package would otherwise create an import cycle back through this module.
+    """
+    from app.modules.iam.rbac import repo as rbac_repo
+    from app.modules.iam.roles import repo as role_repo
+
+    role = role_repo.get_by_name(session=session, name=DEFAULT_ROLE_NAME)
+    if role is not None:
+        rbac_repo.assign_role_to_user(session=session, user_id=user_id, role_id=role.id)
+
 
 def list_users(
     *, session: Session, skip: int = 0, limit: int = 100
@@ -76,6 +96,9 @@ def create_user(
         user_in, update={"id": auth_uid, "tenant_id": tenant.id}
     )
     db_user = user_repo.create(session=session, user=db_user)
+    # Mirror JIT provisioning: a created human account holds the baseline role,
+    # or it is refused at the owner-resource permission gates.
+    assign_default_role(session=session, user_id=db_user.id)
     audit.record(
         session=session,
         actor_id=actor_id,
@@ -118,6 +141,7 @@ def provision_user_from_claims(
             )
         return existing
     session.refresh(user)
+    assign_default_role(session=session, user_id=user.id)
     return user
 
 

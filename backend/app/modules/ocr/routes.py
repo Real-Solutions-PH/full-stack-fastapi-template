@@ -1,9 +1,9 @@
 import uuid
 from typing import Any
 
-from fastapi import APIRouter, File, Query, UploadFile
+from fastapi import APIRouter, Depends, File, Query, UploadFile
 
-from app.modules.iam.deps import CurrentUser
+from app.modules.iam.deps import CurrentUser, require_permission
 from app.modules.ocr import services as ocr_service
 from app.modules.ocr.providers.factory import list_available_providers
 from app.modules.ocr.schema import OcrDocumentPublic, OcrDocumentsPublic
@@ -18,7 +18,7 @@ router = APIRouter(prefix="/ocr", tags=["ocr"])
 @router.post(
     "/upload",
     response_model=OcrDocumentPublic,
-    dependencies=[rate_limited("ocr")],
+    dependencies=[rate_limited("ocr"), Depends(require_permission("ocr:write"))],
 )
 async def upload_document(
     *,
@@ -37,7 +37,11 @@ async def upload_document(
     return doc
 
 
-@router.get("/", response_model=OcrDocumentsPublic)
+@router.get(
+    "/",
+    response_model=OcrDocumentsPublic,
+    dependencies=[Depends(require_permission("ocr:read"))],
+)
 def list_documents(
     session: SessionDep,
     current_user: CurrentUser,
@@ -56,7 +60,11 @@ def list_documents(
     return OcrDocumentsPublic(data=items, count=count)
 
 
-@router.get("/providers", response_model=list[str])
+@router.get(
+    "/providers",
+    response_model=list[str],
+    dependencies=[Depends(require_permission("ocr:read"))],
+)
 def get_available_providers(
     current_user: CurrentUser,  # noqa: ARG001
 ) -> Any:
@@ -64,7 +72,11 @@ def get_available_providers(
     return list_available_providers()
 
 
-@router.get("/{id}", response_model=OcrDocumentPublic)
+@router.get(
+    "/{id}",
+    response_model=OcrDocumentPublic,
+    dependencies=[Depends(require_permission("ocr:read"))],
+)
 def get_document(session: SessionDep, current_user: CurrentUser, id: uuid.UUID) -> Any:
     """Get a single OCR document by ID."""
     return ocr_service.get_document(
@@ -72,7 +84,10 @@ def get_document(session: SessionDep, current_user: CurrentUser, id: uuid.UUID) 
     )
 
 
-@router.delete("/{id}", dependencies=[rate_limited("ocr")])
+@router.delete(
+    "/{id}",
+    dependencies=[rate_limited("ocr"), Depends(require_permission("ocr:write"))],
+)
 def delete_document(
     session: SessionDep, current_user: CurrentUser, id: uuid.UUID
 ) -> Message:

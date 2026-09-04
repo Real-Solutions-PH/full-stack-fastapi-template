@@ -23,6 +23,7 @@ Context pack for human + AI programmers building this SaaS. Fill each template; 
 | [19-glossary.md](19-glossary.md) | Domain terms, acronyms | All |
 | [20-decision-log.md](20-decision-log.md) | Deprecated — pointer to `adr/` | Tech lead |
 | [21-onboarding.md](21-onboarding.md) | Dev setup, repo tour, runbook | Eng |
+| [22-ai-module.md](22-ai-module.md) | AI module — LLM provider/key setup, chat transport, spend-cap posture | Backend |
 | [constitution.md](constitution.md) | Engineering Constitution — stack defaults and conventions | All |
 | [adr/](adr/) | Architecture Decision Records — one file per decision | Tech lead |
 | [runbook.md](runbook.md) | Deploy, rollback, backup/restore, common ops, incidents | DevOps |

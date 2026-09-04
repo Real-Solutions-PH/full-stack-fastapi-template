@@ -118,8 +118,8 @@ lint: backend-lint frontend-lint ## Run all linters
 
 format: backend-format frontend-lint ## Run all formatters
 
-pre-commit: ## Run pre-commit hooks on all files
-	pre-commit run --all-files
+pre-commit: ## Run prek (pre-commit) hooks on all files
+	uvx prek run --all-files
 
 # ---------------------------------------------------------------------------
 # Testing (Docker-based)

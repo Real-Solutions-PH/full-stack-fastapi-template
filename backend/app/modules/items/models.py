@@ -18,6 +18,12 @@ class Item(ItemBase, table=True):
         default_factory=_utcnow,
         sa_type=DateTime(timezone=True),  # type: ignore
     )
+    # Soft-delete marker (retention convention); see users/models.py.
+    deleted_at: datetime | None = Field(
+        default=None,
+        sa_type=DateTime(timezone=True),  # type: ignore
+        index=True,
+    )
     owner_id: uuid.UUID = Field(
         foreign_key="user.id", nullable=False, ondelete="CASCADE", index=True
     )

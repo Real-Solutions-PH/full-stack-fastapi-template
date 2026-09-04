@@ -75,21 +75,17 @@ it("Sign up with existing email", () => {
   const email = randomEmail()
   const password = randomPassword()
 
-  cy.visit("/signup")
-
-  fillForm(fullName, email, password, password)
-  cy.contains("button", "Sign Up").click()
-  // Wait out the app's own post-signup navigation before re-visiting the
-  // form — otherwise its late router.push("/login") wipes the second form.
-  cy.location("pathname").should("eq", "/login")
+  // A *confirmed* account must already exist for GoTrue to reject the signup.
+  // The local stack now runs with email confirmations enabled, so re-signing
+  // up an unconfirmed address is obfuscated (anti-enumeration) rather than
+  // erroring — seed a verified user via the API to get a real duplicate.
+  cy.createUserViaApi(email, password)
 
   cy.visit("/signup")
-
   fillForm(fullName, email, password, password)
   cy.contains("button", "Sign Up").click()
 
-  // GoTrue's error copy for a duplicate signup (local stack has email
-  // confirmations disabled, so no success-with-obfuscation applies).
+  // GoTrue's error copy for a duplicate signup against a confirmed address.
   cy.contains("User already registered").should("be.visible")
 })
 

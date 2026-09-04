@@ -187,41 +187,66 @@ def test_update_user_me(client: TestClient, db: Session) -> None:
     headers = auth_headers(user.email, password)
 
     full_name = "Updated Name"
-    email = random_email()
-    data = {"full_name": full_name, "email": email}
     r = client.patch(
         f"{settings.API_V1_STR}/users/me",
         headers=headers,
-        json=data,
+        json={"full_name": full_name},
     )
     assert r.status_code == 200
     updated_user = r.json()
-    assert updated_user["email"] == email
     assert updated_user["full_name"] == full_name
+    assert updated_user["email"] == user.email  # email is not self-serviceable
 
     # The update happened in the app's session; drop this session's cached
     # instance (create_auth_user loaded it) before re-reading.
     db.expire_all()
-    user_query = select(User).where(User.email == email)
-    user_db = db.exec(user_query).first()
+    user_db = db.get(User, user.id)
     assert user_db
-    assert user_db.email == email
     assert user_db.full_name == full_name
 
 
-def test_update_user_me_email_exists(
-    client: TestClient, normal_user_token_headers: dict[str, str], db: Session
+def test_update_user_me_email_change_is_refused(
+    client: TestClient, db: Session
 ) -> None:
-    user = create_random_user(db)
+    """Self-service email change is refused (returns 400) and applies nothing.
 
-    data = {"email": user.email}
+    The old path pushed the new address through the GoTrue admin API marked
+    confirmed, so any authenticated user could claim an address they don't
+    own — an account-takeover primitive.
+    """
+    user, password = create_auth_user(db)
+    headers = auth_headers(user.email, password)
+
     r = client.patch(
         f"{settings.API_V1_STR}/users/me",
-        headers=normal_user_token_headers,
-        json=data,
+        headers=headers,
+        json={"full_name": "should-not-apply", "email": random_email()},
     )
-    assert r.status_code == 409
-    assert r.json()["message"] == "User with this email already exists"
+    assert r.status_code == 400
+    assert "email" in r.json()["message"].lower()
+
+    # The whole request is rejected before any write — full_name unchanged too.
+    db.expire_all()
+    user_db = db.get(User, user.id)
+    assert user_db
+    assert user_db.email == user.email
+    assert user_db.full_name != "should-not-apply"
+
+
+def test_update_user_me_same_email_is_noop(client: TestClient, db: Session) -> None:
+    """Submitting the user's OWN current email is allowed (no-op), so a client
+    that always sends the email field is not broken."""
+    user, password = create_auth_user(db)
+    headers = auth_headers(user.email, password)
+
+    r = client.patch(
+        f"{settings.API_V1_STR}/users/me",
+        headers=headers,
+        json={"full_name": "New Name", "email": user.email},
+    )
+    assert r.status_code == 200
+    assert r.json()["full_name"] == "New Name"
+    assert r.json()["email"] == user.email
 
 
 def test_update_user(

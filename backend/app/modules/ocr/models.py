@@ -31,8 +31,9 @@ class OcrDocument(SQLModel, table=True):
     page_count: int | None = Field(default=None)
     minio_key: str = Field(max_length=1000)
 
-    # OCR results
-    status: str = Field(default="pending", max_length=20)
+    # OCR results. Rows are always created with an explicit status; the
+    # default only covers direct construction.
+    status: str = Field(default="processing", max_length=20)
     document_type: str | None = Field(default=None, max_length=50)
     extracted_text: str | None = Field(default=None, sa_column=Column(Text))
     provider_used: str | None = Field(default=None, max_length=50)

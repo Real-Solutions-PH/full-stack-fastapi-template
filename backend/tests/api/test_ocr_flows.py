@@ -11,7 +11,7 @@ import uuid
 from collections.abc import Generator
 
 import pytest
-from fastapi import FastAPI, status
+from fastapi import FastAPI, HTTPException, status
 from fastapi.testclient import TestClient
 from sqlmodel import Session
 
@@ -113,8 +113,10 @@ def test_upload_success_persists_completed_doc(
     assert doc["provider_used"] == "fake"
     assert doc["page_count"] == 2
     assert doc["original_filename"] == "scan.png"
-    assert str(doc["minio_key"]).endswith(".png")
-    assert fake_minio.uploads == [doc["minio_key"]]
+    # minio_key is internal and never surfaced in the API response.
+    assert "minio_key" not in doc
+    assert len(fake_minio.uploads) == 1
+    assert fake_minio.uploads[0].endswith(".png")
 
     # detail route returns the same document for its owner
     r = aux_client.get(f"{OCR}/{doc['id']}", headers=normal_user_token_headers)
@@ -132,7 +134,9 @@ def test_upload_provider_failure_marks_doc_failed(
     monkeypatch.setattr(ocr_services, "get_ocr_provider", lambda _name=None: provider)
     doc = _upload(aux_client, normal_user_token_headers)
     assert doc["status"] == "failed"
-    assert "ocr blew up" in str(doc["error_message"])
+    # Client sees a generic message; the raw exception text is never leaked.
+    assert doc["error_message"] == "OCR processing failed."
+    assert "ocr blew up" not in str(doc["error_message"])
 
 
 def test_upload_rejects_disallowed_mime_type(
@@ -158,6 +162,39 @@ def test_upload_rejects_oversize_file(
         files={"file": PNG_FILE},
     )
     assert r.status_code == status.HTTP_400_BAD_REQUEST
+
+
+class _StreamUpload:
+    """Minimal UploadFile stand-in with no declared size (chunked upload)."""
+
+    def __init__(self, data: bytes, chunk: int) -> None:
+        self._data = data
+        self._chunk = chunk
+        self._pos = 0
+        self.size: int | None = None
+
+    async def read(self, size: int = -1) -> bytes:
+        take = self._chunk if size < 0 else min(size, self._chunk)
+        out = self._data[self._pos : self._pos + take]
+        self._pos += len(out)
+        return out
+
+
+def test_read_capped_rejects_body_over_limit_without_declared_size() -> None:
+    import asyncio
+
+    upload = _StreamUpload(b"x" * 50, chunk=8)
+    with pytest.raises(HTTPException) as exc:
+        asyncio.run(ocr_services._read_capped(upload, max_bytes=16))  # type: ignore[arg-type]
+    assert exc.value.status_code == 400
+
+
+def test_read_capped_returns_body_under_limit() -> None:
+    import asyncio
+
+    upload = _StreamUpload(b"x" * 10, chunk=8)
+    data = asyncio.run(ocr_services._read_capped(upload, max_bytes=16))  # type: ignore[arg-type]
+    assert data == b"x" * 10
 
 
 def test_get_extension_fallbacks() -> None:
@@ -240,7 +277,8 @@ def test_delete_removes_row_and_storage_object(
     doc = _upload(aux_client, normal_user_token_headers)
     r = aux_client.delete(f"{OCR}/{doc['id']}", headers=normal_user_token_headers)
     assert r.status_code == status.HTTP_200_OK
-    assert fake_minio.deletes == [doc["minio_key"]]
+    assert len(fake_minio.deletes) == 1
+    assert fake_minio.deletes[0] == fake_minio.uploads[0]
 
     r = aux_client.get(f"{OCR}/{doc['id']}", headers=normal_user_token_headers)
     assert r.status_code == status.HTTP_404_NOT_FOUND

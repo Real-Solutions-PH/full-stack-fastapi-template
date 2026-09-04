@@ -54,6 +54,16 @@ class Settings(BaseSettings):
             self.FRONTEND_HOST
         ]
 
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def docs_enabled(self) -> bool:
+        """Serve /docs, /redoc and openapi.json in local only.
+
+        Outside a local environment the interactive docs and the schema
+        expose the full API surface, so they are disabled entirely.
+        """
+        return self.ENVIRONMENT == "local"
+
     PROJECT_NAME: str
     SENTRY_DSN: HttpUrl | None = None
     POSTGRES_SERVER: str
@@ -61,20 +71,51 @@ class Settings(BaseSettings):
     POSTGRES_USER: str
     POSTGRES_PASSWORD: str = ""
     POSTGRES_DB: str = ""
+    # Non-owner role the app engine connects as so RLS policies are enforced.
+    # Provisioned out-of-band (LOGIN + password from the password manager, see
+    # the runbook). Empty = fall back to the owner role (RLS stays dormant).
+    POSTGRES_APP_USER: str = ""
+    POSTGRES_APP_PASSWORD: str = ""
 
     @computed_field  # type: ignore[prop-decorator]
     @property
-    def SQLALCHEMY_DATABASE_URI(self) -> str:
+    def app_user_configured(self) -> bool:
+        return bool(self.POSTGRES_APP_USER)
+
+    def _database_uri(self, username: str, password: str) -> str:
         return str(
             PostgresDsn.build(
                 scheme="postgresql+psycopg",
-                username=self.POSTGRES_USER,
-                password=self.POSTGRES_PASSWORD,
+                username=username,
+                password=password,
                 host=self.POSTGRES_SERVER,
                 port=self.POSTGRES_PORT,
                 path=self.POSTGRES_DB,
             )
         )
+
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def SQLALCHEMY_DATABASE_URI(self) -> str:
+        """Owner connection: migrations, seeds, platform-operator paths."""
+        return self._database_uri(self.POSTGRES_USER, self.POSTGRES_PASSWORD)
+
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def SQLALCHEMY_APP_DATABASE_URI(self) -> str:
+        """App connection: the non-owner role RLS is enforced against.
+
+        Falls back to the owner credentials when ``POSTGRES_APP_USER`` is
+        unset, leaving RLS dormant (local/dev default).
+        """
+        # When app_user is set, use ITS password (never silently fall back to
+        # the owner's password — that would dial app_user with owner creds and
+        # fail auth at connect time). Fall back to owner creds only wholesale.
+        if self.POSTGRES_APP_USER:
+            return self._database_uri(
+                self.POSTGRES_APP_USER, self.POSTGRES_APP_PASSWORD
+            )
+        return self._database_uri(self.POSTGRES_USER, self.POSTGRES_PASSWORD)
 
     SMTP_TLS: bool = True
     SMTP_SSL: bool = False
@@ -126,6 +167,21 @@ class Settings(BaseSettings):
     # Tenancy: slug of the tenant new signups are assigned to.
     DEFAULT_TENANT_SLUG: str = "default"
 
+    # Coarse outer guard on request body size (a per-worker memory-DoS
+    # backstop). Must exceed the largest legitimate upload, e.g. OCR files.
+    MAX_REQUEST_BODY_SIZE_MB: int = 25
+
+    # Rate limiting: per-tenant token bucket backed by Redis (already in
+    # compose). Disabled by default; set a positive per-minute budget to turn
+    # it on. The bucket capacity (burst) equals one minute's budget.
+    REDIS_URL: str = "redis://redis:6379/0"
+    RATE_LIMIT_PER_MINUTE: int = 0
+
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def max_request_body_size_bytes(self) -> int:
+        return self.MAX_REQUEST_BODY_SIZE_MB * 1024 * 1024
+
     MINIO_ENDPOINT: str = "http://minio:9000"
     MINIO_ROOT_USER: str = "minioadmin"
     MINIO_ROOT_PASSWORD: str = "minioadmin"
@@ -167,9 +223,15 @@ class Settings(BaseSettings):
         return [m.strip() for m in self.OCR_ALLOWED_MIME_TYPES.split(",") if m.strip()]
 
     def _check_default_secret(
-        self, var_name: str, value: str | None, insecure_value: str = "changethis"
+        self,
+        var_name: str,
+        value: str | None,
+        insecure_value: str | tuple[str, ...] = "changethis",
     ) -> None:
-        if value == insecure_value:
+        insecure_values = (
+            (insecure_value,) if isinstance(insecure_value, str) else insecure_value
+        )
+        if value in insecure_values:
             message = (
                 f"The value of {var_name} is a well-known insecure default, "
                 "for security, please change it, at least for deployments."
@@ -185,6 +247,16 @@ class Settings(BaseSettings):
         self._check_default_secret(
             "FIRST_SUPERUSER_PASSWORD", self.FIRST_SUPERUSER_PASSWORD
         )
+        # Object-store root creds: minioadmin is MinIO's shipped default and
+        # changethis is this template's placeholder — both are public knowledge.
+        self._check_default_secret(
+            "MINIO_ROOT_USER", self.MINIO_ROOT_USER, insecure_value="minioadmin"
+        )
+        self._check_default_secret(
+            "MINIO_ROOT_PASSWORD",
+            self.MINIO_ROOT_PASSWORD,
+            insecure_value=("minioadmin", "changethis"),
+        )
         # The CLI stack's demo service-role key is public knowledge; outside
         # a local environment it must never be the configured key.
         self._check_default_secret(
@@ -192,6 +264,13 @@ class Settings(BaseSettings):
             self.SUPABASE_SERVICE_ROLE_KEY,
             insecure_value=_DEMO_SUPABASE_SERVICE_ROLE_KEY,
         )
+        # An empty service-role key silently breaks JIT provisioning (every
+        # GoTrue admin call 500s); outside local it must be set explicitly.
+        if self.ENVIRONMENT != "local" and not self.SUPABASE_SERVICE_ROLE_KEY:
+            raise ValueError(
+                "SUPABASE_SERVICE_ROLE_KEY must be set outside a local environment; "
+                "an empty key breaks user provisioning against GoTrue."
+            )
 
         return self
 

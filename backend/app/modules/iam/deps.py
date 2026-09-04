@@ -1,12 +1,16 @@
+import json
 import uuid
-from collections.abc import Callable
+from collections.abc import Callable, Generator
 from typing import Annotated
 
 import jwt
 from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from sqlalchemy import Connection, event
+from sqlmodel import Session
 
 from app.core import supabase_auth
+from app.core.db import app_engine
 from app.modules.iam.users.models import User
 from app.shared.deps import SessionDep
 
@@ -104,3 +108,54 @@ def require_permission(permission: str) -> Callable[..., User]:
         return current_user
 
     return _dep
+
+
+def _tenant_claims_json(user: User) -> str:
+    """The ``request.jwt.claims`` payload RLS reads (Supabase-compatible).
+
+    ``app_tenant_id()`` keys on ``->> 'tenant_id'``; the tenant is resolved
+    from the authenticated user's row, not from the Supabase JWT (which does
+    not carry it).
+    """
+    return json.dumps(
+        {
+            "sub": str(user.id),
+            "tenant_id": str(user.tenant_id),
+            "role": "authenticated",
+        }
+    )
+
+
+def install_tenant_claims(session: Session, claims_json: str) -> None:
+    """Set ``request.jwt.claims`` transaction-locally on every transaction of
+    ``session``.
+
+    Re-applied on each ``after_begin`` so a request that commits and reads
+    again stays tenant-scoped — a transaction-local ``set_config`` resets the
+    GUC to '' when its transaction ends.
+    """
+
+    @event.listens_for(session, "after_begin")
+    def _set_claims(
+        _session: Session, _transaction: object, connection: Connection
+    ) -> None:
+        connection.exec_driver_sql(
+            "SELECT set_config('request.jwt.claims', %s, true)", (claims_json,)
+        )
+
+
+def get_tenant_session(current_user: CurrentUser) -> Generator[Session, None, None]:
+    """RLS-enforced session bound to the app engine, carrying the caller's
+    tenant claims (as Supabase PostgREST would inject them).
+
+    Opt-in seam: a tenant-scoped route uses this in place of the owner-backed
+    ``SessionDep`` so tenant isolation is enforced at the database. Superuser /
+    platform-operator routes keep the owner session — under RLS the tenant
+    policy would hide other tenants' rows.
+    """
+    with Session(app_engine) as session:
+        install_tenant_claims(session, _tenant_claims_json(current_user))
+        yield session
+
+
+TenantSessionDep = Annotated[Session, Depends(get_tenant_session)]

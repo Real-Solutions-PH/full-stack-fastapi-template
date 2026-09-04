@@ -3,25 +3,26 @@ from typing import Any
 
 from fastapi import APIRouter, Depends
 
-from app.modules.iam.deps import get_current_active_superuser
+from app.modules.iam.deps import require_permission
 from app.modules.iam.permissions import services as permission_service
 from app.modules.iam.permissions.schema import (
     PermissionPublic,
     PermissionsPublic,
 )
 from app.shared.deps import SessionDep
+from app.shared.pagination import PaginationDep
 
 router = APIRouter(
     prefix="/permissions",
     tags=["permissions"],
-    dependencies=[Depends(get_current_active_superuser)],
+    dependencies=[Depends(require_permission("permissions:read"))],
 )
 
 
 @router.get("/", response_model=PermissionsPublic)
-def read_permissions(session: SessionDep, skip: int = 0, limit: int = 200) -> Any:
+def read_permissions(session: SessionDep, pagination: PaginationDep) -> Any:
     perms, count = permission_service.list_permissions(
-        session=session, skip=skip, limit=limit
+        session=session, skip=pagination.skip, limit=pagination.limit
     )
     return PermissionsPublic(
         data=[PermissionPublic.model_validate(p) for p in perms], count=count

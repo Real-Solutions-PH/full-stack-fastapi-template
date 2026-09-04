@@ -7,6 +7,7 @@ from app.modules.iam.deps import CurrentUser
 from app.modules.items import services as item_service
 from app.modules.items.schema import ItemCreate, ItemPublic, ItemsPublic, ItemUpdate
 from app.shared.deps import SessionDep
+from app.shared.pagination import PaginationDep
 from app.shared.rate_limit import rate_limited
 from app.shared.schema import Message
 
@@ -15,10 +16,13 @@ router = APIRouter(prefix="/items", tags=["items"])
 
 @router.get("/", response_model=ItemsPublic)
 def read_items(
-    session: SessionDep, current_user: CurrentUser, skip: int = 0, limit: int = 100
+    session: SessionDep, current_user: CurrentUser, pagination: PaginationDep
 ) -> Any:
     items, count = item_service.list_items(
-        session=session, current_user=current_user, skip=skip, limit=limit
+        session=session,
+        current_user=current_user,
+        skip=pagination.skip,
+        limit=pagination.limit,
     )
     items_public = [ItemPublic.model_validate(item) for item in items]
     return ItemsPublic(data=items_public, count=count)

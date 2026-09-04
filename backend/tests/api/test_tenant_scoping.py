@@ -296,7 +296,7 @@ def test_superuser_sees_items_across_tenants(
     )
     assert created.status_code == 200
     r = client.get(
-        f"{settings.API_V1_STR}/items/?limit=1000", headers=superuser_token_headers
+        f"{settings.API_V1_STR}/items/?limit=100", headers=superuser_token_headers
     )
     assert r.status_code == 200
     ids = [row["id"] for row in r.json()["data"]]

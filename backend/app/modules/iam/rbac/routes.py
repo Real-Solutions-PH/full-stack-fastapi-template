@@ -3,7 +3,7 @@ from typing import Any
 
 from fastapi import APIRouter, Depends
 
-from app.modules.iam.deps import get_current_active_superuser
+from app.modules.iam.deps import require_permission
 from app.modules.iam.permissions.schema import PermissionPublic
 from app.modules.iam.rbac import repo as rbac_repo
 from app.modules.iam.rbac import services as rbac_service
@@ -11,13 +11,13 @@ from app.modules.iam.rbac.schema import RolePermissionsPublic, UserPermissions
 from app.shared.deps import SessionDep
 from app.shared.schema import Message
 
-# Assignment surface is superuser-only. Fine-grained, permission-based access
-# for these routes (e.g. require_permission("roles:write")) can be layered on
-# once RBAC is populated; kept superuser-gated here to preserve current authz.
+# Privilege-granting surface (assign roles, grant permissions): gated on
+# rbac:manage, held by the superadmin role's "*" grant. The superuser flag
+# still bypasses; ordinary and tenant-admin accounts are refused.
 router = APIRouter(
     prefix="/rbac",
     tags=["rbac"],
-    dependencies=[Depends(get_current_active_superuser)],
+    dependencies=[Depends(require_permission("rbac:manage"))],
 )
 
 

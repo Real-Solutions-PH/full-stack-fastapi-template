@@ -12,6 +12,7 @@ from app.modules.ai.conversations.schema import (
 )
 from app.modules.iam.deps import CurrentUser
 from app.shared.deps import SessionDep
+from app.shared.pagination import PaginationDep
 from app.shared.rate_limit import rate_limited
 from app.shared.schema import Message
 
@@ -22,11 +23,13 @@ router = APIRouter(prefix="/chat", tags=["ai-chat"])
 def read_conversations(
     session: SessionDep,
     current_user: CurrentUser,
-    skip: int = 0,
-    limit: int = 50,
+    pagination: PaginationDep,
 ) -> Any:
     conversations, count = conv_service.list_conversations(
-        session=session, current_user=current_user, skip=skip, limit=limit
+        session=session,
+        current_user=current_user,
+        skip=pagination.skip,
+        limit=pagination.limit,
     )
     return ConversationsPublic(
         data=[ConversationPublic.model_validate(c) for c in conversations],

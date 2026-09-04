@@ -10,8 +10,9 @@ from app.modules.ai.agents.schema import (
     AgentsPublic,
     AgentUpdate,
 )
-from app.modules.iam.deps import CurrentUser, get_current_active_superuser
+from app.modules.iam.deps import CurrentUser, require_permission
 from app.shared.deps import SessionDep
+from app.shared.pagination import PaginationDep
 from app.shared.schema import Message
 
 router = APIRouter(prefix="/agents", tags=["ai-agents"])
@@ -19,9 +20,11 @@ router = APIRouter(prefix="/agents", tags=["ai-agents"])
 
 @router.get("/", response_model=AgentsPublic)
 def read_agents(
-    session: SessionDep, _current_user: CurrentUser, skip: int = 0, limit: int = 100
+    session: SessionDep, _current_user: CurrentUser, pagination: PaginationDep
 ) -> Any:
-    agents, count = agent_service.list_agents(session=session, skip=skip, limit=limit)
+    agents, count = agent_service.list_agents(
+        session=session, skip=pagination.skip, limit=pagination.limit
+    )
     return AgentsPublic(
         data=[AgentPublic.model_validate(a) for a in agents], count=count
     )
@@ -34,7 +37,7 @@ def read_agent(session: SessionDep, _current_user: CurrentUser, id: uuid.UUID) -
 
 @router.post(
     "/",
-    dependencies=[Depends(get_current_active_superuser)],
+    dependencies=[Depends(require_permission("agents:write"))],
     response_model=AgentPublic,
 )
 def create_agent(
@@ -45,7 +48,7 @@ def create_agent(
 
 @router.put(
     "/{id}",
-    dependencies=[Depends(get_current_active_superuser)],
+    dependencies=[Depends(require_permission("agents:write"))],
     response_model=AgentPublic,
 )
 def update_agent(
@@ -58,7 +61,7 @@ def update_agent(
     return agent_service.update_agent(session=session, agent_id=id, agent_in=agent_in)
 
 
-@router.delete("/{id}", dependencies=[Depends(get_current_active_superuser)])
+@router.delete("/{id}", dependencies=[Depends(require_permission("agents:write"))])
 def delete_agent(
     session: SessionDep, _current_user: CurrentUser, id: uuid.UUID
 ) -> Message:

@@ -17,6 +17,14 @@ DEFAULT_PERMISSIONS: list[tuple[str, str, str]] = [
     ("audit", "read", "Read the audit log"),
     ("data", "export", "Export personal data (GDPR portability)"),
     ("data", "erase", "Erase personal data (GDPR right to erasure)"),
+    # AI catalog (platform-global surface): mutating agents/tools and all MCP
+    # access. Ordinary agent/tool reads stay open to any authenticated user.
+    ("agents", "write", "Create, update or delete agent definitions"),
+    ("tools", "write", "Create, update or delete tool definitions and assignments"),
+    ("mcp", "read", "Read MCP server definitions"),
+    ("mcp", "write", "Create, update or delete MCP server definitions"),
+    # RBAC administration: assign roles and grant permissions.
+    ("rbac", "manage", "Assign roles and grant permissions to users and roles"),
 ]
 
 

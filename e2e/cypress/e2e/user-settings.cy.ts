@@ -62,7 +62,13 @@ describe("Edit user profile", () => {
 })
 
 describe("Edit user email", () => {
-  it("Edit user email with a valid email", () => {
+  // Self-service email change is intentionally refused (400). The old path
+  // pushed the new address straight through the GoTrue admin API with
+  // email_confirm=true, confirming an address the user never proved they own
+  // — an account-takeover primitive. Until a proper user-initiated,
+  // double-confirmation email change is wired, the API rejects it; superusers
+  // can still change a user's email via the admin flow.
+  it("Self-service email change is refused and leaves the address unchanged", () => {
     const email = randomEmail()
     const password = randomPassword()
     const updatedEmail = randomEmail()
@@ -77,9 +83,14 @@ describe("Edit user email", () => {
     cy.findByLabelText("Email").type(updatedEmail)
     cy.contains("button", "Save").click()
 
-    cy.contains("User updated successfully").should("be.visible")
+    cy.contains("Self-service email changes are not supported").should(
+      "be.visible",
+    )
+
+    // The address is left untouched — cancel out and the original stands.
+    cy.contains("button", "Cancel").first().click()
     cy.get("form")
-      .contains(new RegExp(`^${updatedEmail}$`))
+      .contains(new RegExp(`^${email}$`))
       .should("be.visible")
   })
 })

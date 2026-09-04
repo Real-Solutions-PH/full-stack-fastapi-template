@@ -74,7 +74,11 @@ def test_minio_defaults_only_warn_in_local() -> None:
         Settings(
             _env_file=None,  # type: ignore[call-arg]
             ENVIRONMENT="local",
-            **{**_BASE, "MINIO_ROOT_USER": "minioadmin", "MINIO_ROOT_PASSWORD": "minioadmin"},
+            **{
+                **_BASE,
+                "MINIO_ROOT_USER": "minioadmin",
+                "MINIO_ROOT_PASSWORD": "minioadmin",
+            },
         )
 
 

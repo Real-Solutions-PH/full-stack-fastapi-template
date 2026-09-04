@@ -40,7 +40,9 @@ def test_ocr_bucket_ensured_when_ocr_enabled(
 ) -> None:
     calls: list[str] = []
     monkeypatch.setattr(main_module.settings, "OCR_ENABLED", True)
-    monkeypatch.setattr(main_module, "ensure_bucket", lambda bucket: calls.append(bucket))
+    monkeypatch.setattr(
+        main_module, "ensure_bucket", lambda bucket: calls.append(bucket)
+    )
     with TestClient(app):
         pass
     assert calls == [main_module.settings.OCR_BUCKET]
@@ -50,7 +52,9 @@ def test_default_bucket_never_ensured(monkeypatch: pytest.MonkeyPatch) -> None:
     # Nothing uses the default bucket, so boot must not touch it.
     calls: list[str] = []
     monkeypatch.setattr(main_module.settings, "OCR_ENABLED", False)
-    monkeypatch.setattr(main_module, "ensure_bucket", lambda bucket: calls.append(bucket))
+    monkeypatch.setattr(
+        main_module, "ensure_bucket", lambda bucket: calls.append(bucket)
+    )
     with TestClient(app):
         pass
     assert calls == []

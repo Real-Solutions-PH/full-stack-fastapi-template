@@ -51,7 +51,9 @@ def rows() -> Generator[dict[str, Any], None, None]:
         for label in ("a", "b"):
             ids = made[label]
             db.execute(text("DELETE FROM item WHERE id = :id"), {"id": ids["item_id"]})
-            db.execute(text('DELETE FROM "user" WHERE id = :id'), {"id": ids["user_id"]})
+            db.execute(
+                text('DELETE FROM "user" WHERE id = :id'), {"id": ids["user_id"]}
+            )
             db.execute(
                 text("DELETE FROM tenant WHERE id = :id"), {"id": ids["tenant_id"]}
             )

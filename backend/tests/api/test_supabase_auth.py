@@ -46,13 +46,33 @@ def test_verify_token_rejects_tampered_token() -> None:
         supabase_auth.verify_token(token[:-3] + "xxx")
 
 
-def test_garbage_bearer_token_is_403(client: TestClient) -> None:
+def test_garbage_bearer_token_is_401(client: TestClient) -> None:
     r = client.get(
         f"{settings.API_V1_STR}/users/me",
         headers={"Authorization": "Bearer not-a-jwt"},
     )
-    assert r.status_code == 403
+    assert r.status_code == 401
+    assert r.headers["WWW-Authenticate"] == "Bearer"
     assert r.json()["message"] == "Could not validate credentials"
+
+
+def test_token_without_email_claim_is_401(
+    client: TestClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A validly-signed token that carries no email claim can't establish a
+    local identity (provisioning needs the email) → 401, not 403."""
+
+    def _claims(_token: str) -> dict[str, object]:
+        return {"sub": str(uuid.uuid4()), "aud": "authenticated"}
+
+    monkeypatch.setattr(supabase_auth, "verify_token", _claims)
+    r = client.get(
+        f"{settings.API_V1_STR}/users/me",
+        headers={"Authorization": "Bearer whatever"},
+    )
+    assert r.status_code == 401
+    assert r.headers["WWW-Authenticate"] == "Bearer"
+    assert r.json()["message"] == "Token has no email claim"
 
 
 def test_jit_provisioning_creates_local_mirror_row(
@@ -196,8 +216,9 @@ def test_update_me_email_change_does_not_touch_gotrue(client: TestClient) -> Non
     assert supabase_auth.admin_get_user_id_by_email(new_email) is None
 
 
-def test_inactive_user_is_rejected_with_400(client: TestClient, db: Session) -> None:
-    """A real, valid token for a deactivated local user gets 400."""
+def test_inactive_user_is_rejected_with_403(client: TestClient, db: Session) -> None:
+    """A real, valid token for a deactivated local user gets 403 (authenticated
+    but not permitted), not 401 — the client must not sign the user out."""
     email = random_email()
     password = random_lower_string()
     auth_uid = supabase_auth.admin_get_or_create_user(email=email, password=password)
@@ -212,7 +233,7 @@ def test_inactive_user_is_rejected_with_400(client: TestClient, db: Session) -> 
     db.commit()
 
     r = client.get(f"{settings.API_V1_STR}/users/me", headers=headers)
-    assert r.status_code == 400
+    assert r.status_code == 403
     assert r.json()["message"] == "Inactive user"
 
 

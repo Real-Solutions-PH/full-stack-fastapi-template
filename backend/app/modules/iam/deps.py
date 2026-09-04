@@ -46,9 +46,13 @@ def get_current_user(request: Request, session: SessionDep, token: TokenDep) -> 
             detail="Authentication service unavailable",
         )
     except (jwt.PyJWTError, KeyError, ValueError):
+        # A malformed/invalid/expired credential is an authentication failure,
+        # not an authorization one → 401 + WWW-Authenticate, so a client knows
+        # to re-authenticate rather than treating it as a permission denial.
         raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
+            status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Could not validate credentials",
+            headers={"WWW-Authenticate": "Bearer"},
         )
     # Claims seam: stash the verified claims for downstream request handling
     # (e.g. future request.jwt.claims GUC wiring for RLS — see the runbook).
@@ -61,12 +65,23 @@ def get_current_user(request: Request, session: SessionDep, token: TokenDep) -> 
 
         email = claims.get("email")
         if not email:
-            raise HTTPException(status_code=403, detail="Token has no email claim")
+            # The credential verified but carries no usable identity → treat as
+            # an authentication failure (401), same bucket as an invalid token.
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Token has no email claim",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
         user = user_service.provision_user_from_claims(
             session=session, user_id=user_id, email=str(email)
         )
     if not user.is_active:
-        raise HTTPException(status_code=400, detail="Inactive user")
+        # Authenticated but not permitted to use the system → 403, not 401:
+        # the credential is valid, so a client must not sign the user out and
+        # retry (GoTrue would keep issuing tokens for the disabled account).
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="Inactive user"
+        )
     return user
 
 

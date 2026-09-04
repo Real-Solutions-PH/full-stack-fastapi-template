@@ -11,7 +11,7 @@ from app.modules.ai.tools.schema import (
     ToolsPublic,
     ToolUpdate,
 )
-from app.modules.iam.deps import CurrentUser, get_current_active_superuser
+from app.modules.iam.deps import CurrentUser, require_permission
 from app.shared.deps import SessionDep
 from app.shared.pagination import PaginationDep
 from app.shared.schema import Message
@@ -35,7 +35,9 @@ def read_tool(session: SessionDep, _current_user: CurrentUser, id: uuid.UUID) ->
 
 
 @router.post(
-    "/", dependencies=[Depends(get_current_active_superuser)], response_model=ToolPublic
+    "/",
+    dependencies=[Depends(require_permission("tools:write"))],
+    response_model=ToolPublic,
 )
 def create_tool(
     *, session: SessionDep, _current_user: CurrentUser, tool_in: ToolCreate
@@ -45,7 +47,7 @@ def create_tool(
 
 @router.put(
     "/{id}",
-    dependencies=[Depends(get_current_active_superuser)],
+    dependencies=[Depends(require_permission("tools:write"))],
     response_model=ToolPublic,
 )
 def update_tool(
@@ -58,7 +60,7 @@ def update_tool(
     return tool_service.update_tool(session=session, tool_id=id, tool_in=tool_in)
 
 
-@router.delete("/{id}", dependencies=[Depends(get_current_active_superuser)])
+@router.delete("/{id}", dependencies=[Depends(require_permission("tools:write"))])
 def delete_tool(
     session: SessionDep, _current_user: CurrentUser, id: uuid.UUID
 ) -> Message:
@@ -76,7 +78,9 @@ def read_agent_tools(
     )
 
 
-@router.post("/agent/{agent_id}", dependencies=[Depends(get_current_active_superuser)])
+@router.post(
+    "/agent/{agent_id}", dependencies=[Depends(require_permission("tools:write"))]
+)
 def assign_tool(
     *,
     session: SessionDep,
@@ -91,7 +95,8 @@ def assign_tool(
 
 
 @router.delete(
-    "/agent/{agent_id}/{tool_id}", dependencies=[Depends(get_current_active_superuser)]
+    "/agent/{agent_id}/{tool_id}",
+    dependencies=[Depends(require_permission("tools:write"))],
 )
 def unassign_tool(
     session: SessionDep,

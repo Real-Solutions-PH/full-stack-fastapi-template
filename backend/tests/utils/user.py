@@ -30,9 +30,15 @@ def create_auth_user(
     email: str | None = None,
     password: str | None = None,
     tenant_id: uuid.UUID | None = None,
+    assign_default_role: bool = True,
 ) -> tuple[User, str]:
     """GoTrue user (idempotent; password reset to a known value) + local
-    mirror row keyed by the auth UID. Returns (user, password)."""
+    mirror row keyed by the auth UID. Returns (user, password).
+
+    Mirrors real JIT provisioning by granting the default role, so an
+    authenticated test user can reach permission-gated owner resources.
+    Pass ``assign_default_role=False`` for a bare, role-less user.
+    """
     email = email or random_email()
     password = password or random_lower_string()
     auth_uid = supabase_auth.admin_get_or_create_user(email=email, password=password)
@@ -46,6 +52,10 @@ def create_auth_user(
                 tenant_id=tenant_id or default_tenant_id(db),
             ),
         )
+    if assign_default_role:
+        from app.modules.iam.users.services import assign_default_role as _assign
+
+        _assign(session=db, user_id=user.id)
     return user, password
 
 

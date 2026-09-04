@@ -108,10 +108,14 @@ class Settings(BaseSettings):
         Falls back to the owner credentials when ``POSTGRES_APP_USER`` is
         unset, leaving RLS dormant (local/dev default).
         """
-        return self._database_uri(
-            self.POSTGRES_APP_USER or self.POSTGRES_USER,
-            self.POSTGRES_APP_PASSWORD or self.POSTGRES_PASSWORD,
-        )
+        # When app_user is set, use ITS password (never silently fall back to
+        # the owner's password — that would dial app_user with owner creds and
+        # fail auth at connect time). Fall back to owner creds only wholesale.
+        if self.POSTGRES_APP_USER:
+            return self._database_uri(
+                self.POSTGRES_APP_USER, self.POSTGRES_APP_PASSWORD
+            )
+        return self._database_uri(self.POSTGRES_USER, self.POSTGRES_PASSWORD)
 
     SMTP_TLS: bool = True
     SMTP_SSL: bool = False

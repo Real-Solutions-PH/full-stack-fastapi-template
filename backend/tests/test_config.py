@@ -129,3 +129,18 @@ def test_app_engine_falls_back_to_owner_when_unset() -> None:
     s = Settings(_env_file=None, ENVIRONMENT="local", **_BASE)  # type: ignore[call-arg]
     assert s.app_user_configured is False
     assert s.SQLALCHEMY_APP_DATABASE_URI == s.SQLALCHEMY_DATABASE_URI
+
+
+def test_app_user_never_borrows_the_owner_password() -> None:
+    # POSTGRES_APP_USER set but POSTGRES_APP_PASSWORD empty must NOT silently
+    # dial app_user with the owner's password.
+    base = {**_BASE, "POSTGRES_PASSWORD": "owner-secret"}
+    s = Settings(
+        _env_file=None,  # type: ignore[call-arg]
+        ENVIRONMENT="local",
+        POSTGRES_APP_USER="app_user",
+        POSTGRES_APP_PASSWORD="",
+        **base,
+    )
+    assert "owner-secret" not in s.SQLALCHEMY_APP_DATABASE_URI
+    assert "app_user" in s.SQLALCHEMY_APP_DATABASE_URI

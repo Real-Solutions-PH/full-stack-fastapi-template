@@ -3,7 +3,7 @@ from contextlib import asynccontextmanager
 from typing import Any
 
 import sentry_sdk
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.routing import APIRoute
 from starlette.datastructures import Headers, MutableHeaders
 from starlette.middleware.cors import CORSMiddleware
@@ -37,9 +37,10 @@ _API_CSP = "default-src 'none'; frame-ancestors 'none'; base-uri 'none'"
 _DOCS_CSP = (
     "default-src 'self'; frame-ancestors 'none'; base-uri 'none'; "
     "script-src 'self' https://cdn.jsdelivr.net 'unsafe-inline'; "
-    "style-src 'self' https://cdn.jsdelivr.net 'unsafe-inline'; "
+    "style-src 'self' https://cdn.jsdelivr.net https://fonts.googleapis.com 'unsafe-inline'; "
     "img-src 'self' https://fastapi.tiangolo.com data:; "
-    "font-src 'self' https://cdn.jsdelivr.net; worker-src 'self' blob:"
+    "font-src 'self' https://cdn.jsdelivr.net https://fonts.gstatic.com; "
+    "worker-src 'self' blob:"
 )
 _DOCS_PATHS = {"/docs", "/redoc"}
 _HSTS = "max-age=63072000; includeSubDomains"
@@ -77,10 +78,6 @@ class SecurityHeadersMiddleware:
         await self.app(scope, receive, send_with_headers)
 
 
-class _PayloadTooLarge(Exception):
-    """Raised when the streamed request body exceeds the configured cap."""
-
-
 class BodySizeLimitMiddleware:
     """Reject requests whose body exceeds ``max_request_body_size_bytes``.
 
@@ -112,17 +109,23 @@ class BodySizeLimitMiddleware:
             if message["type"] == "http.request":
                 received += len(message.get("body", b""))
                 if received > max_bytes:
-                    raise _PayloadTooLarge
+                    # Raised inside the app call, so the app's own exception
+                    # handler turns it into a proper 413 (envelope + headers).
+                    raise HTTPException(
+                        status_code=413, detail="Request body too large"
+                    )
             return message
 
-        try:
-            await self.app(scope, limited_receive, send)
-        except _PayloadTooLarge:
-            await self._reject(send)
+        await self.app(scope, limited_receive, send)
 
     @staticmethod
     async def _reject(send: Send) -> None:
-        body = b'{"code":"payload_too_large","message":"Request body too large","details":null}'
+        # Fast path runs outside the app, so emit the envelope directly with
+        # the same code the app's HTTP handler would produce for a 413.
+        body = (
+            b'{"code":"request_entity_too_large",'
+            b'"message":"Request body too large","details":null}'
+        )
         await send(
             {
                 "type": "http.response.start",
@@ -219,7 +222,7 @@ def custom_openapi() -> dict[str, Any]:
 
 
 original_openapi = app.openapi
-app.openapi = custom_openapi  # type: ignore[method-assign]  # ty: ignore[invalid-assignment]
+app.openapi = custom_openapi  # type: ignore[method-assign]
 
 if settings.AI_ENABLED:
     from app.modules.ai.copilotkit import setup_copilotkit

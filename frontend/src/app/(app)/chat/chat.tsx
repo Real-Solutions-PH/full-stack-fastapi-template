@@ -6,6 +6,7 @@ import "@copilotkit/react-core/v2/styles.css"
 import { useMemo } from "react"
 import ChatPage from "@/components/Chat/ChatPage"
 import { AGENT_IDS } from "@/lib/agents"
+import { resolveApiBaseUrl } from "@/lib/env"
 import { createClient } from "@/lib/supabase/client"
 
 /**
@@ -27,7 +28,7 @@ class SupabaseHttpAgent extends HttpAgent {
 
 export default function Chat() {
   const agents = useMemo(() => {
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? ""
+    const apiUrl = resolveApiBaseUrl()
     return Object.fromEntries(
       AGENT_IDS.map((name) => [
         name,

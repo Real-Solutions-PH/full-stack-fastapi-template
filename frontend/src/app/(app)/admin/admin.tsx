@@ -7,8 +7,10 @@ import { Suspense, useEffect } from "react"
 import { type UserPublic, UsersService } from "@/client"
 import AddUser from "@/components/Admin/AddUser"
 import { columns, type UserTableData } from "@/components/Admin/columns"
+import RolePermissionsManager from "@/components/Admin/RolePermissionsManager"
 import { DataTable } from "@/components/Common/DataTable"
 import PendingUsers from "@/components/Pending/PendingUsers"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import useAuth from "@/hooks/useAuth"
 
 function getUsersQueryOptions() {
@@ -48,20 +50,36 @@ export default function Admin() {
     }
   }, [user, router])
 
-  if (user && !user.is_superuser) return null
+  // Wait for the current-user query to resolve before rendering anything that
+  // calls superuser-only endpoints (readUsers, /rbac). Rendering the table
+  // before the guard resolves fires readUsers for a normal user mid-load, which
+  // the backend answers with 403.
+  if (!user) return <PendingUsers />
+  if (!user.is_superuser) return null
 
   return (
-    <div className="flex flex-col gap-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Users</h1>
-          <p className="text-muted-foreground">
-            Manage user accounts and permissions
-          </p>
+    <Tabs defaultValue="users" className="flex flex-col gap-6">
+      <TabsList>
+        <TabsTrigger value="users">Users</TabsTrigger>
+        <TabsTrigger value="roles">Roles &amp; permissions</TabsTrigger>
+      </TabsList>
+
+      <TabsContent value="users" className="flex flex-col gap-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight">Users</h1>
+            <p className="text-muted-foreground">
+              Manage user accounts and permissions
+            </p>
+          </div>
+          <AddUser />
         </div>
-        <AddUser />
-      </div>
-      <UsersTable />
-    </div>
+        <UsersTable />
+      </TabsContent>
+
+      <TabsContent value="roles">
+        <RolePermissionsManager />
+      </TabsContent>
+    </Tabs>
   )
 }

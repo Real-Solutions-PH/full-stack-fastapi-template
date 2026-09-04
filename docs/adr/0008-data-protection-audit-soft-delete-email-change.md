@@ -45,9 +45,10 @@ production products.
 ## Constitution clause deviated from
 
 - **§3 — "Creds stored encrypted in DB."** MCP/tool `config` may hold secrets
-  and is now guaranteed write-only (absent from every response), but is still
-  stored as plaintext JSONB, not encrypted at rest. Encryption-at-rest for
-  connection secrets is a tracked follow-up.
+  and is now guaranteed write-only (absent from every response), but at the
+  time of this ADR was still stored as plaintext JSONB. Encryption-at-rest was
+  since added in ADR-0009 (a residual §3 deviation — a settings key rather than
+  a KMS-held master key — is tracked there).
 - No clause mandates a self-service email-change feature; refusing it until it
   can be done with verified ownership is a strengthening of the secure-by-
   default posture, not a regression.
@@ -76,5 +77,5 @@ production products.
   always populated.
 - Implement the user-initiated double-confirmation email change once the route
   forwards the access token and SMTP is configured.
-- Encrypt MCP/tool `config` at rest (§3).
+- ~~Encrypt MCP/tool `config` at rest (§3).~~ Done in ADR-0009.
 - Filter user read paths by `deleted_at`, and add a retention-purge job.

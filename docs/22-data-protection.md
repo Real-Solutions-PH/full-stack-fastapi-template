@@ -81,6 +81,79 @@ escalation forensics and accountability. Snapshots carry only non-secret
 fields: connection secrets (MCP/tool `config`) are never captured. See
 `app/modules/audit/`.
 
+## Encryption at rest — connection secrets
+
+Most credentials live in Supabase Auth, not the app DB. The exception is
+**connection config for MCP servers and tools** (`mcpserver.config`,
+`tool.config`), which can hold bearer tokens, auth headers, and provider API
+keys. That config is write-only at the API (never echoed — see ADR-0008) and
+is **encrypted at rest** so a database dump alone never exposes a secret.
+
+**Scheme.** The `config` column is a `bytea` holding a Fernet token
+(AES-128-CBC + HMAC-SHA256, authenticated) over the JSON of the config dict.
+Encryption is transparent to the application: assign and read a plain `dict`;
+the ciphertext only exists in the column. See `app/core/crypto.py`
+(`EncryptedJSON`). Because the stored form is opaque, `config` cannot be
+queried or indexed by its contents — it is only ever fetched whole by id, so
+this costs nothing.
+
+### Key management
+
+`CONFIG_ENCRYPTION_KEYS` is a **comma-separated list of Fernet keys**. The
+first key encrypts new writes; every key in the list can decrypt. Generate a
+key with:
+
+```bash
+python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
+```
+
+- **Non-local (`ENVIRONMENT != local`)**: the key is **required** — the app
+  refuses to start without it (`Settings` validation), so secrets are never
+  written under a default key.
+- **Local**: if unset, a well-known **insecure built-in dev key** is used and a
+  warning is emitted, so dev and tests work unconfigured. Never rely on it for
+  anything real.
+
+Store the key in the team password manager (constitution §2.8), inject it via
+`.env`, and **never commit it**.
+
+### Rotation
+
+1. Generate a new key and **prepend** it: `CONFIG_ENCRYPTION_KEYS=<new>,<old>`.
+2. Redeploy. New writes use `<new>`; existing rows still decrypt under `<old>`.
+3. Re-encrypt existing rows onto the new key with a one-off script that loads
+   each row and re-saves it (loading decrypts under `<old>`; saving re-encrypts
+   under the primary `<new>`). A no-op API update does **not** re-encrypt —
+   `config` is only re-encrypted when it is written, and it can't be read back
+   over the API to re-submit:
+
+   ```python
+   from sqlalchemy.orm.attributes import flag_modified
+   from sqlmodel import Session, select
+   from app.core.db import engine
+   from app.modules.ai.mcp.models import MCPServer
+   from app.modules.ai.tools.models import Tool
+
+   with Session(engine) as s:
+       for model in (MCPServer, Tool):
+           for row in s.exec(select(model)).all():
+               flag_modified(row, "config")  # force a re-write -> re-encrypt
+               s.add(row)
+       s.commit()
+   ```
+
+   (`flag_modified` is required — reassigning the same dict is not tracked as a
+   change.)
+4. Once every row is re-encrypted, drop `<old>` from the list.
+
+### Known limitation (constitution §3 deviation)
+
+This is application-level encryption with a key from settings — a step below
+the constitution's envelope-encryption ideal (a **per-tenant data key** with
+the **master key in a KMS / Supabase Vault**). These catalogs are global and
+have no per-tenant key, and no KMS is wired. The residual gap is tracked in
+ADR-0009.
+
 ## Account email changes
 
 An account's email is the anchor for recovery and magic-link sign-in, so it

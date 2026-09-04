@@ -146,6 +146,12 @@ class Settings(BaseSettings):
 
     DEFAULT_LLM_PROVIDER: str = "nebius"
 
+    # Encryption at rest for connection-secret config blobs (MCP/tool config).
+    # Comma-separated urlsafe-base64 Fernet keys: the first encrypts, all
+    # decrypt (rotation). Required outside local; local falls back to an
+    # insecure built-in dev key (see app/core/crypto.py).
+    CONFIG_ENCRYPTION_KEYS: str = ""
+
     # Tools
     BRAVE_API_KEY: str | None = None
 
@@ -192,6 +198,20 @@ class Settings(BaseSettings):
             self.SUPABASE_SERVICE_ROLE_KEY,
             insecure_value=_DEMO_SUPABASE_SERVICE_ROLE_KEY,
         )
+
+        # No key => the insecure built-in dev key (crypto.py). Tolerated in
+        # local so dev/tests work unconfigured; refused everywhere else, since
+        # it would leave connection secrets recoverable from a DB dump.
+        if not self.CONFIG_ENCRYPTION_KEYS.strip():
+            message = (
+                "CONFIG_ENCRYPTION_KEYS is unset; connection-secret config would "
+                "be encrypted with the well-known insecure dev key. Set it (a "
+                "Fernet key) for any non-local deployment."
+            )
+            if self.ENVIRONMENT == "local":
+                warnings.warn(message, stacklevel=1)
+            else:
+                raise ValueError(message)
 
         return self
 

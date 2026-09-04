@@ -3,8 +3,9 @@ from datetime import datetime, timezone
 from typing import Any
 
 from sqlalchemy import DateTime
-from sqlalchemy.dialects.postgresql import JSONB
 from sqlmodel import Column, Field, SQLModel
+
+from app.core.crypto import EncryptedJSON
 
 
 def _utcnow() -> datetime:
@@ -17,9 +18,11 @@ class Tool(SQLModel, table=True):
     name: str = Field(unique=True, index=True, max_length=64)
     description: str | None = Field(default=None, max_length=255)
     tool_type: str = Field(max_length=32)
+    # Encrypted at rest: can hold provider API keys. Write-only at the API;
+    # stored as an opaque Fernet blob.
     config: dict[str, Any] = Field(
         default_factory=dict,
-        sa_column=Column(JSONB, nullable=False, server_default="{}"),
+        sa_column=Column(EncryptedJSON, nullable=False),
     )
     is_active: bool = True
     created_at: datetime | None = Field(  # type: ignore[call-overload]

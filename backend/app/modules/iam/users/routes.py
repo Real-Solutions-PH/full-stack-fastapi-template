@@ -32,8 +32,12 @@ def read_users(session: SessionDep, skip: int = 0, limit: int = 100) -> Any:
 @router.post(
     "/", dependencies=[Depends(get_current_active_superuser)], response_model=UserPublic
 )
-def create_user(*, session: SessionDep, user_in: UserCreate) -> Any:
-    return user_service.create_user(session=session, user_in=user_in)
+def create_user(
+    *, session: SessionDep, current_user: CurrentUser, user_in: UserCreate
+) -> Any:
+    return user_service.create_user(
+        session=session, user_in=user_in, actor_id=current_user.id
+    )
 
 
 @router.patch("/me", response_model=UserPublic)
@@ -73,10 +77,13 @@ def read_user_by_id(
 def update_user(
     *,
     session: SessionDep,
+    current_user: CurrentUser,
     user_id: uuid.UUID,
     user_in: UserUpdate,
 ) -> Any:
-    return user_service.update_user(session=session, user_id=user_id, user_in=user_in)
+    return user_service.update_user(
+        session=session, user_id=user_id, user_in=user_in, actor_id=current_user.id
+    )
 
 
 @router.delete("/{user_id}", dependencies=[Depends(get_current_active_superuser)])

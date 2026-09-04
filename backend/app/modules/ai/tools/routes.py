@@ -35,9 +35,11 @@ def read_tool(session: SessionDep, _current_user: CurrentUser, id: uuid.UUID) ->
     "/", dependencies=[Depends(get_current_active_superuser)], response_model=ToolPublic
 )
 def create_tool(
-    *, session: SessionDep, _current_user: CurrentUser, tool_in: ToolCreate
+    *, session: SessionDep, current_user: CurrentUser, tool_in: ToolCreate
 ) -> Any:
-    return tool_service.create_tool(session=session, tool_in=tool_in)
+    return tool_service.create_tool(
+        session=session, tool_in=tool_in, actor_id=current_user.id
+    )
 
 
 @router.put(
@@ -48,18 +50,20 @@ def create_tool(
 def update_tool(
     *,
     session: SessionDep,
-    _current_user: CurrentUser,
+    current_user: CurrentUser,
     id: uuid.UUID,
     tool_in: ToolUpdate,
 ) -> Any:
-    return tool_service.update_tool(session=session, tool_id=id, tool_in=tool_in)
+    return tool_service.update_tool(
+        session=session, tool_id=id, tool_in=tool_in, actor_id=current_user.id
+    )
 
 
 @router.delete("/{id}", dependencies=[Depends(get_current_active_superuser)])
 def delete_tool(
-    session: SessionDep, _current_user: CurrentUser, id: uuid.UUID
+    session: SessionDep, current_user: CurrentUser, id: uuid.UUID
 ) -> Message:
-    tool_service.delete_tool(session=session, tool_id=id)
+    tool_service.delete_tool(session=session, tool_id=id, actor_id=current_user.id)
     return Message(message="Tool deleted successfully")
 
 
@@ -77,12 +81,15 @@ def read_agent_tools(
 def assign_tool(
     *,
     session: SessionDep,
-    _current_user: CurrentUser,
+    current_user: CurrentUser,
     agent_id: uuid.UUID,
     body: AgentToolAssign,
 ) -> Message:
     tool_service.assign_tool_to_agent(
-        session=session, agent_id=agent_id, tool_id=body.tool_id
+        session=session,
+        agent_id=agent_id,
+        tool_id=body.tool_id,
+        actor_id=current_user.id,
     )
     return Message(message="Tool assigned to agent")
 
@@ -92,11 +99,11 @@ def assign_tool(
 )
 def unassign_tool(
     session: SessionDep,
-    _current_user: CurrentUser,
+    current_user: CurrentUser,
     agent_id: uuid.UUID,
     tool_id: uuid.UUID,
 ) -> Message:
     tool_service.remove_tool_from_agent(
-        session=session, agent_id=agent_id, tool_id=tool_id
+        session=session, agent_id=agent_id, tool_id=tool_id, actor_id=current_user.id
     )
     return Message(message="Tool removed from agent")

@@ -44,25 +44,29 @@ def read_mcp_server(
 
 @router.post("/", response_model=MCPServerPublic)
 def create_mcp_server(
-    *, session: SessionDep, _current_user: CurrentUser, mcp_in: MCPServerCreate
+    *, session: SessionDep, current_user: CurrentUser, mcp_in: MCPServerCreate
 ) -> Any:
-    return mcp_service.create_mcp_server(session=session, mcp_in=mcp_in)
+    return mcp_service.create_mcp_server(
+        session=session, mcp_in=mcp_in, actor_id=current_user.id
+    )
 
 
 @router.put("/{id}", response_model=MCPServerPublic)
 def update_mcp_server(
     *,
     session: SessionDep,
-    _current_user: CurrentUser,
+    current_user: CurrentUser,
     id: uuid.UUID,
     mcp_in: MCPServerUpdate,
 ) -> Any:
-    return mcp_service.update_mcp_server(session=session, mcp_id=id, mcp_in=mcp_in)
+    return mcp_service.update_mcp_server(
+        session=session, mcp_id=id, mcp_in=mcp_in, actor_id=current_user.id
+    )
 
 
 @router.delete("/{id}")
 def delete_mcp_server(
-    session: SessionDep, _current_user: CurrentUser, id: uuid.UUID
+    session: SessionDep, current_user: CurrentUser, id: uuid.UUID
 ) -> Message:
-    mcp_service.delete_mcp_server(session=session, mcp_id=id)
+    mcp_service.delete_mcp_server(session=session, mcp_id=id, actor_id=current_user.id)
     return Message(message="MCP server deleted successfully")

@@ -14,7 +14,9 @@ def list_logs(
     count = session.exec(select(func.count()).select_from(AuditLog)).one()
     rows = session.exec(
         select(AuditLog)
-        .order_by(col(AuditLog.created_at).desc())
+        # id is a secondary sort key so offset paging is stable when several
+        # rows share a created_at (e.g. multiple audits in one request).
+        .order_by(col(AuditLog.created_at).desc(), col(AuditLog.id))
         .offset(skip)
         .limit(limit)
     ).all()

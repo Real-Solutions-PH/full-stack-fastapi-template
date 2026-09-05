@@ -59,6 +59,12 @@ def test_audit_read_pagination_bounds(client: TestClient, db: Session) -> None:
     headers = _dpo_headers(db)
     r = client.get(f"{_URL}?limit=2", headers=headers)
     assert r.status_code == 200
-    assert len(r.json()["data"]) <= 2
+    body = r.json()
+    assert len(body["data"]) <= 2
+    # count is the FULL total (>= the 3 just written), not the page size
+    assert body["count"] >= 3
+    # newest first
+    timestamps = [row["created_at"] for row in body["data"]]
+    assert timestamps == sorted(timestamps, reverse=True)
     # limit above the bound is rejected at the edge (422), not a full scan
     assert client.get(f"{_URL}?limit=101", headers=headers).status_code == 422

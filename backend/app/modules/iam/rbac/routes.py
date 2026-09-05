@@ -3,7 +3,7 @@ from typing import Any
 
 from fastapi import APIRouter, Depends
 
-from app.modules.iam.deps import require_permission
+from app.modules.iam.deps import CurrentUser, require_permission
 from app.modules.iam.permissions.schema import PermissionPublic
 from app.modules.iam.rbac import repo as rbac_repo
 from app.modules.iam.rbac import services as rbac_service
@@ -27,15 +27,27 @@ def read_user_permissions(session: SessionDep, user_id: uuid.UUID) -> Any:
 
 
 @router.post("/users/{user_id}/roles/{role_id}", response_model=Message)
-def assign_role(session: SessionDep, user_id: uuid.UUID, role_id: uuid.UUID) -> Any:
-    rbac_service.assign_role_to_user(session=session, user_id=user_id, role_id=role_id)
+def assign_role(
+    session: SessionDep,
+    user_id: uuid.UUID,
+    role_id: uuid.UUID,
+    current_user: CurrentUser,
+) -> Any:
+    rbac_service.assign_role_to_user(
+        session=session, user_id=user_id, role_id=role_id, actor_id=current_user.id
+    )
     return Message(message="Role assigned")
 
 
 @router.delete("/users/{user_id}/roles/{role_id}", response_model=Message)
-def remove_role(session: SessionDep, user_id: uuid.UUID, role_id: uuid.UUID) -> Any:
+def remove_role(
+    session: SessionDep,
+    user_id: uuid.UUID,
+    role_id: uuid.UUID,
+    current_user: CurrentUser,
+) -> Any:
     rbac_service.remove_role_from_user(
-        session=session, user_id=user_id, role_id=role_id
+        session=session, user_id=user_id, role_id=role_id, actor_id=current_user.id
     )
     return Message(message="Role removed")
 
@@ -50,19 +62,31 @@ def read_role_permissions(session: SessionDep, role_id: uuid.UUID) -> Any:
 
 @router.post("/roles/{role_id}/permissions/{permission_id}", response_model=Message)
 def add_permission(
-    session: SessionDep, role_id: uuid.UUID, permission_id: uuid.UUID
+    session: SessionDep,
+    role_id: uuid.UUID,
+    permission_id: uuid.UUID,
+    current_user: CurrentUser,
 ) -> Any:
     rbac_service.add_permission_to_role(
-        session=session, role_id=role_id, permission_id=permission_id
+        session=session,
+        role_id=role_id,
+        permission_id=permission_id,
+        actor_id=current_user.id,
     )
     return Message(message="Permission granted")
 
 
 @router.delete("/roles/{role_id}/permissions/{permission_id}", response_model=Message)
 def remove_permission(
-    session: SessionDep, role_id: uuid.UUID, permission_id: uuid.UUID
+    session: SessionDep,
+    role_id: uuid.UUID,
+    permission_id: uuid.UUID,
+    current_user: CurrentUser,
 ) -> Any:
     rbac_service.remove_permission_from_role(
-        session=session, role_id=role_id, permission_id=permission_id
+        session=session,
+        role_id=role_id,
+        permission_id=permission_id,
+        actor_id=current_user.id,
     )
     return Message(message="Permission revoked")

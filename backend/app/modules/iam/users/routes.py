@@ -37,8 +37,12 @@ def read_users(session: SessionDep, pagination: PaginationDep) -> Any:
     dependencies=[Depends(require_permission("users:write"))],
     response_model=UserPublic,
 )
-def create_user(*, session: SessionDep, user_in: UserCreate) -> Any:
-    return user_service.create_user(session=session, user_in=user_in)
+def create_user(
+    *, session: SessionDep, user_in: UserCreate, current_user: CurrentUser
+) -> Any:
+    return user_service.create_user(
+        session=session, user_in=user_in, actor_id=current_user.id
+    )
 
 
 @router.patch("/me", response_model=UserPublic)
@@ -53,6 +57,13 @@ def update_user_me(
 @router.get("/me", response_model=UserPublic)
 def read_user_me(current_user: CurrentUser) -> Any:
     return current_user
+
+
+@router.get("/me/export")
+def export_my_data(session: SessionDep, current_user: CurrentUser) -> dict[str, Any]:
+    """Self-service data export (GDPR portability): the caller's own record and
+    all their items. Gated by authentication only — it is your own data."""
+    return user_service.export_user_data(session=session, user_id=current_user.id)
 
 
 @router.delete("/me", response_model=Message)
@@ -80,8 +91,21 @@ def update_user(
     session: SessionDep,
     user_id: uuid.UUID,
     user_in: UserUpdate,
+    current_user: CurrentUser,
 ) -> Any:
-    return user_service.update_user(session=session, user_id=user_id, user_in=user_in)
+    return user_service.update_user(
+        session=session, user_id=user_id, user_in=user_in, actor_id=current_user.id
+    )
+
+
+@router.get(
+    "/{user_id}/export",
+    dependencies=[Depends(require_permission("data:export"))],
+)
+def export_user_data(user_id: uuid.UUID, session: SessionDep) -> dict[str, Any]:
+    """Export a user's data (GDPR portability), for a data:export holder (e.g.
+    the DPO). Returns the profile row and all items; carries no credentials."""
+    return user_service.export_user_data(session=session, user_id=user_id)
 
 
 @router.delete("/{user_id}", dependencies=[Depends(require_permission("users:delete"))])
@@ -92,3 +116,20 @@ def delete_user(
         session=session, current_user=current_user, user_id=user_id
     )
     return Message(message="User deleted successfully")
+
+
+@router.delete(
+    "/{user_id}/erase",
+    dependencies=[Depends(require_permission("data:erase"))],
+    response_model=Message,
+)
+def erase_user_data(
+    session: SessionDep, current_user: CurrentUser, user_id: uuid.UUID
+) -> Message:
+    """Erase a user (GDPR right to erasure), for a data:erase holder. Runs the
+    same irreversible hard delete as the admin path: revokes the auth identity,
+    then cascades the local rows. Audited as ``user.delete``."""
+    user_service.delete_user(
+        session=session, current_user=current_user, user_id=user_id
+    )
+    return Message(message="User data erased")

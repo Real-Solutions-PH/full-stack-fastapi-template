@@ -259,8 +259,19 @@ double_confirm_changes = true
 # mailbox or set enable_confirmations = false in a local-only override — Supabase
 # Cloud ignores this file, so hosted projects follow their dashboard setting.
 enable_confirmations = true
-# If enabled, users will need to reauthenticate or have logged in recently to change their password.
-secure_password_change = false
+# If enabled, changing a password requires a session that authenticated within the
+# last 24h; an older session must first call reauthenticate() for a one-time nonce.
+#
+# TRADE-OFF (enabled here): every password path already mints a fresh session right
+# before updateUser() — the web/mobile reset screens via exchangeCodeForSession()
+# (a recovery session) and Change Password via a signInWithPassword() preflight — so
+# no current flow needs a nonce and none break. The gain is defense-in-depth: a
+# stale or stolen session older than 24h can no longer silently change the password.
+#
+# Maps to GOTRUE_SECURITY_UPDATE_PASSWORD_REQUIRE_REAUTHENTICATION only; it does NOT
+# require the current password (that is a separate flag, left off). Supabase Cloud
+# ignores this file, so hosted projects follow their dashboard setting.
+secure_password_change = true
 # Controls the minimum amount of time that must pass before sending another signup confirmation or password reset email.
 max_frequency = "1s"
 # Number of characters used in the email OTP.

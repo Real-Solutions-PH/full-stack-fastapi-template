@@ -6,13 +6,13 @@ session on the non-owner ``app_user`` role only sees its own tenant's rows —
 and stays isolated across a commit (claims are re-applied per transaction).
 """
 
-import secrets
+import logging
 import uuid
 from collections.abc import Generator
 from typing import Any
 
 import pytest
-from sqlalchemy import Engine, create_engine, text
+from sqlalchemy import Engine, text
 from sqlmodel import Session
 
 from app.core import rls
@@ -22,7 +22,8 @@ from app.db.models import Item, Tenant, User
 from app.modules.iam import deps
 from tests.utils.utils import random_email, random_lower_string
 
-APP_USER_PASSWORD = secrets.token_urlsafe(24)
+# app_user's LOGIN is provisioned once per session by the shared
+# ``app_user_engine`` fixture (tests/conftest.py); these tests consume it.
 
 
 @pytest.fixture(scope="module")
@@ -58,25 +59,6 @@ def rows() -> Generator[dict[str, Any], None, None]:
                 text("DELETE FROM tenant WHERE id = :id"), {"id": ids["tenant_id"]}
             )
         db.commit()
-
-
-@pytest.fixture(scope="module")
-def app_user_engine(rows: dict[str, Any]) -> Generator[Engine, None, None]:  # noqa: ARG001
-    with owner_engine.connect() as conn:
-        conn.execute(text(f"ALTER ROLE app_user LOGIN PASSWORD '{APP_USER_PASSWORD}'"))
-        conn.commit()
-    url = (
-        f"postgresql+psycopg://app_user:{APP_USER_PASSWORD}"
-        f"@{settings.POSTGRES_SERVER}:{settings.POSTGRES_PORT}/{settings.POSTGRES_DB}"
-    )
-    eng = create_engine(url, pool_size=1, max_overflow=0)
-    try:
-        yield eng
-    finally:
-        eng.dispose()
-        with owner_engine.connect() as conn:
-            conn.execute(text("ALTER ROLE app_user NOLOGIN PASSWORD NULL"))
-            conn.commit()
 
 
 def _user_for(tenant_id: uuid.UUID) -> User:
@@ -144,3 +126,17 @@ def test_posture_raises_when_app_user_set_but_bypassing_outside_local(
     )
     with pytest.raises(RuntimeError, match="RLS misconfigured"):
         rls.check_rls_posture()
+
+
+def test_posture_is_silent_when_app_engine_is_non_owner(
+    app_user_engine: Engine,
+    monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    # Once the app engine runs as the non-owner app_user role, RLS is live, so
+    # the startup posture check stays silent: no "RLS is DORMANT" warning and no
+    # raise.
+    monkeypatch.setattr(rls, "app_engine", app_user_engine)
+    with caplog.at_level(logging.WARNING, logger="app.core.rls"):
+        rls.check_rls_posture()
+    assert not any("RLS is DORMANT" in r.getMessage() for r in caplog.records)

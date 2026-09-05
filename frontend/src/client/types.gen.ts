@@ -269,6 +269,10 @@ export type UsersUpdateUserMeData = {
 
 export type UsersUpdateUserMeResponse = (UserPublic);
 
+export type UsersExportMyDataResponse = ({
+    [key: string]: unknown;
+});
+
 export type UsersReadUserByIdData = {
     userId: string;
 };
@@ -287,6 +291,20 @@ export type UsersDeleteUserData = {
 };
 
 export type UsersDeleteUserResponse = (Message);
+
+export type UsersExportUserDataData = {
+    userId: string;
+};
+
+export type UsersExportUserDataResponse = ({
+    [key: string]: unknown;
+});
+
+export type UsersEraseUserDataData = {
+    userId: string;
+};
+
+export type UsersEraseUserDataResponse = (Message);
 
 export type UtilsTestEmailData = {
     emailTo: string;

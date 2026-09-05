@@ -3,7 +3,7 @@
 import type { CancelablePromise } from './core/CancelablePromise';
 import { OpenAPI } from './core/OpenAPI';
 import { request as __request } from './core/request';
-import type { ItemsReadItemsData, ItemsReadItemsResponse, ItemsCreateItemData, ItemsCreateItemResponse, ItemsReadItemData, ItemsReadItemResponse, ItemsUpdateItemData, ItemsUpdateItemResponse, ItemsDeleteItemData, ItemsDeleteItemResponse, PermissionsReadPermissionsData, PermissionsReadPermissionsResponse, PermissionsReadPermissionData, PermissionsReadPermissionResponse, PrivateCreateUserData, PrivateCreateUserResponse, RbacReadUserPermissionsData, RbacReadUserPermissionsResponse, RbacAssignRoleData, RbacAssignRoleResponse, RbacRemoveRoleData, RbacRemoveRoleResponse, RbacReadRolePermissionsData, RbacReadRolePermissionsResponse, RbacAddPermissionData, RbacAddPermissionResponse, RbacRemovePermissionData, RbacRemovePermissionResponse, RolesReadRolesData, RolesReadRolesResponse, RolesReadRoleData, RolesReadRoleResponse, TenantsReadTenantsData, TenantsReadTenantsResponse, TenantsReadTenantData, TenantsReadTenantResponse, UsersReadUsersData, UsersReadUsersResponse, UsersCreateUserData, UsersCreateUserResponse, UsersReadUserMeResponse, UsersDeleteUserMeResponse, UsersUpdateUserMeData, UsersUpdateUserMeResponse, UsersReadUserByIdData, UsersReadUserByIdResponse, UsersUpdateUserData, UsersUpdateUserResponse, UsersDeleteUserData, UsersDeleteUserResponse, UtilsTestEmailData, UtilsTestEmailResponse, UtilsHealthCheckResponse } from './types.gen';
+import type { ItemsReadItemsData, ItemsReadItemsResponse, ItemsCreateItemData, ItemsCreateItemResponse, ItemsReadItemData, ItemsReadItemResponse, ItemsUpdateItemData, ItemsUpdateItemResponse, ItemsDeleteItemData, ItemsDeleteItemResponse, PermissionsReadPermissionsData, PermissionsReadPermissionsResponse, PermissionsReadPermissionData, PermissionsReadPermissionResponse, PrivateCreateUserData, PrivateCreateUserResponse, RbacReadUserPermissionsData, RbacReadUserPermissionsResponse, RbacAssignRoleData, RbacAssignRoleResponse, RbacRemoveRoleData, RbacRemoveRoleResponse, RbacReadRolePermissionsData, RbacReadRolePermissionsResponse, RbacAddPermissionData, RbacAddPermissionResponse, RbacRemovePermissionData, RbacRemovePermissionResponse, RolesReadRolesData, RolesReadRolesResponse, RolesReadRoleData, RolesReadRoleResponse, TenantsReadTenantsData, TenantsReadTenantsResponse, TenantsReadTenantData, TenantsReadTenantResponse, UsersReadUsersData, UsersReadUsersResponse, UsersCreateUserData, UsersCreateUserResponse, UsersReadUserMeResponse, UsersDeleteUserMeResponse, UsersUpdateUserMeData, UsersUpdateUserMeResponse, UsersExportMyDataResponse, UsersReadUserByIdData, UsersReadUserByIdResponse, UsersUpdateUserData, UsersUpdateUserResponse, UsersDeleteUserData, UsersDeleteUserResponse, UsersExportUserDataData, UsersExportUserDataResponse, UsersEraseUserDataData, UsersEraseUserDataResponse, UtilsTestEmailData, UtilsTestEmailResponse, UtilsHealthCheckResponse } from './types.gen';
 
 export class ItemsService {
     /**
@@ -486,6 +486,23 @@ export class UsersService {
     }
     
     /**
+     * Export My Data
+     * Self-service data export (GDPR portability): the caller's own record and
+     * all their items. Gated by authentication only — it is your own data.
+     * @returns unknown Successful Response
+     * @throws ApiError
+     */
+    public static exportMyData(): CancelablePromise<UsersExportMyDataResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/users/me/export',
+            errors: {
+                '4XX': 'Client Error'
+            }
+        });
+    }
+    
+    /**
      * Read User By Id
      * @param data The data for the request.
      * @param data.userId
@@ -539,6 +556,51 @@ export class UsersService {
         return __request(OpenAPI, {
             method: 'DELETE',
             url: '/api/v1/users/{user_id}',
+            path: {
+                user_id: data.userId
+            },
+            errors: {
+                '4XX': 'Client Error'
+            }
+        });
+    }
+    
+    /**
+     * Export User Data
+     * Export a user's data (GDPR portability), for a data:export holder (e.g.
+     * the DPO). Returns the profile row and all items; carries no credentials.
+     * @param data The data for the request.
+     * @param data.userId
+     * @returns unknown Successful Response
+     * @throws ApiError
+     */
+    public static exportUserData(data: UsersExportUserDataData): CancelablePromise<UsersExportUserDataResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/users/{user_id}/export',
+            path: {
+                user_id: data.userId
+            },
+            errors: {
+                '4XX': 'Client Error'
+            }
+        });
+    }
+    
+    /**
+     * Erase User Data
+     * Erase a user (GDPR right to erasure), for a data:erase holder. Runs the
+     * same irreversible hard delete as the admin path: revokes the auth identity,
+     * then cascades the local rows. Audited as ``user.delete``.
+     * @param data The data for the request.
+     * @param data.userId
+     * @returns Message Successful Response
+     * @throws ApiError
+     */
+    public static eraseUserData(data: UsersEraseUserDataData): CancelablePromise<UsersEraseUserDataResponse> {
+        return __request(OpenAPI, {
+            method: 'DELETE',
+            url: '/api/v1/users/{user_id}/erase',
             path: {
                 user_id: data.userId
             },

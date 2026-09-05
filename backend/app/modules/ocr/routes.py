@@ -7,10 +7,10 @@ from app.modules.iam.deps import CurrentUser, require_permission
 from app.modules.ocr import services as ocr_service
 from app.modules.ocr.providers.factory import list_available_providers
 from app.modules.ocr.schema import OcrDocumentPublic, OcrDocumentsPublic
-from app.shared.deps import SessionDep
 from app.shared.pagination import PaginationDep
 from app.shared.rate_limit import rate_limited
 from app.shared.schema import Message
+from app.shared.tenant_session import TenantScopedSessionDep
 
 router = APIRouter(prefix="/ocr", tags=["ocr"])
 
@@ -22,7 +22,7 @@ router = APIRouter(prefix="/ocr", tags=["ocr"])
 )
 async def upload_document(
     *,
-    session: SessionDep,
+    session: TenantScopedSessionDep,
     current_user: CurrentUser,
     file: UploadFile = File(...),
     provider: str | None = Query(default=None, description="OCR provider to use"),
@@ -43,7 +43,7 @@ async def upload_document(
     dependencies=[Depends(require_permission("ocr:read"))],
 )
 def list_documents(
-    session: SessionDep,
+    session: TenantScopedSessionDep,
     current_user: CurrentUser,
     pagination: PaginationDep,
     status: str | None = Query(default=None, description="Filter by status"),
@@ -77,7 +77,9 @@ def get_available_providers(
     response_model=OcrDocumentPublic,
     dependencies=[Depends(require_permission("ocr:read"))],
 )
-def get_document(session: SessionDep, current_user: CurrentUser, id: uuid.UUID) -> Any:
+def get_document(
+    session: TenantScopedSessionDep, current_user: CurrentUser, id: uuid.UUID
+) -> Any:
     """Get a single OCR document by ID."""
     return ocr_service.get_document(
         session=session, current_user=current_user, doc_id=id
@@ -89,7 +91,7 @@ def get_document(session: SessionDep, current_user: CurrentUser, id: uuid.UUID) 
     dependencies=[rate_limited("ocr"), Depends(require_permission("ocr:write"))],
 )
 def delete_document(
-    session: SessionDep, current_user: CurrentUser, id: uuid.UUID
+    session: TenantScopedSessionDep, current_user: CurrentUser, id: uuid.UUID
 ) -> Message:
     """Delete an OCR document and its MinIO file."""
     ocr_service.delete_document(session=session, current_user=current_user, doc_id=id)

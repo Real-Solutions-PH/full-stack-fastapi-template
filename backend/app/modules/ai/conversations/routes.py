@@ -11,10 +11,10 @@ from app.modules.ai.conversations.schema import (
     ConversationWithMessages,
 )
 from app.modules.iam.deps import CurrentUser, require_permission
-from app.shared.deps import SessionDep
 from app.shared.pagination import PaginationDep
 from app.shared.rate_limit import rate_limited
 from app.shared.schema import Message
+from app.shared.tenant_session import TenantScopedSessionDep
 
 router = APIRouter(prefix="/chat", tags=["ai-chat"])
 
@@ -25,7 +25,7 @@ router = APIRouter(prefix="/chat", tags=["ai-chat"])
     dependencies=[Depends(require_permission("conversations:read"))],
 )
 def read_conversations(
-    session: SessionDep,
+    session: TenantScopedSessionDep,
     current_user: CurrentUser,
     pagination: PaginationDep,
 ) -> Any:
@@ -47,7 +47,7 @@ def read_conversations(
     dependencies=[Depends(require_permission("conversations:read"))],
 )
 def read_conversation(
-    session: SessionDep,
+    session: TenantScopedSessionDep,
     current_user: CurrentUser,
     conversation_id: uuid.UUID,
 ) -> Any:
@@ -68,7 +68,7 @@ def read_conversation(
 )
 def create_conversation(
     *,
-    session: SessionDep,
+    session: TenantScopedSessionDep,
     current_user: CurrentUser,
     conv_in: ConversationCreate,
 ) -> Any:
@@ -85,7 +85,7 @@ def create_conversation(
     ],
 )
 def delete_conversation(
-    session: SessionDep,
+    session: TenantScopedSessionDep,
     current_user: CurrentUser,
     conversation_id: uuid.UUID,
 ) -> Message:

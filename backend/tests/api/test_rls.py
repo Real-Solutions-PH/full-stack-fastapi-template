@@ -13,24 +13,20 @@ leak) instead of seeing zero rows.
 """
 
 import json
-import secrets
 import uuid
 from collections.abc import Generator
 from typing import Any
 
 import pytest
-from sqlalchemy import Connection, Engine, create_engine, text
+from sqlalchemy import Connection, Engine, text
 from sqlalchemy.exc import ProgrammingError
 from sqlmodel import Session
 
-from app.core.config import settings
-from app.core.db import engine as owner_engine
 from app.db.models import Conversation, Item, Message, Tenant, User
 from tests.utils.utils import random_email, random_lower_string
 
-# Random per-run password; teardown clears it — NOLOGIN alone does NOT
-# remove a password, and make backend-test may point at a real local DB.
-APP_USER_PASSWORD = secrets.token_urlsafe(24)
+# The app_user role's LOGIN is provisioned once per session by the shared
+# ``app_user_engine`` fixture (tests/conftest.py); these tests consume it.
 
 
 def _set_claims(conn: Connection, tenant_id: uuid.UUID) -> None:
@@ -93,35 +89,6 @@ def fixture_rows(db: Session) -> Generator[dict[str, Any], None, None]:
         db.execute(text('DELETE FROM "user" WHERE id = :id'), {"id": ids["user_id"]})
         db.execute(text("DELETE FROM tenant WHERE id = :id"), {"id": ids["tenant_id"]})
     db.commit()
-
-
-@pytest.fixture(scope="module")
-def app_user_engine(
-    fixture_rows: dict[str, Any],  # noqa: ARG001  rows must exist before role flips
-) -> Generator[Engine, None, None]:
-    """Engine connected as the non-owner app_user role (RLS enforced).
-
-    Single pooled connection on purpose: the ''-vs-NULL gotcha only
-    reproduces when a claim-less transaction reuses a session that
-    previously ran a transaction-local set_config.
-    """
-    with owner_engine.connect() as conn:
-        conn.execute(text(f"ALTER ROLE app_user LOGIN PASSWORD '{APP_USER_PASSWORD}'"))
-        conn.commit()
-
-    url = (
-        f"postgresql+psycopg://app_user:{APP_USER_PASSWORD}"
-        f"@{settings.POSTGRES_SERVER}:{settings.POSTGRES_PORT}"
-        f"/{settings.POSTGRES_DB}"
-    )
-    engine = create_engine(url, pool_size=1, max_overflow=0)
-    try:
-        yield engine
-    finally:
-        engine.dispose()
-        with owner_engine.connect() as conn:
-            conn.execute(text("ALTER ROLE app_user NOLOGIN PASSWORD NULL"))
-            conn.commit()
 
 
 def test_app_user_does_not_bypass_rls(app_user_engine: Engine) -> None:

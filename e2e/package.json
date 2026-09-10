@@ -4,7 +4,8 @@
   "version": "0.0.0",
   "scripts": {
     "test": "cypress run",
-    "test:ui": "cypress open"
+    "test:ui": "cypress open",
+    "lint": "biome check --write --no-errors-on-unmatched --files-ignore-unknown=true ./"
   },
   "devDependencies": {
     "@testing-library/cypress": "10.1.3",

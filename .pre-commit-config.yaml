@@ -26,7 +26,7 @@ repos:
         entry: bun run lint
         language: system
         types: [text]
-        files: ^frontend/
+        files: ^(frontend|e2e)/
         pass_filenames: false
 
       - id: local-ruff-check

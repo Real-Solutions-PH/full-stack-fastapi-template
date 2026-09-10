@@ -1,0 +1,37 @@
+name: Image Scan
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        image:
+          - backend
+          - frontend
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+      - name: Seed .env for CI
+        run: cp .env.example .env
+      - name: Build the ${{ matrix.image }} image
+        run: docker compose -f compose.yml build ${{ matrix.image }}
+      - name: Scan the ${{ matrix.image }} image for known vulnerabilities
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          image-ref: ${{ matrix.image }}:latest
+          format: table
+          severity: CRITICAL,HIGH
+          # Only fail on vulnerabilities that have a fix available; unfixable
+          # base-image noise is reported but does not block.
+          ignore-unfixed: true
+          exit-code: "1"

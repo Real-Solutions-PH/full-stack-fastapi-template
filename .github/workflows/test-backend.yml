@@ -37,6 +37,21 @@ jobs:
       - name: Migrate DB
         run: uv run bash scripts/prestart.sh
         working-directory: backend
+      - name: Verify migrations reverse cleanly and converge on one head
+        # Every revision must run both up and down, and the history must never
+        # fork. Exercise the full round-trip and assert a single head so a
+        # broken downgrade or divergent heads fail CI instead of merging silently.
+        run: |
+          uv run alembic upgrade head
+          uv run alembic downgrade base
+          uv run alembic upgrade head
+          heads="$(uv run alembic heads --resolve-dependencies | grep -c '(head)')"
+          if [ "$heads" -ne 1 ]; then
+            echo "Expected exactly one migration head, found $heads"
+            uv run alembic heads --resolve-dependencies
+            exit 1
+          fi
+        working-directory: backend
       - name: Run tests
         run: uv run bash scripts/tests-start.sh "Coverage for ${{ github.sha }}"
         working-directory: backend

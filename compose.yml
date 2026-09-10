@@ -31,7 +31,7 @@ services:
       - app-redis-data:/data
 
   minio:
-    image: minio/minio:latest
+    image: minio/minio:RELEASE.2025-09-07T16-13-09Z
     restart: always
     command: server /data --console-address ":9001"
     env_file:
@@ -71,7 +71,6 @@ services:
       - BACKEND_CORS_ORIGINS=${BACKEND_CORS_ORIGINS}
       - FIRST_SUPERUSER=${FIRST_SUPERUSER?Variable not set}
       - FIRST_SUPERUSER_PASSWORD=${FIRST_SUPERUSER_PASSWORD?Variable not set}
-      - SUPABASE_URL=http://host.docker.internal:54321
       - SUPABASE_JWT_ISSUER=${SUPABASE_URL?Variable not set}/auth/v1
       - SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY?Variable not set}
       - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY?Variable not set}
@@ -111,7 +110,6 @@ services:
       - BACKEND_CORS_ORIGINS=${BACKEND_CORS_ORIGINS}
       - FIRST_SUPERUSER=${FIRST_SUPERUSER?Variable not set}
       - FIRST_SUPERUSER_PASSWORD=${FIRST_SUPERUSER_PASSWORD?Variable not set}
-      - SUPABASE_URL=http://host.docker.internal:54321
       - SUPABASE_JWT_ISSUER=${SUPABASE_URL?Variable not set}/auth/v1
       - SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY?Variable not set}
       - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY?Variable not set}
@@ -132,6 +130,30 @@ services:
       timeout: 5s
       retries: 5
 
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+
+  worker:
+    image: '${DOCKER_IMAGE_BACKEND?Variable not set}:${TAG-latest}'
+    restart: always
+    depends_on:
+      db:
+        condition: service_healthy
+        restart: true
+      prestart:
+        condition: service_completed_successfully
+    env_file:
+      - .env
+    environment:
+      - ENVIRONMENT=${ENVIRONMENT}
+      - POSTGRES_SERVER=db
+      - POSTGRES_PORT=${POSTGRES_PORT}
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${POSTGRES_USER?Variable not set}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD?Variable not set}
+      - SENTRY_DSN=${SENTRY_DSN}
+    command: procrastinate --app=app.modules.jobs.app.jobs_app worker
     build:
       context: .
       dockerfile: backend/Dockerfile

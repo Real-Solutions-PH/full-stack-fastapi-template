@@ -2,22 +2,33 @@ services:
 
   db:
     restart: "no"
+    # Bind to loopback: these dev-only infra ports carry weak local creds and
+    # must not be reachable from the LAN.
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5432:5432"
 
   redis:
     restart: "no"
     ports:
-      - "6379:6379"
+      - "127.0.0.1:6379:6379"
 
   minio:
     restart: "no"
     ports:
-      - "9000:9000"
-      - "9001:9001"
+      - "127.0.0.1:9000:9000"
+      - "127.0.0.1:9001:9001"
+
+  prestart:
+    # Same dev-only Supabase address as the backend: init_db calls GoTrue at
+    # startup, so prestart must reach the host stack via host.docker.internal.
+    environment:
+      SUPABASE_URL: http://host.docker.internal:54321
 
   backend:
     restart: "no"
+    # The image runs as an unprivileged user; in dev, run as root so the
+    # container can write the bind-mounted coverage dir and compose-watch syncs.
+    user: root
     ports:
       - "8000:8000"
     build:
@@ -47,13 +58,34 @@ services:
       SMTP_PORT: "1025"
       SMTP_TLS: "false"
       EMAILS_FROM_EMAIL: "noreply@example.com"
+      # The host-run Supabase stack (supabase start) is reached from inside the
+      # container via host.docker.internal; this dev-only address lives here,
+      # not in the base compose, so the base image stays environment-agnostic.
+      SUPABASE_URL: http://host.docker.internal:54321
+
+  worker:
+    restart: "no"
+    # Run as root in dev so compose-watch syncs into the container.
+    user: root
+    develop:
+      watch:
+        - path: ./backend
+          action: sync
+          target: /app/backend
+          ignore:
+            - ./backend/.venv
+            - .venv
+        - path: ./backend/pyproject.toml
+          action: rebuild
 
   # Catches the BACKEND's app-notification SMTP emails only (SMTP_HOST above).
   # Auth emails (signup/recovery) are sent by Supabase GoTrue and land in the
   # local Supabase stack's Mailpit (http://127.0.0.1:54324) — the E2E suite
   # reads those from Mailpit, not from here.
   mailcatcher:
-    image: schickling/mailcatcher
+    # No version tags are published for this image, so pin by digest
+    # (schickling/mailcatcher:latest at time of pinning) for reproducibility.
+    image: schickling/mailcatcher@sha256:55ed289525a565f7587b138a423705267eb34eda1ec8d35acd6dc7966a933e84
     ports:
       - "1080:1080"
       - "1025:1025"

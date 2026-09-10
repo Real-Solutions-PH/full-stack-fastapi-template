@@ -42,4 +42,12 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 
 WORKDIR /app/backend/
 
+# Run as an unprivileged user in the built image (the frontend runtime stage
+# already does). The dev compose override runs this service as root so it can
+# write the bind-mounted coverage directory and compose-watch file syncs.
+RUN groupadd --system --gid 1001 appuser \
+    && useradd --system --uid 1001 --gid appuser appuser \
+    && chown -R appuser:appuser /app
+USER appuser
+
 CMD ["fastapi", "run", "--workers", "4", "app/main.py"]

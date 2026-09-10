@@ -6,7 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "biome check --write --unsafe --no-errors-on-unmatched --files-ignore-unknown=true ./",
+    "lint": "biome check --write --no-errors-on-unmatched --files-ignore-unknown=true ./",
     "generate-client": "openapi-ts",
     "test": "bun test"
   },

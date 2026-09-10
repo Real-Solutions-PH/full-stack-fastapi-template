@@ -222,6 +222,9 @@ class Settings(BaseSettings):
     def ocr_allowed_mime_list(self) -> list[str]:
         return [m.strip() for m in self.OCR_ALLOWED_MIME_TYPES.split(",") if m.strip()]
 
+    # Jobs Module (background task queue, backed by the Procrastinate worker)
+    JOBS_ENABLED: bool = False
+
     def _check_default_secret(
         self,
         var_name: str,

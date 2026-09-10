@@ -20,3 +20,7 @@ if settings.OCR_ENABLED:
     from app.modules.ocr.main import router as ocr_router
 
     v1_router.include_router(ocr_router)
+if settings.JOBS_ENABLED:
+    from app.modules.jobs.main import router as jobs_router
+
+    v1_router.include_router(jobs_router)

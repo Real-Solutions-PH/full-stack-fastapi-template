@@ -63,6 +63,21 @@ services:
       # not in the base compose, so the base image stays environment-agnostic.
       SUPABASE_URL: http://host.docker.internal:54321
 
+  worker:
+    restart: "no"
+    # Run as root in dev so compose-watch syncs into the container.
+    user: root
+    develop:
+      watch:
+        - path: ./backend
+          action: sync
+          target: /app/backend
+          ignore:
+            - ./backend/.venv
+            - .venv
+        - path: ./backend/pyproject.toml
+          action: rebuild
+
   # Catches the BACKEND's app-notification SMTP emails only (SMTP_HOST above).
   # Auth emails (signup/recovery) are sent by Supabase GoTrue and land in the
   # local Supabase stack's Mailpit (http://127.0.0.1:54324) — the E2E suite

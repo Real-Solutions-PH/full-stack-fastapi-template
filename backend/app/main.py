@@ -166,7 +166,15 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
                 exc_info=True,
             )
     check_rls_posture()
-    yield
+    # Open the jobs queue connector so routes can enqueue tasks; the worker
+    # process opens its own. Skipped entirely when the module is disabled.
+    if settings.JOBS_ENABLED:
+        from app.modules.jobs.app import jobs_app
+
+        async with jobs_app.open_async():
+            yield
+    else:
+        yield
 
 
 app = FastAPI(

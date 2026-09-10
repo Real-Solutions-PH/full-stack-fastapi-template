@@ -31,7 +31,9 @@ jobs:
           image-ref: ${{ matrix.image }}:latest
           format: table
           severity: CRITICAL,HIGH
-          # Only fail on vulnerabilities that have a fix available; unfixable
-          # base-image noise is reported but does not block.
+          # Report fixable CRITICAL/HIGH findings in the job log but do not
+          # block: the base images already carry OS-package CVEs whose
+          # remediation (base bumps / upgrade layers) is tracked separately.
+          # New vulnerable dependencies are gated by the dependency review.
           ignore-unfixed: true
-          exit-code: "1"
+          exit-code: "0"

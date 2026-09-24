@@ -34,6 +34,7 @@ jobs:
           # Report fixable CRITICAL/HIGH findings in the job log but do not
           # block: the base images already carry OS-package CVEs whose
           # remediation (base bumps / upgrade layers) is tracked separately.
-          # New vulnerable dependencies are gated by the dependency review.
+          # New vulnerable dependencies are gated by the dependency review
+          # wherever the repository supports it (see dependency-review.yml).
           ignore-unfixed: true
           exit-code: "0"

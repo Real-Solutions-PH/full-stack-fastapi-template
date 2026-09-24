@@ -13,6 +13,13 @@ on:
 jobs:
   changes:
     runs-on: ubuntu-latest
+    # On pull requests paths-filter lists the changed files through the API,
+    # which needs pull-requests:read. A private repository's default token
+    # can be restricted to contents/metadata/packages, and Dependabot's token
+    # is read-only regardless, so request exactly what the job needs.
+    permissions:
+      contents: read
+      pull-requests: read
     # Set job outputs to values from filter step
     outputs:
       changed: ${{ steps.filter.outputs.changed }}
@@ -41,6 +48,14 @@ jobs:
     timeout-minutes: 60
     runs-on: ubuntu-latest
     steps:
+    # This job builds every stack image plus the Cypress image on top of the
+    # Supabase stack and the host installs, which can exceed a hosted runner's
+    # free disk. Drop preinstalled SDKs the job never uses.
+    - name: Free runner disk space
+      run: |
+        df -h /
+        sudo rm -rf /usr/local/lib/android /usr/share/dotnet /opt/ghc /usr/local/.ghcup /opt/hostedtoolcache/CodeQL
+        df -h /
     - uses: actions/checkout@v7
     - uses: oven-sh/setup-bun@v2
     - uses: actions/setup-python@v6
@@ -91,7 +106,10 @@ jobs:
   # https://github.com/marketplace/actions/alls-green#why
   alls-green-cypress:  # This job does nothing and is only used for the branch protection
     if: always()
+    # changes is listed too: when it fails, test-cypress is skipped, and an
+    # allowed skip alone would let this aggregate pass without any tests.
     needs:
+      - changes
       - test-cypress
     runs-on: ubuntu-latest
     steps:
